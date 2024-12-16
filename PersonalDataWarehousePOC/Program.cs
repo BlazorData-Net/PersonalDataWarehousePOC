@@ -1,3 +1,4 @@
+using BlazorDatasheet.Extensions;
 using PersonalDataWarehousePOC.Components;
 
 namespace PersonalDataWarehousePOC;
@@ -12,6 +13,8 @@ public class Program
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
+
+        builder.Services.AddBlazorDatasheet();
 
         var app = builder.Build();
 
