@@ -3,13 +3,18 @@
 @using BlazorDatasheet.Core.Data
 @using System.Data
 @using BlazorDatasheet.Core.Formats
+@using PersonalDataWarehousePOC.Services
+@inject ExcelService ExcelService
 
 <PageTitle>Tables</PageTitle>
 
-<select @onchange="@(async (args) => await LoadTableData(args.Value?.ToString()))">
+@* <select @onchange="@(async (args) => await LoadTableData(args.Value?.ToString()))">
     <option value="TableOne">Table One</option>
     <option value="TableTwo">Table Two</option>
-</select>
+</select> *@
+<br />
+<br />
+<InputFile OnChange="HandleFileSelected" />
 <br />
 <br />
 @if (IsLoadingSheet)
@@ -20,15 +25,18 @@ else
 {
     <Datasheet Sheet="@sheet" />
 }
-<br />
-<br />
 
+<br />
+<br />
 
 @code {
     private Sheet sheet;
 
+    private DataSet dataSet;
+    private Stream fileStream;
+    private IBrowserFile file;
+
     List<string> TableColumns = new List<string>();
-    DataTable OrginalDataTable = new DataTable();
     DataTable CurrentDataTable = new DataTable();
 
     string Message = string.Empty;
@@ -41,84 +49,42 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadTableData("TableOne");
+        IsLoadingSheet = false;
+
+        // Initialize the sheet
+        sheet = new Sheet(10, 10);
     }
 
-    private void InitializeDataTable(string paramTableName)
-    {
-        // Create a DataTable
-        OrginalDataTable = new DataTable();
-
-        if (paramTableName == "TableOne")
-        {
-            OrginalDataTable.Columns.Add("Id", typeof(int));
-            OrginalDataTable.Columns.Add("Name", typeof(string));
-            OrginalDataTable.Columns.Add("Description", typeof(string));
-            OrginalDataTable.Columns.Add("Price", typeof(decimal));
-            OrginalDataTable.Columns.Add("Quantity", typeof(int));
-
-            // Add 10 rows of sample data
-            OrginalDataTable.Rows.Add(1, "Product 1", "Description 1", 10.00, 100);
-            OrginalDataTable.Rows.Add(2, "Product 2", "Description 2", 20.00, 200);
-            OrginalDataTable.Rows.Add(3, "Product 3", "Description 3", 30.00, 300);
-            OrginalDataTable.Rows.Add(4, "Product 4", "Description 4", 40.00, 400);
-            OrginalDataTable.Rows.Add(5, "Product 5", "Description 5", 50.00, 500);
-            OrginalDataTable.Rows.Add(6, "Product 6", "Description 6", 60.00, 600);
-            OrginalDataTable.Rows.Add(7, "Product 7", "Description 7", 70.00, 700);
-            OrginalDataTable.Rows.Add(8, "Product 8", "Description 8", 80.00, 800);
-            OrginalDataTable.Rows.Add(9, "Product 9", "Description 9", 90.00, 900);
-            OrginalDataTable.Rows.Add(10, "Product 10", "Description 10", 100.00, 1000);
-        }
-
-        if (paramTableName == "TableTwo")
-        {
-            OrginalDataTable.Columns.Add("Id", typeof(int));
-            OrginalDataTable.Columns.Add("FirstName", typeof(string));
-            OrginalDataTable.Columns.Add("LastName", typeof(string));
-            OrginalDataTable.Columns.Add("Email", typeof(string));
-            OrginalDataTable.Columns.Add("Phone", typeof(string));
-            OrginalDataTable.Columns.Add("City", typeof(string));
-            OrginalDataTable.Columns.Add("State", typeof(string));
-            OrginalDataTable.Columns.Add("Zipcode", typeof(string));
-
-            // Add 10 rows of sample data
-            OrginalDataTable.Rows.Add(1, "John", "Doe", "john.doe@example.com", "555-1234", "Los Angeles", "CA", "90001");
-            OrginalDataTable.Rows.Add(2, "Jane", "Smith", "jane.smith@example.com", "555-5678", "San Francisco", "CA", "94101");
-            OrginalDataTable.Rows.Add(3, "Michael", "Johnson", "michael.johnson@example.com", "555-8765", "San Diego", "CA", "92101");
-            OrginalDataTable.Rows.Add(4, "Emily", "Davis", "emily.davis@example.com", "555-4321", "Sacramento", "CA", "95814");
-            OrginalDataTable.Rows.Add(5, "David", "Wilson", "david.wilson@example.com", "555-3456", "Fresno", "CA", "93701");
-            OrginalDataTable.Rows.Add(6, "Emma", "Brown", "emma.brown@example.com", "555-7890", "Long Beach", "CA", "90802");
-            OrginalDataTable.Rows.Add(7, "James", "Miller", "james.miller@example.com", "555-6789", "Oakland", "CA", "94601");
-            OrginalDataTable.Rows.Add(8, "Olivia", "Martinez", "olivia.martinez@example.com", "555-0987", "Bakersfield", "CA", "93301");
-            OrginalDataTable.Rows.Add(9, "William", "Garcia", "william.garcia@example.com", "555-6543", "Anaheim", "CA", "92801");
-            OrginalDataTable.Rows.Add(10, "Sophia", "Anderson", "sophia.anderson@example.com", "555-3210", "Santa Ana", "CA", "92701");
-            OrginalDataTable.Rows.Add(11, "Benjamin", "Lee", "benjamin.lee@example.com", "555-1357", "Irvine", "CA", "92602");
-            OrginalDataTable.Rows.Add(12, "Isabella", "Harris", "isabella.harris@example.com", "555-2468", "Modesto", "CA", "95350");
-            OrginalDataTable.Rows.Add(13, "Ethan", "Clark", "ethan.clark@example.com", "555-9876", "Chula Vista", "CA", "91910");
-            OrginalDataTable.Rows.Add(14, "Mia", "Lewis", "mia.lewis@example.com", "555-6780", "Fremont", "CA", "94536");
-            OrginalDataTable.Rows.Add(15, "Alexander", "Robinson", "alexander.robinson@example.com", "555-4326", "San Bernardino", "CA", "92401");
-            OrginalDataTable.Rows.Add(16, "Charlotte", "Walker", "charlotte.walker@example.com", "555-5432", "Fontana", "CA", "92335");
-            OrginalDataTable.Rows.Add(17, "Daniel", "Young", "daniel.young@example.com", "555-8762", "Oxnard", "CA", "93030");
-            OrginalDataTable.Rows.Add(18, "Amelia", "Allen", "amelia.allen@example.com", "555-3457", "Moreno Valley", "CA", "92551");
-            OrginalDataTable.Rows.Add(19, "Lucas", "King", "lucas.king@example.com", "555-5672", "Huntington Beach", "CA", "92647");
-            OrginalDataTable.Rows.Add(20, "Harper", "Scott", "harper.scott@example.com", "555-7894", "Glendale", "CA", "91203");
-        }
-    }
-
-    private async Task LoadTableData(string paramTableName)
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
         IsLoadingSheet = true;
+        StateHasChanged();
 
-        strAIResponse = "";
+        var file = e.File;
+        using var stream = file.OpenReadStream();
+        dataSet = await ExcelService.ReadExcelFileAsync(stream);
+
+        // Load dataSet into DataTable
+        if (dataSet != null && dataSet.Tables.Count > 0)
+        {
+            CurrentDataTable = dataSet.Tables[0];
+            await LoadTableData();
+        }
+
+        IsLoadingSheet = false;
+        StateHasChanged();
+    }
+
+
+    private async Task LoadTableData()
+    {
         Message = "";
 
-        InitializeDataTable(paramTableName);
-
         // Get a list of the columns from the DataTable
-        TableColumns = OrginalDataTable.Columns.Cast<DataColumn>().Select(x => x.ColumnName).ToList();
+        TableColumns = CurrentDataTable.Columns.Cast<DataColumn>().Select(x => x.ColumnName).ToList();
 
         // Create sheet with the number of columns
-        sheet = new Sheet(OrginalDataTable.Rows.Count, TableColumns.Count);
+        sheet = new Sheet(CurrentDataTable.Rows.Count, TableColumns.Count);
 
         // Wait 1 second before loading the table data
         // to join the UI thread
@@ -136,7 +102,7 @@ else
         }
 
         int ii = 0;
-        foreach (DataRow dataRow in OrginalDataTable.Rows)
+        foreach (DataRow dataRow in CurrentDataTable.Rows)
         {
             i = 0;
             foreach (string objDatabaseColumn in TableColumns)
@@ -168,7 +134,5 @@ else
         // Turn on history
         sheet.EndBatchUpdates();
         sheet.Commands.ResumeHistory();
-
-        IsLoadingSheet = false;
     }
 }

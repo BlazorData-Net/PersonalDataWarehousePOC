@@ -1,5 +1,6 @@
 using BlazorDatasheet.Extensions;
 using PersonalDataWarehousePOC.Components;
+using PersonalDataWarehousePOC.Services;
 
 namespace PersonalDataWarehousePOC;
 
@@ -14,7 +15,15 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        // Blazor Datasheet
         builder.Services.AddBlazorDatasheet();
+
+        // Excel Service
+        builder.Services.AddSingleton<ExcelService>();
+
+        // This is required by Excel service to parse strings in binary BIFF2-5 Excel documents
+        // encoded with DOS-era code pages.
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
         var app = builder.Build();
 
