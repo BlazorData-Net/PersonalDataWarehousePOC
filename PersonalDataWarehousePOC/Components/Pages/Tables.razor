@@ -21,9 +21,7 @@
 <br />
 @if (IsLoadingSheet)
 {
-    <div class="progress-bar progress-bar-striped progress-bar-animated"
-         role="progressbar"
-         style="width: 25%"></div>
+    <div role="progressbar" class="marquee" style="width: 25%"></div>
 }
 else
 {
@@ -36,28 +34,53 @@ else
     <Datasheet Sheet="@sheet" />
 }
 
-<br />
-<br />
+@if (isNewTablePopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">New Table</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseNewTablePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <form @onsubmit="SaveParquetAsync">
+                            <div>
+                                <label for="tableName">Table Name:</label>
+                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentTableName" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="submit">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
     private Sheet sheet;
 
     private DataSet dataSet;
-    private Stream fileStream;
-    private IBrowserFile file;
+    private IBrowserFile CurrentFile;
 
     List<string> TableColumns = new List<string>();
     DataTable CurrentDataTable = new DataTable();
+    string CurrentTableName = string.Empty;
 
     string Message = string.Empty;
-    string strAIResponse = "";
 
+    bool isNewTablePopupVisible = false;
     bool IsLoadingSheet = true;
-    bool IsLoading = false;
-    bool ShowLog = false;
-    bool CanApplyChanges = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         IsLoadingSheet = false;
 
@@ -65,13 +88,18 @@ else
         sheet = new Sheet(10, 10);
     }
 
-    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        CurrentFile = e.File;
+        isNewTablePopupVisible = true;
+    }
+
+    private async Task LoadExcelFile()
     {
         IsLoadingSheet = true;
         StateHasChanged();
 
-        var file = e.File;
-        using var stream = file.OpenReadStream();
+        using var stream = CurrentFile.OpenReadStream();
         dataSet = await ExcelService.ReadExcelFileAsync(stream);
 
         // Load dataSet into DataTable
@@ -81,10 +109,10 @@ else
             await LoadTableData();
         }
 
+        CurrentFile = null;
         IsLoadingSheet = false;
         StateHasChanged();
     }
-
 
     private async Task LoadTableData()
     {
@@ -148,8 +176,10 @@ else
 
     private async Task SaveParquetAsync()
     {
-        IsLoading = true;
+        IsLoadingSheet = true;
         StateHasChanged();
+
+        // Convert sheet to datatable
 
         int columnCount = CurrentDataTable.Columns.Count;
         int lastColumnIndex = columnCount - 1;
@@ -194,14 +224,19 @@ else
         await parquetTable.WriteAsync(ms); // Await for async write
         ms.Position = 0;
 
-        string fileName = "Data/Parquet/ParquetFile.parquet";
+        string fileName = $"Data/Parquet/{CurrentTableName}.parquet";
         using (var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
         {
             ms.CopyTo(fileStream);
         }
 
-        IsLoading = false;
+        IsLoadingSheet = false;
         StateHasChanged();
+    }
+
+    private void CloseNewTablePopup()
+    {
+        isNewTablePopupVisible = false;
     }
 
 }
