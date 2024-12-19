@@ -216,7 +216,33 @@ else
         StateHasChanged();
 
         // Convert sheet to datatable
+        ConvertSheetToDataTable();
 
+        // Convert to Parquet
+        await ConvertToParquet();
+
+        IsLoadingSheet = false;
+        IsNewTablePopupVisible = false;
+        StateHasChanged();
+
+        Message = $"{CurrentTableName} saved successfully.";
+    }
+
+    private void CloseNewTablePopup()
+    {
+        IsNewTablePopupVisible = false;
+    }
+
+    private void CloseMessagePopup()
+    {
+        Message = "";
+    }
+
+    // Datasheet
+
+    #region private void ConvertSheetToDataTable
+    private void ConvertSheetToDataTable()
+    {
         colGeneralErrors = new List<string>();
         CurrentDataTable = new DataTable();
 
@@ -289,9 +315,12 @@ else
 
             CurrentDataTable.Rows.Add(row);
         }
+    }
+    #endregion
 
-        // Convert to Parquet
-
+    #region private async Task ConvertToParquet
+    private async Task ConvertToParquet()
+    {
         int columnCount = CurrentDataTable.Columns.Count;
         int lastColumnIndex = columnCount - 1;
 
@@ -341,21 +370,8 @@ else
         {
             ms.CopyTo(fileStream);
         }
-
-        IsLoadingSheet = false;
-        IsNewTablePopupVisible = false;
-        StateHasChanged();
     }
-
-    private void CloseNewTablePopup()
-    {
-        IsNewTablePopupVisible = false;
-    }
-
-    private void CloseMessagePopup()
-    {
-        Message = "";
-    }
+    #endregion
 
     // Utility
 
