@@ -6,6 +6,7 @@
 @using Parquet;
 @using Parquet.Schema
 @using PersonalDataWarehousePOC.Services
+@using System.Text
 @inject ExcelService ExcelService
 
 <PageTitle>Tables</PageTitle>
@@ -221,6 +222,9 @@ else
         // Convert to Parquet
         await ConvertToParquet();
 
+        // Create C# class from DataTable 
+        GenerateClassFromDataTable(CurrentDataTable, CurrentTableName);
+
         IsLoadingSheet = false;
         IsNewTablePopupVisible = false;
         StateHasChanged();
@@ -370,6 +374,41 @@ else
         {
             ms.CopyTo(fileStream);
         }
+    }
+    #endregion
+
+    #region public static void GenerateClassFromDataTable(DataTable dt, string className)
+    public static void GenerateClassFromDataTable(DataTable dt, string className)
+    {
+        // Define directory for output
+        string directoryPath = Path.Combine("Data", "Classes");
+        Directory.CreateDirectory(directoryPath);
+
+        // Start building the class code
+        StringBuilder codeBuilder = new StringBuilder();
+        codeBuilder.AppendLine("using System;");
+        codeBuilder.AppendLine();
+        codeBuilder.AppendLine($"namespace Data");
+        codeBuilder.AppendLine("{");
+        codeBuilder.AppendLine($"    public class {className}");
+        codeBuilder.AppendLine("    {");
+
+        // For each column in the DataTable, create a string property
+        foreach (DataColumn column in dt.Columns)
+        {
+            // Ensure the property name is a valid C# identifier
+            string propertyName = column.ColumnName.Replace(" ", "_"); // Simple replacement, customize as needed
+            codeBuilder.AppendLine($"        public string {propertyName} {{ get; set; }}");
+        }
+
+        codeBuilder.AppendLine("    }");
+        codeBuilder.AppendLine("}");
+
+        // Set the file path
+        string filePath = Path.Combine(directoryPath, className + ".cs");
+
+        // Write the class to file
+        File.WriteAllText(filePath, codeBuilder.ToString());
     }
     #endregion
 
