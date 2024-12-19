@@ -16,7 +16,7 @@
 </select> *@
 <br />
 <br />
-<InputFile OnChange="HandleFileSelected" />
+<InputFile OnChange="HandleFileSelectedAsync" />
 <br />
 <br />
 @if (IsLoadingSheet)
@@ -27,14 +27,17 @@ else
 {
     @if (CurrentDataTable.Rows.Count > 0)
     {
-        <button @onclick="SaveParquetAsync">Save</button>
-        <br />
+        @if (IsFileSelected)
+        {
+            <button @onclick="Save">Save</button>
+            <br />
+        }
     }
     <br />
     <Datasheet Sheet="@sheet" />
 }
 
-@if (isNewTablePopupVisible)
+@if (IsNewTablePopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
         <div class="modal-dialog">
@@ -72,13 +75,15 @@ else
     private IBrowserFile CurrentFile;
 
     List<string> TableColumns = new List<string>();
+    List<string> colGeneralErrors = new List<string>();
     DataTable CurrentDataTable = new DataTable();
     string CurrentTableName = string.Empty;
 
     string Message = string.Empty;
 
-    bool isNewTablePopupVisible = false;
+    bool IsFileSelected = false;
     bool IsLoadingSheet = true;
+    bool IsNewTablePopupVisible = false;
 
     protected override void OnInitialized()
     {
@@ -88,13 +93,13 @@ else
         sheet = new Sheet(10, 10);
     }
 
-    private void HandleFileSelected(InputFileChangeEventArgs e)
+    private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
     {
         CurrentFile = e.File;
-        isNewTablePopupVisible = true;
+        await LoadExcelFileAsync();
     }
 
-    private async Task LoadExcelFile()
+    private async Task LoadExcelFileAsync()
     {
         IsLoadingSheet = true;
         StateHasChanged();
@@ -111,6 +116,7 @@ else
 
         CurrentFile = null;
         IsLoadingSheet = false;
+        IsFileSelected = true;
         StateHasChanged();
     }
 
@@ -174,6 +180,11 @@ else
         sheet.Commands.ResumeHistory();
     }
 
+    private void Save()
+    {
+        IsNewTablePopupVisible = true;
+    }
+
     private async Task SaveParquetAsync()
     {
         IsLoadingSheet = true;
@@ -181,10 +192,86 @@ else
 
         // Convert sheet to datatable
 
+        colGeneralErrors = new List<string>();
+        CurrentDataTable = new DataTable();
+
+        foreach (var column in TableColumns)
+        {
+            CurrentDataTable.Columns.Add(new DataColumn(column, typeof(String)));
+        }
+
+        for (int i = 0; i < sheet.NumRows; i++)
+        {
+            DataRow row = CurrentDataTable.NewRow();
+
+            for (int j = 0; j < TableColumns.Count; j++)
+            {
+                try
+                {
+                    var cellValue = sheet.Cells[i, j]?.Value;
+
+                    if (cellValue == null || cellValue == DBNull.Value || string.IsNullOrWhiteSpace(cellValue.ToString()))
+                    {
+                        row[j] = DBNull.Value;
+                    }
+                    else
+                    {
+                        var columnType = CurrentDataTable.Columns[j].DataType;
+
+                        if (columnType == typeof(int))
+                        {
+                            row[j] = Convert.ToInt32(cellValue);
+                        }
+                        else if (columnType == typeof(DateTime))
+                        {
+                            row[j] = Convert.ToDateTime(cellValue);
+                        }
+                        else if (columnType == typeof(TimeSpan))
+                        {
+                            string stringValue = cellValue.ToString();
+
+                            if (DateTime.TryParse(stringValue, out var parsedDateTime))
+                            {
+                                row[j] = parsedDateTime.TimeOfDay;
+                            }
+                            else if (TimeSpan.TryParse(stringValue, out var parsedTimeSpan))
+                            {
+                                row[j] = parsedTimeSpan;
+                            }
+                            else
+                            {
+                                row[j] = stringValue;
+                            }
+                        }
+                        else
+                        {
+                            string cleanValue = cellValue.ToString()
+                                .Replace("\r\n", " ")
+                                .Replace("\t", " ")
+                                .Replace("\r", " ")
+                                .Replace("\n", " ")
+                                .Trim();
+
+                            row[j] = cleanValue;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    colGeneralErrors.Add(ex.GetBaseException().Message);
+                }
+            }
+
+            CurrentDataTable.Rows.Add(row);
+        }
+
+        // Convert to Parquet
+
         int columnCount = CurrentDataTable.Columns.Count;
         int lastColumnIndex = columnCount - 1;
 
         // Prepare fields for all columns
+
         var parquetFields = new List<Field>(columnCount);
         for (int i = 0; i < columnCount; i++)
         {
@@ -231,12 +318,12 @@ else
         }
 
         IsLoadingSheet = false;
+        IsNewTablePopupVisible = false;
         StateHasChanged();
     }
 
     private void CloseNewTablePopup()
     {
-        isNewTablePopupVisible = false;
+        IsNewTablePopupVisible = false;
     }
-
 }
