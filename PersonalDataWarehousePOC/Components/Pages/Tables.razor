@@ -153,27 +153,13 @@ else
             {
                 // Set the value of the cell
                 sheet.Cells[ii, i].Value = dataRow[i].ToString();
-
-                // Make the first column read only and hidden and an integer
-                if (i == 0)
-                {
-                    sheet.Cells[ii, i].Format = new CellFormat() { IsReadOnly = true };
-                    sheet.Cells[ii, i].Type = "int";
-                }
-                else
-                {
-                    sheet.Cells[ii, i].Format = new CellFormat() { IsReadOnly = false };
-                    sheet.Cells[ii, i].Type = "string";
-                }
-
+                sheet.Cells[ii, i].Format = new CellFormat() { IsReadOnly = false };
+                sheet.Cells[ii, i].Type = "string";
                 i++;
             }
 
             ii++;
         }
-
-        // Hide the Id column
-        sheet.Columns.Hide(0, 0);
 
         // Turn on history
         sheet.EndBatchUpdates();
