@@ -61,7 +61,31 @@ else
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
+@if (Message != "")
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Alert!</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 300px; height: 100px; overflow: auto">
+                            @Message
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -79,7 +103,7 @@ else
     DataTable CurrentDataTable = new DataTable();
     string CurrentTableName = string.Empty;
 
-    string Message = string.Empty;
+    string Message = "";
 
     bool IsFileSelected = false;
     bool IsLoadingSheet = true;
@@ -173,6 +197,15 @@ else
 
     private async Task SaveParquetAsync()
     {
+        if (CurrentTableName.Trim().Length == 0)
+        {
+            IsNewTablePopupVisible = false;
+            Message = "Table Name is required.";
+            return;
+        }
+
+        CurrentTableName = CleanAndCapitalize(CurrentTableName);
+
         IsLoadingSheet = true;
         StateHasChanged();
 
@@ -312,4 +345,56 @@ else
     {
         IsNewTablePopupVisible = false;
     }
+
+    private void CloseMessagePopup()
+    {
+        Message = "";
+    }
+
+    // Utility
+    #region public static string CleanAndCapitalize(string input)
+    public static string CleanAndCapitalize(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return string.Empty;
+
+        // 1) Keep only letters, digits, and spaces (temporarily), removing all other characters
+        //    We keep spaces initially to determine word boundaries for capitalization.
+        char[] filteredChars = input
+            .Where(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c))
+            .ToArray();
+
+        // Convert to a string to process spaces and capitalization
+        string intermediate = new string(filteredChars);
+
+        // 2) Remove spaces and capitalize the following character if it is a letter
+        // We'll build the result using a StringBuilder for efficiency.
+        var result = new System.Text.StringBuilder();
+        bool capitalizeNext = false;
+
+        for (int i = 0; i < intermediate.Length; i++)
+        {
+            char c = intermediate[i];
+
+            if (char.IsWhiteSpace(c))
+            {
+                // Encountered a space: the next valid letter should be capitalized if it's not a digit.
+                capitalizeNext = true;
+            }
+            else
+            {
+                // This character is alphanumeric. If we are instructed to capitalize it and it's a letter:
+                if (capitalizeNext && char.IsLetter(c))
+                {
+                    c = char.ToUpper(c);
+                }
+
+                result.Append(c);
+                capitalizeNext = false; // Reset flag after processing a non-space character
+            }
+        }
+
+        return result.ToString();
+    }
+    #endregion
 }
