@@ -204,6 +204,12 @@ else
             return;
         }
 
+        if (DetectDuplicate(CurrentTableName))
+        {
+            Message = "Table Name already exists.";
+            return;
+        }
+
         CurrentTableName = CleanAndCapitalize(CurrentTableName);
 
         IsLoadingSheet = true;
@@ -352,6 +358,7 @@ else
     }
 
     // Utility
+
     #region public static string CleanAndCapitalize(string input)
     public static string CleanAndCapitalize(string input)
     {
@@ -395,6 +402,15 @@ else
         }
 
         return result.ToString();
+    }
+    #endregion
+
+    #region public static bool DetectDuplicate(string paramTableName)
+    public static bool DetectDuplicate(string paramTableName)
+    {
+        // Check if the table name already exists
+        string fileName = $"Data/Parquet/{paramTableName}.parquet";
+        return System.IO.File.Exists(fileName);
     }
     #endregion
 }
