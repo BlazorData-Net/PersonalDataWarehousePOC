@@ -18,8 +18,8 @@ public class Program
         // Blazor Datasheet
         builder.Services.AddBlazorDatasheet();
 
-        // Excel Service
-        builder.Services.AddSingleton<ExcelService>();
+        // DataService Service
+        builder.Services.AddSingleton<DataService>();
 
         // This is required by Excel service to parse strings in binary BIFF2-5 Excel documents
         // encoded with DOS-era code pages.

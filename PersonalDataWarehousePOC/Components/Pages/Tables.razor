@@ -4,23 +4,39 @@
 @using System.Data
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Menu
+@using ExcelDataReader
 @using Parquet;
 @using Parquet.Schema
 @using PersonalDataWarehousePOC.Services
 @using System.Text
-@inject ExcelService ExcelService
+@inject DataService DataService
 
 <PageTitle>Tables</PageTitle>
 
 <h4>Tables</h4>
+<br />
 
-@* <select @onchange="@(async (args) => await LoadTableData(args.Value?.ToString()))">
-    <option value="TableOne">Table One</option>
-    <option value="TableTwo">Table Two</option>
-</select> *@
-<br />
-<InputFile OnChange="HandleFileSelectedAsync" />
-<br />
+<!-- MAIN UI -->
+<div>
+    <label style="@(!IsShowFileUpload ? "display:none;" : "")">Open Excel File: </label>
+    <br /><br />
+    <InputFile @key="resetInputFileFlag" OnChange="HandleFileSelectedAsync" style="@(!IsShowFileUpload ? "display:none;" : "")" />
+    @if (IsFileSelected)
+    {
+        <label>Selected File: @CurrentFileName</label>
+        <span>&nbsp; &nbsp;</span>
+        <button @onclick="@(async () =>
+            {
+                // Toggle the flag to force a re-render of InputFile
+                resetInputFileFlag = !resetInputFileFlag;
+                IsFileSelected = false;
+                IsShowFileUpload = true;
+                await LoadTableListDropdown();
+            })">
+            Clear File
+        </button>
+    }
+</div>
 <br />
 @if (IsLoadingSheet)
 {
@@ -28,18 +44,41 @@
 }
 else
 {
-    @if (CurrentDataTable.Rows.Count > 0)
-    {
-        @if (IsFileSelected)
+    <div>
+        @if (TableList.Count > 0)
+        {
+            @if (CurrentTableName != "")
+            {
+                <label>Select Table: </label>
+                <select @onchange="@(async (args) =>
+                    {
+                        CurrentTableName = args.Value?.ToString();
+                        await LoadTableData(CurrentTableName);
+                    })">
+                    @foreach (var table in TableList)
+                    {
+                        <option value="@table" selected="@(table == CurrentTableName ? "selected" : null)">
+                            @table
+                        </option>
+                    }
+                </select>
+            }
+        }
+    </div>
+    <br />
+    <div>
+        @if (CurrentDataTable.Rows.Count > 0)
         {
             <button @onclick="Save">Save</button>
             <br />
         }
-    }
+    </div>
     <br />
+
     <Datasheet Sheet="@sheet" MenuOptions=_sheetMenuOpt />
 }
 
+<!-- POPUPS -->
 @if (IsNewTablePopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -101,15 +140,19 @@ else
     private DataSet dataSet;
     private IBrowserFile CurrentFile;
 
+    List<string> TableList = new List<string>();
     List<string> TableColumns = new List<string>();
     List<string> colGeneralErrors = new List<string>();
     DataTable CurrentDataTable = new DataTable();
     string CurrentTableName = string.Empty;
+    string CurrentFileName = string.Empty;
 
     string Message = "";
 
+    bool resetInputFileFlag = false;
     bool IsFileSelected = false;
-    bool IsLoadingSheet = true;
+    bool IsShowFileUpload = true;
+    bool IsLoadingSheet = false;
     bool IsNewTablePopupVisible = false;
 
     SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
@@ -126,29 +169,49 @@ else
             ClearEnabled = false
         };
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        IsLoadingSheet = false;
-
         // Initialize the sheet
         sheet = new Sheet(10, 10);
+
+        await LoadTableListDropdown();
     }
 
     // Events
 
     private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
     {
-        CurrentFile = e.File;
-        await LoadExcelFileAsync();
-    }
+        if (e.File == null)
+        {
+            return;
+        }
 
-    private async Task LoadExcelFileAsync()
-    {
+        CurrentTableName = string.Empty;
+        CurrentFile = e.File;
+        CurrentFileName = CurrentFile.Name;
+
+        IsShowFileUpload = false;
         IsLoadingSheet = true;
         StateHasChanged();
 
-        using var stream = CurrentFile.OpenReadStream();
-        dataSet = await ExcelService.ReadExcelFileAsync(stream);
+        using var fileStream = CurrentFile.OpenReadStream();
+
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+        using var memoryStream = new MemoryStream();
+        await fileStream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        using var reader = ExcelReaderFactory.CreateReader(memoryStream);
+        var result = reader.AsDataSet(new ExcelDataSetConfiguration()
+            {
+                ConfigureDataTable = _ => new ExcelDataTableConfiguration()
+                {
+                    UseHeaderRow = true
+                }
+            });
+
+        dataSet = result;
 
         // Load dataSet into DataTable
         if (dataSet != null && dataSet.Tables.Count > 0)
@@ -160,6 +223,29 @@ else
         CurrentFile = null;
         IsLoadingSheet = false;
         IsFileSelected = true;
+        StateHasChanged();
+    }
+
+    private async Task LoadTableData(string paramTable)
+    {
+        IsLoadingSheet = true;
+        StateHasChanged();
+
+        // Load the DataTable
+        var parquetFolder = Path.Combine("Data", "Parquet");
+        var fileName = Path.Combine(parquetFolder, $"{paramTable}.parquet");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            CurrentDataTable = await DataService.ReadParquetFileAsync(fileName);
+            await LoadTableData();
+        }
+        else
+        {
+            Message = "Table not found.";
+        }
+
+        IsLoadingSheet = false;
         StateHasChanged();
     }
 
@@ -211,7 +297,14 @@ else
 
     private void Save()
     {
-        IsNewTablePopupVisible = true;
+        if (CurrentTableName.Trim().Length == 0)
+        {
+            IsNewTablePopupVisible = true;
+        }
+        else
+        {
+            Message = "Just save table data...";
+        }
     }
 
     private async Task SaveParquetAsync()
@@ -239,7 +332,7 @@ else
         // Convert to Parquet
         await ConvertToParquet();
 
-        // Create C# class from DataTable 
+        // Create C# class from DataTable
         GenerateClassFromDataTable(CurrentDataTable, CurrentTableName);
 
         IsLoadingSheet = false;
@@ -247,6 +340,31 @@ else
         StateHasChanged();
 
         Message = $"{CurrentTableName} saved successfully.";
+    }
+
+    private async Task LoadTableListDropdown()
+    {
+        IsLoadingSheet = true;
+        StateHasChanged();
+
+        // Load the TableList data
+        var parquetFolder = Path.Combine("Data", "Parquet");
+        if (Directory.Exists(parquetFolder))
+        {
+            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        // If TableList has items, load the first table
+        if (TableList.Count > 0)
+        {
+            CurrentTableName = TableList[0];
+            await LoadTableData(CurrentTableName);
+        }
+
+        IsLoadingSheet = false;
+        StateHasChanged();
     }
 
     // Popups
