@@ -3,6 +3,7 @@
 @using BlazorDatasheet.Core.Data
 @using System.Data
 @using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet.Menu
 @using Parquet;
 @using Parquet.Schema
 @using PersonalDataWarehousePOC.Services
@@ -36,7 +37,7 @@ else
         }
     }
     <br />
-    <Datasheet Sheet="@sheet" />
+    <Datasheet Sheet="@sheet" MenuOptions=_sheetMenuOpt />
 }
 
 @if (IsNewTablePopupVisible)
@@ -111,6 +112,20 @@ else
     bool IsLoadingSheet = true;
     bool IsNewTablePopupVisible = false;
 
+    SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
+        {
+            InsertColsEnabled = false,
+            HideColsEnabled = false,
+            HideRowsEnabled = false,
+            DeleteColsEnabled = false,
+            MergeEnabled = false,
+            SortRangeEnabled = false,
+            FilterColumnEnabled = false,
+            HeaderMenuEnabled = false,
+            AlignmentEnabled = false,
+            ClearEnabled = false
+        };
+
     protected override void OnInitialized()
     {
         IsLoadingSheet = false;
@@ -118,6 +133,8 @@ else
         // Initialize the sheet
         sheet = new Sheet(10, 10);
     }
+
+    // Events
 
     private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
     {
@@ -232,6 +249,8 @@ else
         Message = $"{CurrentTableName} saved successfully.";
     }
 
+    // Popups
+
     private void CloseNewTablePopup()
     {
         IsNewTablePopupVisible = false;
@@ -242,7 +261,7 @@ else
         Message = "";
     }
 
-    // Datasheet
+    // Datasheet Operations
 
     #region private void ConvertSheetToDataTable
     private void ConvertSheetToDataTable()
