@@ -63,6 +63,11 @@ else
         @if (CurrentDataTable.Rows.Count > 0)
         {
             <button @onclick="Save">Save</button>
+            @if (CurrentTableName != "")
+            {
+                <span>&nbsp; &nbsp;</span>
+                <button @onclick="Delete">Delete</button>
+            }
             <br />
         }
     </div>
@@ -340,6 +345,13 @@ else
         }
         else
         {
+            // Toggle the flag to force a re-render of InputFile
+            resetInputFileFlag = !resetInputFileFlag;
+
+            // Reset the variables
+            IsFileSelected = false;
+            IsShowFileUpload = true;
+
             // Save the Parquet file
             await SaveParquetAsync();
         }
@@ -389,6 +401,58 @@ else
         StateHasChanged();
 
         Message = $"{CurrentTableName} saved successfully.";
+    }
+
+    // Delete
+
+    private async Task Delete()
+    {
+        if (CurrentTableName.Trim().Length == 0)
+        {
+            Message = "Must save table first.";
+        }
+        else
+        {
+            // Delete the Parquet file
+            IsLoadingSheet = true;
+            StateHasChanged();
+
+            // Delete the Parquet file
+            var fileName = Path.Combine("Data", "Parquet", $"{CurrentTableName}.parquet");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            // Delete the C# class file
+            fileName = Path.Combine("Data", "Classes", $"{CurrentTableName}.cs");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            // Re-Load the TableList dropdown
+            LoadTableListDropdown();
+
+            // If TableList has items, load the first table
+            if (TableList.Count > 0)
+            {
+                CurrentTableName = TableList[0];
+                await LoadTableData(CurrentTableName);
+            }
+
+            // Toggle the flag to force a re-render of InputFile
+            // Clearing it if needed
+            resetInputFileFlag = !resetInputFileFlag;
+
+            string deletedTableName = CurrentTableName;
+            CurrentTableName = string.Empty;
+
+            Message = $"{deletedTableName} deleted!";
+
+            IsLoadingSheet = false;
+            StateHasChanged();
+        }
     }
 
     // Popups
