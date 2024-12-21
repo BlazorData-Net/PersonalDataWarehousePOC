@@ -25,14 +25,7 @@
     {
         <label>Selected File: @CurrentFileName</label>
         <span>&nbsp; &nbsp;</span>
-        <button @onclick="@(async () =>
-            {
-                // Toggle the flag to force a re-render of InputFile
-                resetInputFileFlag = !resetInputFileFlag;
-                IsFileSelected = false;
-                IsShowFileUpload = true;
-                await LoadTableListDropdown();
-            })">
+        <button @onclick="ClearFileSeleted">
             Clear File
         </button>
     }
@@ -174,7 +167,14 @@ else
         // Initialize the sheet
         sheet = new Sheet(10, 10);
 
-        await LoadTableListDropdown();
+        LoadTableListDropdown();
+
+        // If TableList has items, load the first table
+        if (TableList.Count > 0)
+        {
+            CurrentTableName = TableList[0];
+            await LoadTableData(CurrentTableName);
+        }
     }
 
     // Events
@@ -223,6 +223,40 @@ else
         CurrentFile = null;
         IsLoadingSheet = false;
         IsFileSelected = true;
+        StateHasChanged();
+    }
+
+    private void ClearFileSeleted()
+    {
+        // Toggle the flag to force a re-render of InputFile
+        resetInputFileFlag = !resetInputFileFlag;
+
+        // Reset the variables
+        IsFileSelected = false;
+        IsShowFileUpload = true;
+
+        LoadTableListDropdown();
+    }
+
+    // Table Dropdown
+
+    private void LoadTableListDropdown()
+    {
+        IsLoadingSheet = true;
+        StateHasChanged();
+
+        TableList = new List<string>();
+
+        // Load the TableList data
+        var parquetFolder = Path.Combine("Data", "Parquet");
+        if (Directory.Exists(parquetFolder))
+        {
+            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        IsLoadingSheet = false;
         StateHasChanged();
     }
 
@@ -295,30 +329,38 @@ else
         sheet.Commands.ResumeHistory();
     }
 
-    private void Save()
+    // Save
+
+    private async Task Save()
     {
         if (CurrentTableName.Trim().Length == 0)
         {
+            // Open the New Table popup
             IsNewTablePopupVisible = true;
         }
         else
         {
-            Message = "Just save table data...";
+            // Save the Parquet file
+            await SaveParquetAsync();
         }
     }
 
     private async Task SaveParquetAsync()
     {
-        if (CurrentTableName.Trim().Length == 0)
+        // Only run these checks on a new Table
+        if (IsNewTablePopupVisible == true)
         {
-            Message = "Table Name is required.";
-            return;
-        }
+            if (CurrentTableName.Trim().Length == 0)
+            {
+                Message = "Table Name is required.";
+                return;
+            }
 
-        if (DetectDuplicate(CurrentTableName))
-        {
-            Message = "Table Name already exists.";
-            return;
+            if (DetectDuplicate(CurrentTableName))
+            {
+                Message = "Table Name already exists.";
+                return;
+            }
         }
 
         CurrentTableName = CleanAndCapitalize(CurrentTableName);
@@ -335,36 +377,18 @@ else
         // Create C# class from DataTable
         GenerateClassFromDataTable(CurrentDataTable, CurrentTableName);
 
+        // Re-Load the TableList dropdown
+        LoadTableListDropdown();
+
+        // Toggle the flag to force a re-render of InputFile
+        // Clearing it if needed
+        resetInputFileFlag = !resetInputFileFlag;
+
         IsLoadingSheet = false;
         IsNewTablePopupVisible = false;
         StateHasChanged();
 
         Message = $"{CurrentTableName} saved successfully.";
-    }
-
-    private async Task LoadTableListDropdown()
-    {
-        IsLoadingSheet = true;
-        StateHasChanged();
-
-        // Load the TableList data
-        var parquetFolder = Path.Combine("Data", "Parquet");
-        if (Directory.Exists(parquetFolder))
-        {
-            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
-
-        // If TableList has items, load the first table
-        if (TableList.Count > 0)
-        {
-            CurrentTableName = TableList[0];
-            await LoadTableData(CurrentTableName);
-        }
-
-        IsLoadingSheet = false;
-        StateHasChanged();
     }
 
     // Popups
