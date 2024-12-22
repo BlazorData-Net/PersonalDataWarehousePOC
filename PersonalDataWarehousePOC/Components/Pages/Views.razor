@@ -42,7 +42,7 @@ Style="width: 90%; height:400px;" />
                     <div class="window-body has-space">
 
                         <RadzenDataGrid 
-                        Data="@objDataParameters.data" TItem="IDictionary<string, object>"
+                        Data="@objDataParameters.data" 
                         ColumnWidth="200px"
                         AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
                         FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
@@ -118,6 +118,8 @@ Style="width: 90%; height:400px;" />
         MonacoOptions.LineNumbers = LineNumbers.On;        
     }
 
+    // Monaco Editor
+
     private void OnEditorContentChanged(bool hasChanged)
     {
         ContentChanged = hasChanged;
@@ -130,12 +132,12 @@ Style="width: 90%; height:400px;" />
         StateHasChanged();
     }
 
+    // Popup Message
+
     private void CloseOutputTablePopup()
     {
         IsNewOutputPopupVisible = false;
     }
-
-    // Popup Message
 
     private void CloseMessagePopup()
     {
@@ -144,25 +146,32 @@ Style="width: 90%; height:400px;" />
 
     // Code Execution
 
+    #region RunCode
     private async Task Execute()
     {
         //  Save the content before executing
         await OnEditorSaveRequested();
 
         // Execute the code
-        var objDataParametersResult = RunDynamicCode(SampleCode);
+        var objResult = RunDynamicCode(SampleCode);
 
-        if (objDataParametersResult != null)
+        if (objResult != null)
         {
-            objDataParameters = objDataParametersResult;
+            // Parse objDataParametersResult.data to a list of dictionaries
+            var columns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+            objDataParameters = new DataParameters
+                {
+                    data = objResult,
+                    columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
+                };
         }
 
         // Show the output
         IsNewOutputPopupVisible = true;
     }
 
-    #region RunCode
-    public DataParameters RunDynamicCode(string paramCode)
+    public IEnumerable<IDictionary<string, object>> RunDynamicCode(string paramCode)
     {
         try
         {
@@ -170,7 +179,7 @@ Style="width: 90%; height:400px;" />
 
             var result = script.ReturnResult();
 
-            return result as DataParameters;
+            return result as IEnumerable<IDictionary<string, object>>;
         }
         catch (Exception ex)
         {
@@ -198,15 +207,11 @@ Style="width: 90%; height:400px;" />
                 EnumValue2
             }
 
-            public DataParameters ReturnResult()
+            public IEnumerable<IDictionary<string, object>> ReturnResult()
             {
                 CreateData();
 
-                return new DataParameters
-                {
-                    columns = columns,
-                    data = data
-                };
+                return data;
             }
 
             private void CreateData()
