@@ -2,6 +2,7 @@
 @using Blazor.Monaco
 @using System.Text.Json
 @using System.Linq.Dynamic.Core
+@using CSScriptLib
 
 <PageTitle>Views</PageTitle>
 
@@ -40,13 +41,13 @@ Style="width: 90%; height:400px;" />
                     </div>
                     <div class="window-body has-space">
 
-                        <RadzenDataGrid @bind-Value=@selectedItems
-                        Data="@data" TItem="IDictionary<string, object>"
+                        <RadzenDataGrid 
+                        Data="@objDataParameters.data" TItem="IDictionary<string, object>"
                         ColumnWidth="200px"
                         AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
                         FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
                             <Columns>
-                                @foreach (var column in columns)
+                                @foreach (var column in objDataParameters.columns)
                                 {
                                     <RadzenDataGridColumn @key=@column.Key
                                     Title="@column.Key"
@@ -68,16 +69,49 @@ Style="width: 90%; height:400px;" />
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (Message != "")
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Alert!</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 300px; height: 100px; overflow: auto">
+                            @Message
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
     private bool ContentChanged { get; set; }
     private string MyScript { get; set; } = string.Empty;
     private MonacoEditor _monacoEditorInstance = null!;
     private EditorOptions MonacoOptions = new EditorOptions();
 
+    private DataParameters objDataParameters = new DataParameters();
+
     private bool IsNewOutputPopupVisible { get; set; } = false;
+
+    string Message = "";
 
     protected override void OnInitialized()
     {
+        objDataParameters = new DataParameters();
+        objDataParameters.data = new List<IDictionary<string, object>>();
+        objDataParameters.columns = new Dictionary<string, Type>();
+
         MonacoOptions.ReadOnly = false;
         MonacoOptions.WordWrap = WordWrap.On;
         MonacoOptions.Theme = Blazor.Monaco.Theme.Vs;
@@ -101,71 +135,130 @@ Style="width: 90%; height:400px;" />
         IsNewOutputPopupVisible = false;
     }
 
+    // Popup Message
+
+    private void CloseMessagePopup()
+    {
+        Message = "";
+    }
+
+    // Code Execution
+
     private async Task Execute()
     {
+        //  Save the content before executing
         await OnEditorSaveRequested();
-        CreateData();
+
+        // Execute the code
+        var objDataParametersResult = RunDynamicCode(SampleCode);
+
+        if (objDataParametersResult != null)
+        {
+            objDataParameters = objDataParametersResult;
+        }
+
+        // Show the output
         IsNewOutputPopupVisible = true;
     }
 
-    // Data
-
-    IList<IDictionary<string, object>> selectedItems;
-
-    public IEnumerable<IDictionary<string, object>> data { get; set; }
-
-    public IDictionary<string, Type> columns { get; set; }
-
-    public enum EnumTest
+    #region RunCode
+    public DataParameters RunDynamicCode(string paramCode)
     {
-        EnumValue1,
-        EnumValue2
-    }
-
-    private void CreateData()
-    {
-        columns = new Dictionary<string, Type>()
+        try
         {
-            { "EmployeeID", typeof(int?) },
-            { "MyColumn", typeof(EnumTest?) },
-            { "FirstName", typeof(string) },
-            { "LastName", typeof(string) },
-            { "HireDate", typeof(DateTime?) },
-            { "DateOnly", typeof(DateOnly?) },
-            { "TimeOnly", typeof(TimeOnly?) },
-            { "UID", typeof(Guid?) },
-        };
+            dynamic script = CSScript.Evaluator.LoadMethod(paramCode);
 
-        foreach (var i in Enumerable.Range(0, 50))
-        {
-            columns.Add($"Column{i}", typeof(string));
+            var result = script.ReturnResult();
+
+            return result as DataParameters;
         }
-
-        data = Enumerable.Range(0, 100).Select(i =>
+        catch (Exception ex)
         {
-            var row = new Dictionary<string, object>();
+            Message = ex.GetBaseException().Message;
+            return null; 
+        }
+    }
+    #endregion
 
-            foreach (var column in columns)
+    // SampleCode
+
+    private string SampleCode = @"
+
+            using System;
+            using System.Collections.Generic;
+            using System.Linq;
+
+            public IEnumerable<IDictionary<string, object>> data { get; set; }
+
+            public IDictionary<string, Type> columns { get; set; }
+
+            public enum EnumTest
             {
-                row.Add(
-                    column.Key,
-                    column.Value == typeof(EnumTest?)
-                        ? i == 0 ? null : (i % 2 == 0 ? EnumTest.EnumValue1 : EnumTest.EnumValue2)
-                        : column.Value == typeof(int?)
-                            ? i == 0 ? null : i
-                            : column.Value == typeof(DateTime?)
-                                ? i == 0 ? null : DateTime.Now.AddMonths(i)
-                                : column.Value == typeof(Guid?)
-                                ? i == 0 ? null : Guid.NewGuid()
-                                : column.Value == typeof(DateOnly?)
-                                ? i == 0 ? null : DateOnly.FromDateTime(DateTime.Now.AddMonths(i))
-                                : column.Value == typeof(TimeOnly?)
-                                ? i == 0 ? null : TimeOnly.FromDateTime(DateTime.Now.AddMonths(i))
-                                : $"{column.Key}{i}"
-                );
+                EnumValue1,
+                EnumValue2
             }
 
-            return row;
-        });
-    }
+            public DataParameters ReturnResult()
+            {
+                CreateData();
+
+                return new DataParameters
+                {
+                    columns = columns,
+                    data = data
+                };
+            }
+
+            private void CreateData()
+            {
+                columns = new Dictionary<string, Type>
+                {
+                    { ""EmployeeID"", typeof(int?) },
+                    { ""MyColumn"", typeof(EnumTest?) },
+                    { ""FirstName"", typeof(string) },
+                    { ""LastName"", typeof(string) },
+                    { ""HireDate"", typeof(DateTime?) },
+                    { ""DateOnly"", typeof(DateOnly?) },
+                    { ""TimeOnly"", typeof(TimeOnly?) },
+                    { ""UID"", typeof(Guid?) },
+                };
+
+                foreach (var i in Enumerable.Range(0, 50))
+                {
+                    var key = $""Column{i}"";
+                    if (!columns.ContainsKey(key))
+                    {
+                        columns.Add(key, typeof(string));
+                    }
+                }
+
+                data = Enumerable.Range(0, 100).Select(i =>
+                {
+                    var row = new Dictionary<string, object>();
+
+                    foreach (var column in columns)
+                    {
+                        row.Add(
+                            column.Key,
+                            column.Value == typeof(EnumTest?)
+                                ? i == 0 ? null : (i % 2 == 0 ? EnumTest.EnumValue1 : EnumTest.EnumValue2)
+                                : column.Value == typeof(int?)
+                                    ? i == 0 ? null : i
+                                    : column.Value == typeof(DateTime?)
+                                        ? i == 0 ? null : DateTime.Now.AddMonths(i)
+                                        : column.Value == typeof(Guid?)
+                                            ? i == 0 ? null : Guid.NewGuid()
+                                            : column.Value == typeof(DateOnly?)
+                                                ? i == 0 ? null : DateOnly.FromDateTime(DateTime.Now.AddMonths(i))
+                                                : column.Value == typeof(TimeOnly?)
+                                                    ? i == 0 ? null : TimeOnly.FromDateTime(DateTime.Now.AddMonths(i))
+                                                    : $""{column.Key}{i}""
+                        );
+                    }
+
+                    return row;
+                });
+            }
+
+    ";
 }
