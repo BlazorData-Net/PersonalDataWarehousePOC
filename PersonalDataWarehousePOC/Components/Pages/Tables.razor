@@ -18,9 +18,11 @@
 
 <!-- MAIN UI -->
 <div>
-    <label style="@(!IsShowFileUpload ? "display:none;" : "")">Open Excel File: </label>
-    <br /><br />
-    <InputFile @key="resetInputFileFlag" OnChange="HandleFileSelectedAsync" style="@(!IsShowFileUpload ? "display:none;" : "")" />
+    <label style="@(IsShowFileUpload ? "" : "display:none;")">Open Excel File: </label>
+    <br />
+    <InputFile @key="resetInputFileFlag"
+    OnChange="HandleFileSelectedAsync"
+    style="@(IsShowFileUpload ? "" : "display:none;")" />
     @if (IsFileSelected)
     {
         <label>Selected File: @CurrentFileName</label>
@@ -50,7 +52,8 @@ else
                     })">
                     @foreach (var table in TableList)
                     {
-                        <option value="@table" selected="@(table == CurrentTableName ? "selected" : null)">
+                        <option value="@table"
+                        selected="@(table == CurrentTableName ? "selected" : null)">
                             @table
                         </option>
                     }
@@ -169,6 +172,25 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await ResetPage();
+    }
+
+    // Events
+
+    private async Task ResetPage()
+    {
+        // Toggle the flag to force a re-render of InputFile
+        resetInputFileFlag = !resetInputFileFlag;
+
+        CurrentTableName = string.Empty;
+        CurrentFileName = string.Empty;
+        IsFileSelected = false;
+        IsShowFileUpload = true;
+        IsLoadingSheet = false;
+        IsNewTablePopupVisible = false;
+        Message = "";
+        LoadTableListDropdown();
+
         // Initialize the sheet
         sheet = new Sheet(10, 10);
 
@@ -181,8 +203,6 @@ else
             await LoadTableData(CurrentTableName);
         }
     }
-
-    // Events
 
     private async Task HandleFileSelectedAsync(InputFileChangeEventArgs e)
     {
@@ -231,25 +251,15 @@ else
         StateHasChanged();
     }
 
-    private void ClearFileSeleted()
+    private async Task ClearFileSeleted()
     {
-        // Toggle the flag to force a re-render of InputFile
-        resetInputFileFlag = !resetInputFileFlag;
-
-        // Reset the variables
-        IsFileSelected = false;
-        IsShowFileUpload = true;
-
-        LoadTableListDropdown();
+        await ResetPage();
     }
 
     // Table Dropdown
 
     private void LoadTableListDropdown()
     {
-        IsLoadingSheet = true;
-        StateHasChanged();
-
         TableList = new List<string>();
 
         // Load the TableList data
@@ -260,9 +270,6 @@ else
                                  .Select(Path.GetFileNameWithoutExtension)
                                  .ToList();
         }
-
-        IsLoadingSheet = false;
-        StateHasChanged();
     }
 
     private async Task LoadTableData(string paramTable)
@@ -293,7 +300,9 @@ else
         Message = "";
 
         // Get a list of the columns from the DataTable
-        TableColumns = CurrentDataTable.Columns.Cast<DataColumn>().Select(x => x.ColumnName).ToList();
+        TableColumns =
+        CurrentDataTable.Columns.Cast<DataColumn>()
+        .Select(x => x.ColumnName).ToList();
 
         // Create sheet with the number of columns
         sheet = new Sheet(CurrentDataTable.Rows.Count, TableColumns.Count);
@@ -431,27 +440,12 @@ else
                 System.IO.File.Delete(fileName);
             }
 
-            // Re-Load the TableList dropdown
-            LoadTableListDropdown();
-
-            // If TableList has items, load the first table
-            if (TableList.Count > 0)
-            {
-                CurrentTableName = TableList[0];
-                await LoadTableData(CurrentTableName);
-            }
-
-            // Toggle the flag to force a re-render of InputFile
-            // Clearing it if needed
-            resetInputFileFlag = !resetInputFileFlag;
-
             string deletedTableName = CurrentTableName;
             CurrentTableName = string.Empty;
 
             Message = $"{deletedTableName} deleted!";
 
-            IsLoadingSheet = false;
-            StateHasChanged();
+            await ResetPage();
         }
     }
 
