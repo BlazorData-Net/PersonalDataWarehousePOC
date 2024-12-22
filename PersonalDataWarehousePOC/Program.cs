@@ -2,6 +2,7 @@ using Blazor.Monaco;
 using BlazorDatasheet.Extensions;
 using PersonalDataWarehousePOC.Components;
 using PersonalDataWarehousePOC.Services;
+using Radzen;
 
 namespace PersonalDataWarehousePOC;
 
@@ -27,6 +28,7 @@ public class Program
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
         builder.Services.AddBlazorMonacoComponents();
+        builder.Services.AddRadzenComponents();
 
         var app = builder.Build();
 

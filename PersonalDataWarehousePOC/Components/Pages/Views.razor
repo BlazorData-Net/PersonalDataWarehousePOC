@@ -1,34 +1,35 @@
 ﻿@page "/views"
 @using Blazor.Monaco
 @using System.Text.Json
+@using System.Linq.Dynamic.Core
 
 <PageTitle>Views</PageTitle>
 
 <h4>Views</h4>
 
-@if (ContentChanged)
-{
-    <span style="color:red"><b>*</b></span>
-}
 <button @onclick="OnEditorSaveRequested">Save</button>
 &nbsp;
 <button @onclick="Execute">Execute</button>
+@if (ContentChanged)
+{
+    <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
+}
 <br />
 <br />
 <MonacoEditor ElementId="script-one"
-              @ref="_monacoEditorInstance"
-              Language="Language.CSharp"
-              OnContentChanged="OnEditorContentChanged"
-              OnSaveRequested="OnEditorSaveRequested"
-              ScriptContent="@MyScript"
-              EditorOptions="MonacoOptions"
-              Style="width:800px; height:400px;" />
+@ref="_monacoEditorInstance"
+Language="Language.CSharp"
+OnContentChanged="OnEditorContentChanged"
+OnSaveRequested="OnEditorSaveRequested"
+ScriptContent="@MyScript"
+EditorOptions="MonacoOptions"
+Style="width: 90%; height:400px;" />
 
 <!-- POPUPS -->
 @if (IsNewOutputPopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog" style="max-width: 90%; margin-top: 5%;">
             <div class="modal-content">
                 <div class="window glass active">
                     <div class="title-bar">
@@ -38,7 +39,27 @@
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        <p>Popup Content</p>
+
+                        <RadzenDataGrid @bind-Value=@selectedItems
+                        Data="@data" TItem="IDictionary<string, object>"
+                        ColumnWidth="200px"
+                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
+                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
+                            <Columns>
+                                @foreach (var column in columns)
+                                {
+                                    <RadzenDataGridColumn @key=@column.Key
+                                    Title="@column.Key"
+                                    Type="column.Value"
+                                    Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
+                                        <Template>
+                                            @context[@column.Key]
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                }
+                            </Columns>
+                        </RadzenDataGrid>
+
                     </div>
                 </div>
             </div>
@@ -52,8 +73,6 @@
     private string MyScript { get; set; } = string.Empty;
     private MonacoEditor _monacoEditorInstance = null!;
     private EditorOptions MonacoOptions = new EditorOptions();
-    private bool _readChangeReset;
-    private bool _showSaveMessage;
 
     private bool IsNewOutputPopupVisible { get; set; } = false;
 
@@ -61,8 +80,8 @@
     {
         MonacoOptions.ReadOnly = false;
         MonacoOptions.WordWrap = WordWrap.On;
-        MonacoOptions.Theme = Theme.Vs;
-        MonacoOptions.LineNumbers = LineNumbers.On;
+        MonacoOptions.Theme = Blazor.Monaco.Theme.Vs;
+        MonacoOptions.LineNumbers = LineNumbers.On;        
     }
 
     private void OnEditorContentChanged(bool hasChanged)
@@ -73,10 +92,6 @@
     private async Task OnEditorSaveRequested()
     {
         MyScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
-        _showSaveMessage = true;
-        StateHasChanged();
-        await Task.Delay(5000); // Wait for 5 seconds
-        _showSaveMessage = false;
         ContentChanged = false;
         StateHasChanged();
     }
@@ -86,8 +101,71 @@
         IsNewOutputPopupVisible = false;
     }
 
-    private void Execute()
+    private async Task Execute()
     {
+        await OnEditorSaveRequested();
+        CreateData();
         IsNewOutputPopupVisible = true;
+    }
+
+    // Data
+
+    IList<IDictionary<string, object>> selectedItems;
+
+    public IEnumerable<IDictionary<string, object>> data { get; set; }
+
+    public IDictionary<string, Type> columns { get; set; }
+
+    public enum EnumTest
+    {
+        EnumValue1,
+        EnumValue2
+    }
+
+    private void CreateData()
+    {
+        columns = new Dictionary<string, Type>()
+        {
+            { "EmployeeID", typeof(int?) },
+            { "MyColumn", typeof(EnumTest?) },
+            { "FirstName", typeof(string) },
+            { "LastName", typeof(string) },
+            { "HireDate", typeof(DateTime?) },
+            { "DateOnly", typeof(DateOnly?) },
+            { "TimeOnly", typeof(TimeOnly?) },
+            { "UID", typeof(Guid?) },
+        };
+
+        foreach (var i in Enumerable.Range(0, 50))
+        {
+            columns.Add($"Column{i}", typeof(string));
+        }
+
+        data = Enumerable.Range(0, 100).Select(i =>
+        {
+            var row = new Dictionary<string, object>();
+
+            foreach (var column in columns)
+            {
+                row.Add(
+                    column.Key,
+                    column.Value == typeof(EnumTest?)
+                        ? i == 0 ? null : (i % 2 == 0 ? EnumTest.EnumValue1 : EnumTest.EnumValue2)
+                        : column.Value == typeof(int?)
+                            ? i == 0 ? null : i
+                            : column.Value == typeof(DateTime?)
+                                ? i == 0 ? null : DateTime.Now.AddMonths(i)
+                                : column.Value == typeof(Guid?)
+                                ? i == 0 ? null : Guid.NewGuid()
+                                : column.Value == typeof(DateOnly?)
+                                ? i == 0 ? null : DateOnly.FromDateTime(DateTime.Now.AddMonths(i))
+                                : column.Value == typeof(TimeOnly?)
+                                ? i == 0 ? null : TimeOnly.FromDateTime(DateTime.Now.AddMonths(i))
+                                : $"{column.Key}{i}"
+                );
+            }
+
+            return row;
+        });
     }
 }
