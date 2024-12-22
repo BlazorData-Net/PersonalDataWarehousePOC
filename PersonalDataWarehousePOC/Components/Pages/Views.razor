@@ -1,18 +1,51 @@
 ﻿@page "/views"
 @using Blazor.Monaco
+@using System.Text.Json
 
 <PageTitle>Views</PageTitle>
 
 <h4>Views</h4>
 
+@if (ContentChanged)
+{
+    <span style="color:red"><b>*</b></span>
+}
+<button @onclick="OnEditorSaveRequested">Save</button>
+&nbsp;
+<button @onclick="Execute">Execute</button>
+<br />
+<br />
 <MonacoEditor ElementId="script-one"
               @ref="_monacoEditorInstance"
               Language="Language.CSharp"
               OnContentChanged="OnEditorContentChanged"
               OnSaveRequested="OnEditorSaveRequested"
-              ScriptContent="@MyScript"              
+              ScriptContent="@MyScript"
               EditorOptions="MonacoOptions"
               Style="width:800px; height:400px;" />
+
+<!-- POPUPS -->
+@if (IsNewOutputPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Output</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseOutputTablePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <p>Popup Content</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
     private bool ContentChanged { get; set; }
@@ -21,6 +54,8 @@
     private EditorOptions MonacoOptions = new EditorOptions();
     private bool _readChangeReset;
     private bool _showSaveMessage;
+
+    private bool IsNewOutputPopupVisible { get; set; } = false;
 
     protected override void OnInitialized()
     {
@@ -32,18 +67,27 @@
 
     private void OnEditorContentChanged(bool hasChanged)
     {
-        Console.WriteLine($"OnEditorContentChanged: {hasChanged}");
         ContentChanged = hasChanged;
     }
 
     private async Task OnEditorSaveRequested()
     {
-        Console.WriteLine("OnEditorSaveRequested");
         MyScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
         _showSaveMessage = true;
         StateHasChanged();
         await Task.Delay(5000); // Wait for 5 seconds
         _showSaveMessage = false;
+        ContentChanged = false;
         StateHasChanged();
+    }
+
+    private void CloseOutputTablePopup()
+    {
+        IsNewOutputPopupVisible = false;
+    }
+
+    private void Execute()
+    {
+        IsNewOutputPopupVisible = true;
     }
 }
