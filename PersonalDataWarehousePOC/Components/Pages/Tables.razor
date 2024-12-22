@@ -21,8 +21,8 @@
     <label style="@(IsShowFileUpload ? "" : "display:none;")">Open Excel File: </label>
     <br />
     <InputFile @key="resetInputFileFlag"
-    OnChange="HandleFileSelectedAsync"
-    style="@(IsShowFileUpload ? "" : "display:none;")" />
+               OnChange="HandleFileSelectedAsync"
+               style="@(IsShowFileUpload ? "" : "display:none;")" />
     @if (IsFileSelected)
     {
         <label>Selected File: @CurrentFileName</label>
@@ -53,7 +53,7 @@ else
                     @foreach (var table in TableList)
                     {
                         <option value="@table"
-                        selected="@(table == CurrentTableName ? "selected" : null)">
+                                selected="@(table == CurrentTableName ? "selected" : null)">
                             @table
                         </option>
                     }
@@ -484,7 +484,9 @@ else
                 {
                     var cellValue = sheet.Cells[i, j]?.Value;
 
-                    if (cellValue == null || cellValue == DBNull.Value || string.IsNullOrWhiteSpace(cellValue.ToString()))
+                    if (cellValue == null 
+                        || cellValue == DBNull.Value 
+                        || string.IsNullOrWhiteSpace(cellValue.ToString()))
                     {
                         row[j] = DBNull.Value;
                     }
@@ -616,15 +618,18 @@ else
         foreach (DataColumn column in dt.Columns)
         {
             // Ensure the property name is a valid C# identifier
-            string propertyName = column.ColumnName.Replace(" ", "_"); // Simple replacement, customize as needed
-            codeBuilder.AppendLine($"        public string {propertyName} {{ get; set; }}");
+            string propertyName = column.ColumnName.Replace(" ", "_"); 
+
+            codeBuilder.AppendLine
+            ($"        public string {propertyName} {{ get; set; }}");
         }
 
         codeBuilder.AppendLine("    }");
         codeBuilder.AppendLine("}");
 
         // Set the file path
-        string filePath = Path.Combine(directoryPath, className + ".cs");
+        string filePath = 
+        Path.Combine(directoryPath, className + ".cs");
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
@@ -639,8 +644,10 @@ else
         if (string.IsNullOrEmpty(input))
             return string.Empty;
 
-        // 1) Keep only letters, digits, and spaces (temporarily), removing all other characters
-        //    We keep spaces initially to determine word boundaries for capitalization.
+        // Keep only letters, digits, and spaces (temporarily), 
+        // removing all other characters
+        // We keep spaces initially to determine word boundaries 
+        // for capitalization.
         char[] filteredChars = input
             .Where(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c))
             .ToArray();
@@ -648,7 +655,8 @@ else
         // Convert to a string to process spaces and capitalization
         string intermediate = new string(filteredChars);
 
-        // 2) Remove spaces and capitalize the following character if it is a letter
+        // Remove spaces and capitalize the following character 
+        // if it is a letter
         // We'll build the result using a StringBuilder for efficiency.
         var result = new System.Text.StringBuilder();
         bool capitalizeNext = false;
@@ -659,19 +667,23 @@ else
 
             if (char.IsWhiteSpace(c))
             {
-                // Encountered a space: the next valid letter should be capitalized if it's not a digit.
+                // Encountered a space: the next valid letter 
+                // should be capitalized if it's not a digit.
                 capitalizeNext = true;
             }
             else
             {
-                // This character is alphanumeric. If we are instructed to capitalize it and it's a letter:
+                // This character is alphanumeric. If we are 
+                // instructed to capitalize it and it's a letter:
                 if (capitalizeNext && char.IsLetter(c))
                 {
                     c = char.ToUpper(c);
                 }
 
                 result.Append(c);
-                capitalizeNext = false; // Reset flag after processing a non-space character
+
+                // Reset flag after processing a non-space character
+                capitalizeNext = false;
             }
         }
 
