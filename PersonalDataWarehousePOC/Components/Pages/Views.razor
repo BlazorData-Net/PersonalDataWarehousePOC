@@ -1,18 +1,49 @@
 ﻿@page "/views"
+@using Blazor.Monaco
 
 <PageTitle>Views</PageTitle>
 
 <h4>Views</h4>
 
-<p role="status">Current count: @currentCount</p>
-
-<button @onclick="IncrementCount">Click me</button>
+<MonacoEditor ElementId="script-one"
+              @ref="_monacoEditorInstance"
+              Language="Language.CSharp"
+              OnContentChanged="OnEditorContentChanged"
+              OnSaveRequested="OnEditorSaveRequested"
+              ScriptContent="@MyScript"              
+              EditorOptions="MonacoOptions"
+              Style="width:800px; height:400px;" />
 
 @code {
-    private int currentCount = 0;
+    private bool ContentChanged { get; set; }
+    private string MyScript { get; set; } = string.Empty;
+    private MonacoEditor _monacoEditorInstance = null!;
+    private EditorOptions MonacoOptions = new EditorOptions();
+    private bool _readChangeReset;
+    private bool _showSaveMessage;
 
-    private void IncrementCount()
+    protected override void OnInitialized()
     {
-        currentCount++;
+        MonacoOptions.ReadOnly = false;
+        MonacoOptions.WordWrap = WordWrap.On;
+        MonacoOptions.Theme = Theme.Vs;
+        MonacoOptions.LineNumbers = LineNumbers.On;
+    }
+
+    private void OnEditorContentChanged(bool hasChanged)
+    {
+        Console.WriteLine($"OnEditorContentChanged: {hasChanged}");
+        ContentChanged = hasChanged;
+    }
+
+    private async Task OnEditorSaveRequested()
+    {
+        Console.WriteLine("OnEditorSaveRequested");
+        MyScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
+        _showSaveMessage = true;
+        StateHasChanged();
+        await Task.Delay(5000); // Wait for 5 seconds
+        _showSaveMessage = false;
+        StateHasChanged();
     }
 }
