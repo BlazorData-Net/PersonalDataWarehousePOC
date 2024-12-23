@@ -3,6 +3,7 @@
 @using System.Text.Json
 @using System.Linq.Dynamic.Core
 @using CSScriptLib
+@using System.Reflection
 
 <PageTitle>Views</PageTitle>
 
@@ -18,13 +19,13 @@
 <br />
 <br />
 <MonacoEditor ElementId="script-one"
-@ref="_monacoEditorInstance"
-Language="Language.CSharp"
-OnContentChanged="OnEditorContentChanged"
-OnSaveRequested="OnEditorSaveRequested"
-ScriptContent="@CurrentScript"
-EditorOptions="MonacoOptions"
-Style="width: 90%; height:400px;" />
+              @ref="_monacoEditorInstance"
+              Language="Language.CSharp"
+              OnContentChanged="OnEditorContentChanged"
+              OnSaveRequested="OnEditorSaveRequested"
+              ScriptContent="@CurrentScript"
+              EditorOptions="MonacoOptions"
+              Style="width: 90%; height:400px;" />
 
 <!-- POPUPS -->
 @if (IsNewOutputPopupVisible)
@@ -41,18 +42,17 @@ Style="width: 90%; height:400px;" />
                     </div>
                     <div class="window-body has-space">
 
-                        <RadzenDataGrid 
-                        Data="@objDataParameters.data" 
-                        ColumnWidth="200px"
-                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
-                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
+                        <RadzenDataGrid Data="@objDataParameters.data"
+                                        ColumnWidth="200px"
+                                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
+                                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
                             <Columns>
                                 @foreach (var column in objDataParameters.columns)
                                 {
                                     <RadzenDataGridColumn @key=@column.Key
-                                    Title="@column.Key"
-                                    Type="column.Value"
-                                    Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
+                                                          Title="@column.Key"
+                                                          Type="column.Value"
+                                                          Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
                                         <Template>
                                             @context[@column.Key]
                                         </Template>
@@ -115,9 +115,9 @@ Style="width: 90%; height:400px;" />
         MonacoOptions.ReadOnly = false;
         MonacoOptions.WordWrap = WordWrap.On;
         MonacoOptions.Theme = Blazor.Monaco.Theme.Vs;
-        MonacoOptions.LineNumbers = LineNumbers.On;        
+        MonacoOptions.LineNumbers = LineNumbers.On;
 
-        CurrentScript = SampleCode;
+        SetDefaultScript();
     }
 
     // Monaco Editor
@@ -132,6 +132,43 @@ Style="width: 90%; height:400px;" />
         CurrentScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
         ContentChanged = false;
         StateHasChanged();
+    }
+
+    // Default Script
+
+    private void SetDefaultScript()
+    {
+        // Are there in classes in the Data namespace?
+        string targetNamespace = "Data";
+
+        // Load the current assembly (replace with a specific assembly if needed)
+        Assembly assembly = Assembly.GetExecutingAssembly();
+
+        // Get all types in the assembly that belong to the specified namespace
+        var typesInNamespace = assembly.GetTypes()
+                                       .Where(t => t.Namespace == targetNamespace && t.IsClass);
+
+        // If no classes are found, set the default script
+        if (typesInNamespace.Count() == 0)
+        {
+            CurrentScript = SampleCode;
+            return;
+        }
+
+        // If classes are found, use the first one
+        string SelectedTable = typesInNamespace.First().Name;
+
+        CurrentScript = $"using System;\n";
+        CurrentScript += $"using System.Collections.Generic;\n";
+        CurrentScript += $"using System.Linq;\n";
+        CurrentScript += $"\n";
+        CurrentScript += $"public IEnumerable<IDictionary<string, object>> ReturnResult()\n";
+        CurrentScript += "{\n";
+        CurrentScript += $@"    var col{SelectedTable} = Dataloader.LoadParquet(""{SelectedTable}"");";
+        CurrentScript += $"\n";
+        CurrentScript += $"    return col{SelectedTable}.Select(row => row.ToDictionary()).ToList();";
+        CurrentScript += "\n";
+        CurrentScript += "}\n";
     }
 
     // Popup Message
@@ -186,7 +223,7 @@ Style="width: 90%; height:400px;" />
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
-            return null; 
+            return null;
         }
     }
     #endregion
