@@ -35,9 +35,12 @@ else
         }
     </div>
     <br />
-    <div>        
-        <button @onclick="OpenWizard">Table Wizard</button>
-        &nbsp;
+    <div>
+        @if (TableList.Count > 0)
+        {
+            <button @onclick="OpenWizard">Table Wizard</button>
+            <span>&nbsp;</span>
+        }
         <button @onclick="OnEditorSaveRequested">Save</button>
         &nbsp;
         <button @onclick="Execute">Execute</button>
@@ -115,7 +118,20 @@ else
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        
+                        <label>Select Table: </label>
+                        <select @onchange="@(async (args) =>
+                            {
+                                CurrentSelectedTableWizard = args.Value?.ToString();
+                            })">
+                            @foreach (var table in TableList)
+                            {
+                                <option value="@table">
+                                    @table
+                                </option>
+                            }
+                        </select>
+                        &nbsp;&nbsp;
+                        <button @onclick="onTableWizard">Select</button>
                     </div>
                 </div>
             </div>
@@ -158,11 +174,13 @@ else
     private DataParameters objDataParameters = new DataParameters();
 
     private bool IsLoading { get; set; } = false;
+    private List<string> TableList = new List<string>();
     private List<string> ViewList = new List<string>();
     private string CurrentViewName = "";
 
     private bool IsWizardVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
+    private string CurrentSelectedTableWizard = "";
 
     string Message = "";
 
@@ -178,6 +196,7 @@ else
         MonacoOptions.LineNumbers = LineNumbers.On;
 
         await LoadViewsListDropdown();
+        LoadTableListDropdown();
     }
 
     // Monaco Editor
@@ -192,6 +211,22 @@ else
         CurrentScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
         ContentChanged = false;
         StateHasChanged();
+    }
+
+    // Table Dropdown
+
+    private void LoadTableListDropdown()
+    {
+        TableList = new List<string>();
+
+        // Load the TableList data
+        var parquetFolder = Path.Combine("Data", "Parquet");
+        if (Directory.Exists(parquetFolder))
+        {
+            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
     }
 
     // Views Dropdown
@@ -243,10 +278,45 @@ else
         StateHasChanged();
     }
 
+    // Table Wizard
+
+    private async Task onTableWizard()
+    {       
+        if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
+        {
+            Message = "Please select a table.";
+            return;
+        }
+
+        CurrentScript = $"using System;\n";
+        CurrentScript += $"using System.Collections.Generic;\n";
+        CurrentScript += $"using System.Linq;\n";
+        CurrentScript += $"using System.Threading.Tasks;\n";
+        CurrentScript += $"\n";
+        CurrentScript += $"public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n";
+        CurrentScript += "{\n";
+        CurrentScript += $"    // Create a Dataloader \n";
+        CurrentScript += $"    Dataloader objDataloader = new Dataloader();\n";
+        CurrentScript += $"    // Call LoadParquet to load {CurrentSelectedTableWizard} into col{CurrentSelectedTableWizard} \n";
+        CurrentScript += $@"    var col{CurrentSelectedTableWizard} = await objDataloader.LoadParquet(""{CurrentSelectedTableWizard}"");";
+        CurrentScript += $"\n";
+        CurrentScript += $"    // Return the results ToDictionary()  \n";
+        CurrentScript += $"    return col{CurrentSelectedTableWizard}.Select(row => row.ToDictionary()).Take(100).ToList();";
+        CurrentScript += "\n";
+        CurrentScript += "}\n";
+
+        await _monacoEditorInstance.SetEditorContent(CurrentScript);
+
+        CloseTableWizardPopup();
+
+        CurrentSelectedTableWizard = "";
+    }
+
     // Popups
 
     private void OpenWizard()
     {
+        CurrentSelectedTableWizard = TableList.FirstOrDefault();
         IsWizardVisible = true;
     }
 
