@@ -35,7 +35,9 @@ else
         }
     </div>
     <br />
-    <div>
+    <div>        
+        <button @onclick="OpenWizard">Table Wizard</button>
+        &nbsp;
         <button @onclick="OnEditorSaveRequested">Save</button>
         &nbsp;
         <button @onclick="Execute">Execute</button>
@@ -99,6 +101,29 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (IsWizardVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Table Wizard</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseTableWizardPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @if (Message != "")
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -136,6 +161,7 @@ else
     private List<string> ViewList = new List<string>();
     private string CurrentViewName = "";
 
+    private bool IsWizardVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
 
     string Message = "";
@@ -219,9 +245,19 @@ else
 
     // Popups
 
+    private void OpenWizard()
+    {
+        IsWizardVisible = true;
+    }
+
     private void CloseOutputTablePopup()
     {
         IsNewOutputPopupVisible = false;
+    }
+
+    private void CloseTableWizardPopup()
+    {
+        IsWizardVisible = false;
     }
 
     private void CloseMessagePopup()
