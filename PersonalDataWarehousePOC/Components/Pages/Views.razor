@@ -140,6 +140,36 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (IsNewTablePopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">New Table</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseNewTablePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <form @onsubmit="SaveViewAsync">
+                            <div>
+                                <label for="tableName">View Name:</label>
+                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentViewName" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="submit">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @if (Message != "")
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -179,6 +209,7 @@ else
     private string CurrentViewName = "";
 
     private bool IsWizardVisible { get; set; } = false;
+    private bool IsNewTablePopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
     private string CurrentSelectedTableWizard = "";
 
@@ -208,7 +239,21 @@ else
 
     private async Task OnEditorSaveRequested()
     {
+        if (CurrentViewName == "")
+        {
+            // Open a popup to enter the view name
+            IsNewTablePopupVisible = true;
+            return;
+        }
+
+        // Save to file in Data/Views
+        var viewsFolder = Path.Combine("Data", "Views");
+        var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
+
         CurrentScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
+
+        await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
+
         ContentChanged = false;
         StateHasChanged();
     }
@@ -281,7 +326,7 @@ else
     // Table Wizard
 
     private async Task onTableWizard()
-    {       
+    {
         if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
         {
             Message = "Please select a table.";
@@ -317,7 +362,13 @@ else
     private void OpenWizard()
     {
         CurrentSelectedTableWizard = TableList.FirstOrDefault();
+        CurrentViewName = ""; // So the new View name popup will show on Save
         IsWizardVisible = true;
+    }
+
+    private void CloseNewTablePopup()
+    {
+        IsNewTablePopupVisible = false;
     }
 
     private void CloseOutputTablePopup()
@@ -335,6 +386,40 @@ else
         Message = "";
     }
 
+    private async Task SaveViewAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentViewName))
+        {
+            Message = "Please enter a view name.";
+            return;
+        }
+
+        var viewsFolder = Path.Combine("Data", "Views");
+        var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            Message = "View already exists.";
+            return;
+        }
+
+        await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
+        IsNewTablePopupVisible = false;
+
+        // Reload the dropdown
+        ViewList = new List<string>();
+
+        if (Directory.Exists(viewsFolder))
+        {
+            ViewList = Directory.GetFiles(viewsFolder, "*.view")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        // Load the view
+        await LoadView(CurrentViewName);
+    }
+
     // Code Execution
 
     #region RunCode
@@ -344,12 +429,6 @@ else
         {
             //  Save the content before executing
             await OnEditorSaveRequested();
-
-            // Save to file in Data/Views
-            var viewsFolder = Path.Combine("Data", "Views");
-            var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
-
-            await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
             // Execute the code
             var objResult = await RunDynamicCode(CurrentScript);
