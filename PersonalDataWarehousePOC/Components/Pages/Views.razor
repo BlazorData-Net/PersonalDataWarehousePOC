@@ -161,12 +161,14 @@
         CurrentScript = $"using System;\n";
         CurrentScript += $"using System.Collections.Generic;\n";
         CurrentScript += $"using System.Linq;\n";
+        CurrentScript += $"using System.Threading.Tasks;\n";
         CurrentScript += $"\n";
-        CurrentScript += $"public IEnumerable<IDictionary<string, object>> ReturnResult()\n";
+        CurrentScript += $"public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n";
         CurrentScript += "{\n";
-        CurrentScript += $@"    var col{SelectedTable} = Dataloader.LoadParquet(""{SelectedTable}"");";
+        CurrentScript += $"    Dataloader objDataloader = new Dataloader();\n";
+        CurrentScript += $@"    var col{SelectedTable} = await objDataloader.LoadParquet(""{SelectedTable}"");";
         CurrentScript += $"\n";
-        CurrentScript += $"    return col{SelectedTable}.Select(row => row.ToDictionary()).ToList();";
+        CurrentScript += $"    return col{SelectedTable}.Select(row => row.ToDictionary()).Take(100).ToList();";
         CurrentScript += "\n";
         CurrentScript += "}\n";
     }
@@ -192,7 +194,7 @@
         await OnEditorSaveRequested();
 
         // Execute the code
-        var objResult = RunDynamicCode(CurrentScript);
+        var objResult = await RunDynamicCode(CurrentScript);
 
         if (objResult != null)
         {
@@ -210,13 +212,13 @@
         IsNewOutputPopupVisible = true;
     }
 
-    public IEnumerable<IDictionary<string, object>> RunDynamicCode(string paramCode)
+    public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
     {
         try
         {
             dynamic script = CSScript.Evaluator.LoadMethod(paramCode);
 
-            var result = script.ReturnResult();
+            var result = await script.ReturnResult();
 
             return result as IEnumerable<IDictionary<string, object>>;
         }
@@ -235,11 +237,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 public IEnumerable<IDictionary<string, object>> data { get; set; }
 static Random random = new Random();
 
-public IEnumerable<IDictionary<string, object>> ReturnResult()
+public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
 {
     // Generate random data
     return Enumerable.Range(1, 100).Select(id => new Dictionary<string, object>
