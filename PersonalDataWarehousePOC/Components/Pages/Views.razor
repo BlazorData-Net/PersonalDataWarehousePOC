@@ -22,7 +22,7 @@
 Language="Language.CSharp"
 OnContentChanged="OnEditorContentChanged"
 OnSaveRequested="OnEditorSaveRequested"
-ScriptContent="@MyScript"
+ScriptContent="@CurrentScript"
 EditorOptions="MonacoOptions"
 Style="width: 90%; height:400px;" />
 
@@ -96,7 +96,7 @@ Style="width: 90%; height:400px;" />
 
 @code {
     private bool ContentChanged { get; set; }
-    private string MyScript { get; set; } = string.Empty;
+    private string CurrentScript { get; set; } = string.Empty;
     private MonacoEditor _monacoEditorInstance = null!;
     private EditorOptions MonacoOptions = new EditorOptions();
 
@@ -116,6 +116,8 @@ Style="width: 90%; height:400px;" />
         MonacoOptions.WordWrap = WordWrap.On;
         MonacoOptions.Theme = Blazor.Monaco.Theme.Vs;
         MonacoOptions.LineNumbers = LineNumbers.On;        
+
+        CurrentScript = SampleCode;
     }
 
     // Monaco Editor
@@ -127,7 +129,7 @@ Style="width: 90%; height:400px;" />
 
     private async Task OnEditorSaveRequested()
     {
-        MyScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
+        CurrentScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
         ContentChanged = false;
         StateHasChanged();
     }
@@ -153,7 +155,7 @@ Style="width: 90%; height:400px;" />
         await OnEditorSaveRequested();
 
         // Execute the code
-        var objResult = RunDynamicCode(SampleCode);
+        var objResult = RunDynamicCode(CurrentScript);
 
         if (objResult != null)
         {
@@ -193,50 +195,50 @@ Style="width: 90%; height:400px;" />
 
     private string SampleCode = @"
 
-        using System;
-        using System.Collections.Generic;
-        using System.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-        public IEnumerable<IDictionary<string, object>> data { get; set; }
-        static Random random = new Random();
+public IEnumerable<IDictionary<string, object>> data { get; set; }
+static Random random = new Random();
 
-        public IEnumerable<IDictionary<string, object>> ReturnResult()
-        {
-            // Generate random data
-            return Enumerable.Range(1, 100).Select(id => new Dictionary<string, object>
-            {
-                { ""EmployeeId"", id },
-                { ""FirstName"", GenerateRandomFirstName() },
-                { ""LastName"", GenerateRandomLastName() },
-                { ""Birthdate"", GenerateRandomBirthdate() },
-                { ""Position"", GenerateRandomPosition() }
-            });
-        }
+public IEnumerable<IDictionary<string, object>> ReturnResult()
+{
+    // Generate random data
+    return Enumerable.Range(1, 100).Select(id => new Dictionary<string, object>
+    {
+        { ""EmployeeId"", id },
+        { ""FirstName"", GenerateRandomFirstName() },
+        { ""LastName"", GenerateRandomLastName() },
+        { ""Birthdate"", GenerateRandomBirthdate() },
+        { ""Position"", GenerateRandomPosition() }
+    });
+}
 
-        static string GenerateRandomFirstName()
-        {
-            var firstNames = new[] { ""John"", ""Jane"", ""Michael"", ""Emily"", ""Chris"", ""Anna"", ""Robert"", ""Laura"" };
-            return firstNames[random.Next(firstNames.Length)];
-        }
+static string GenerateRandomFirstName()
+{
+    var firstNames = new[] { ""John"", ""Jane"", ""Michael"", ""Emily"", ""Chris"", ""Anna"", ""Robert"", ""Laura"" };
+    return firstNames[random.Next(firstNames.Length)];
+}
 
-        static string GenerateRandomLastName()
-        {
-            var lastNames = new[] { ""Smith"", ""Johnson"", ""Brown"", ""Taylor"", ""Anderson"", ""Thomas"", ""Jackson"", ""White"" };
-            return lastNames[random.Next(lastNames.Length)];
-        }
+static string GenerateRandomLastName()
+{
+    var lastNames = new[] { ""Smith"", ""Johnson"", ""Brown"", ""Taylor"", ""Anderson"", ""Thomas"", ""Jackson"", ""White"" };
+    return lastNames[random.Next(lastNames.Length)];
+}
 
-        static DateTime GenerateRandomBirthdate()
-        {
-            var startDate = new DateTime(1950, 1, 1);
-            var range = (DateTime.Today - startDate).Days;
-            return startDate.AddDays(random.Next(range));
-        }
+static DateTime GenerateRandomBirthdate()
+{
+    var startDate = new DateTime(1950, 1, 1);
+    var range = (DateTime.Today - startDate).Days;
+    return startDate.AddDays(random.Next(range));
+}
 
-        static string GenerateRandomPosition()
-        {
-            var positions = new[] { ""Developer"", ""Manager"", ""Designer"", ""Analyst"", ""Tester"", ""Support"", ""Admin"" };
-            return positions[random.Next(positions.Length)];
-        }
+static string GenerateRandomPosition()
+{
+    var positions = new[] { ""Developer"", ""Manager"", ""Designer"", ""Analyst"", ""Tester"", ""Support"", ""Admin"" };
+    return positions[random.Next(positions.Length)];
+}
 
     ";
 }
