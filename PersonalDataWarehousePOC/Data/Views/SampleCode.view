@@ -1,0 +1,45 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+public IEnumerable<IDictionary<string, object>> data { get; set; }
+static Random random = new Random();
+
+public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
+{
+    // Generate random data
+    return Enumerable.Range(1, 100).Select(id => new Dictionary<string, object>
+    {
+        { "EmployeeId", id },
+        { "FirstName", GenerateRandomFirstName() },
+        { "LastName", GenerateRandomLastName() },
+        { "Birthdate", GenerateRandomBirthdate() },
+        { "Position", GenerateRandomPosition() }
+    });
+}
+
+static string GenerateRandomFirstName()
+{
+    var firstNames = new[] { "John", "Jane", "Michael", "Emily", "Chris", "Anna", "Robert", "Laura" };
+    return firstNames[random.Next(firstNames.Length)];
+}
+
+static string GenerateRandomLastName()
+{
+    var lastNames = new[] { "Smith", "Johnson", "Brown", "Taylor", "Anderson", "Thomas", "Jackson", "White" };
+    return lastNames[random.Next(lastNames.Length)];
+}
+
+static DateTime GenerateRandomBirthdate()
+{
+    var startDate = new DateTime(1950, 1, 1);
+    var range = (DateTime.Today - startDate).Days;
+    return startDate.AddDays(random.Next(range));
+}
+
+static string GenerateRandomPosition()
+{
+    var positions = new[] { "Developer", "Manager", "Designer", "Analyst", "Tester", "Support", "Admin" };
+    return positions[random.Next(positions.Length)];
+}
