@@ -165,9 +165,12 @@
         CurrentScript += $"\n";
         CurrentScript += $"public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n";
         CurrentScript += "{\n";
+        CurrentScript += $"    // Create a Dataloader \n";
         CurrentScript += $"    Dataloader objDataloader = new Dataloader();\n";
+        CurrentScript += $"    // Call LoadParquet to load {SelectedTable} into col{SelectedTable} \n";
         CurrentScript += $@"    var col{SelectedTable} = await objDataloader.LoadParquet(""{SelectedTable}"");";
         CurrentScript += $"\n";
+        CurrentScript += $"    // Return the results ToDictionary()  \n";
         CurrentScript += $"    return col{SelectedTable}.Select(row => row.ToDictionary()).Take(100).ToList();";
         CurrentScript += "\n";
         CurrentScript += "}\n";
@@ -190,26 +193,33 @@
     #region RunCode
     private async Task Execute()
     {
-        //  Save the content before executing
-        await OnEditorSaveRequested();
-
-        // Execute the code
-        var objResult = await RunDynamicCode(CurrentScript);
-
-        if (objResult != null)
+        try
         {
-            // Parse objDataParametersResult.data to a list of dictionaries
-            var columns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+            //  Save the content before executing
+            await OnEditorSaveRequested();
 
-            objDataParameters = new DataParameters
-                {
-                    data = objResult,
-                    columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
-                };
+            // Execute the code
+            var objResult = await RunDynamicCode(CurrentScript);
+
+            if (objResult != null)
+            {
+                // Parse objDataParametersResult.data to a list of dictionaries
+                var columns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+                objDataParameters = new DataParameters
+                    {
+                        data = objResult,
+                        columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
+                    };
+            }
+
+            // Show the output
+            IsNewOutputPopupVisible = true;
         }
-
-        // Show the output
-        IsNewOutputPopupVisible = true;
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+        }
     }
 
     public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
