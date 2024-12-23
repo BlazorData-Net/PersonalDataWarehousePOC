@@ -33,6 +33,7 @@
 
                         // Read each column asynchronously from this row group
                         Parquet.Data.DataColumn[] parquetColumns = new Parquet.Data.DataColumn[dataFields.Length];
+
                         for (int colIndex = 0; colIndex < dataFields.Length; colIndex++)
                         {
                             parquetColumns[colIndex] = await rowGroupReader.ReadColumnAsync(dataFields[colIndex]);
