@@ -362,3 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /PersonalDataWarehousePOC/Data
+/PersonalDataWarehousePOC/Data/Views/LAData1.view
+/PersonalDataWarehousePOC/Data/Views/LAData2.view
+/PersonalDataWarehousePOC/Data/Views/Test1.view
