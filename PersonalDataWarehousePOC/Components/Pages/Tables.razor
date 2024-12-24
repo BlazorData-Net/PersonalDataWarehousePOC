@@ -634,8 +634,8 @@ else
 
             // Build the line:
             DictionaryMapping.AppendLine(
-                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") ? dict[\"{propertyName}\"]?.ToString() : null,"
-            );
+                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
+                +"? dict[\"{propertyName}\"]?.ToString() : null,");
         }
 
         // ** Open the Class.txt template from Templates\Class.txt and replace the content with the codeBuilder
