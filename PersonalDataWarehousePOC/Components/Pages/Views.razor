@@ -44,6 +44,11 @@ else
         <button @onclick="NewScript">New</button>
         &nbsp;
         <button @onclick="OnEditorSaveRequested">Save</button>
+        @if (CurrentViewName != "")
+        {
+            <span>&nbsp; &nbsp;</span>
+            <button @onclick="Delete">Delete</button>
+        }
         &nbsp;
         <button @onclick="Execute">Execute</button>
         @if (ContentChanged)
@@ -323,6 +328,36 @@ else
 
         IsLoading = false;
         StateHasChanged();
+    }
+
+    // Delete
+
+    private async Task Delete()
+    {
+        if (CurrentViewName.Trim().Length == 0)
+        {
+            Message = "Must save view first.";
+        }
+        else
+        {
+            // Delete the file
+            IsLoading = true;
+            StateHasChanged();
+
+            // Delete the file
+            var fileName = Path.Combine("Data", "Views", $"{CurrentViewName}.view");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            string deletedViewName = CurrentViewName;
+            CurrentViewName = string.Empty;
+
+            Message = $"{deletedViewName} deleted!";
+
+            await LoadViewsListDropdown();
+        }
     }
 
     // New Script
