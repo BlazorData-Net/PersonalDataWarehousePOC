@@ -27,7 +27,7 @@ else
                 @foreach (var view in ViewList)
                 {
                     <option value="@view"
-                            selected="@(view == CurrentViewName ? "selected" : null)">
+                    selected="@(view == CurrentViewName ? "selected" : null)">
                         @view
                     </option>
                 }
@@ -41,6 +41,8 @@ else
             <button @onclick="OpenWizard">Table Wizard</button>
             <span>&nbsp;</span>
         }
+        <button @onclick="NewScript">New</button>
+        &nbsp;
         <button @onclick="OnEditorSaveRequested">Save</button>
         &nbsp;
         <button @onclick="Execute">Execute</button>
@@ -51,13 +53,13 @@ else
         <br />
         <br />
         <MonacoEditor ElementId="script-one"
-                      @ref="_monacoEditorInstance"
-                      Language="Language.CSharp"
-                      OnContentChanged="OnEditorContentChanged"
-                      OnSaveRequested="OnEditorSaveRequested"
-                      ScriptContent="@CurrentScript"
-                      EditorOptions="MonacoOptions"
-                      Style="width: 90%; height:400px;" />
+        @ref="_monacoEditorInstance"
+        Language="Language.CSharp"
+        OnContentChanged="OnEditorContentChanged"
+        OnSaveRequested="OnEditorSaveRequested"
+        ScriptContent="@CurrentScript"
+        EditorOptions="MonacoOptions"
+        Style="width: 90%; height:400px;" />
     </div>
     <br />
 }
@@ -78,16 +80,16 @@ else
                     <div class="window-body has-space">
 
                         <RadzenDataGrid Data="@objDataParameters.data"
-                                        ColumnWidth="200px"
-                                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
-                                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
+                        ColumnWidth="200px"
+                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
+                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
                             <Columns>
                                 @foreach (var column in objDataParameters.columns)
                                 {
                                     <RadzenDataGridColumn @key=@column.Key
-                                                          Title="@column.Key"
-                                                          Type="column.Value"
-                                                          Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
+                                    Title="@column.Key"
+                                    Type="column.Value"
+                                    Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
                                         <Template>
                                             @context[@column.Key]
                                         </Template>
@@ -323,6 +325,15 @@ else
         StateHasChanged();
     }
 
+    // New Script
+
+    private async Task NewScript()
+    {
+        await _monacoEditorInstance.SetEditorContent(SampleCode);
+        CurrentScript = SampleCode;
+        CurrentViewName = "";
+    }
+
     // Table Wizard
 
     private async Task onTableWizard()
@@ -427,6 +438,13 @@ else
     {
         try
         {
+            if (CurrentViewName == "")
+            {
+                // Open a popup to enter the view name
+                IsNewTablePopupVisible = true;
+                return;
+            }
+
             //  Save the content before executing
             await OnEditorSaveRequested();
 
@@ -471,4 +489,21 @@ else
         }
     }
     #endregion
+
+    private string SampleCode = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
+{
+    // Generate random data
+    return Enumerable.Range(1, 1).Select(id => new Dictionary<string, object>
+    {
+        { ""EmployeeId"", ""1234"" },
+        { ""FirstName"", ""John"" },
+        { ""LastName"", ""Doe"" }
+    });
+}";
 }
