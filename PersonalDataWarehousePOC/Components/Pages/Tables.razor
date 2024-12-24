@@ -219,7 +219,8 @@ else
         IsLoadingSheet = true;
         StateHasChanged();
 
-        using var fileStream = CurrentFile.OpenReadStream();
+        // Increase the max allowed size to a value larger than your file size
+        using var fileStream = CurrentFile.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024); // 50 MB
 
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
