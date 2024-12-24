@@ -1,8 +1,11 @@
 using Blazor.Monaco;
 using BlazorDatasheet.Extensions;
+using Microsoft.AspNetCore.OData;
+using Microsoft.OData.ModelBuilder;
 using PersonalDataWarehousePOC.Components;
 using PersonalDataWarehousePOC.Services;
 using Radzen;
+using System.Reflection;
 
 namespace PersonalDataWarehousePOC;
 
@@ -30,7 +33,22 @@ public class Program
         builder.Services.AddBlazorMonacoComponents();
         builder.Services.AddRadzenComponents();
 
+        /// **** ODATA START ****
+        var modelBuilder = new ODataConventionModelBuilder();
+
+        ODataSupport.AddDynamicEntitySets(modelBuilder);
+
+        builder.Services.AddControllers().AddOData(
+            options => options.Select().Filter().OrderBy().Expand().Count().SetMaxTop(null).AddRouteComponents(
+                "odata",
+                modelBuilder.GetEdmModel()));
+        /// **** ODATA END ****
+
         var app = builder.Build();
+
+        /// **** ODATA START ****
+        app.UseRouting();
+        /// **** ODATA END ****
 
         app.MapDefaultEndpoints();
 
@@ -46,6 +64,10 @@ public class Program
 
         app.UseAntiforgery();
 
+        /// **** ODATA START ****
+        app.MapControllers();
+        /// **** ODATA END ****
+  
         app.MapStaticAssets();
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
