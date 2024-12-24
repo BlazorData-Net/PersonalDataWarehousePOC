@@ -365,3 +365,5 @@ FodyWeavers.xsd
 /PersonalDataWarehousePOC/Data/Views/LAData1.view
 /PersonalDataWarehousePOC/Data/Views/LAData2.view
 /PersonalDataWarehousePOC/Data/Views/Test1.view
+/PersonalDataWarehousePOC/Data/Classes/OneMillionRows.cs
+/PersonalDataWarehousePOC/Data/Views/OneMillionRowsTake100.view
