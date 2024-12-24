@@ -485,8 +485,8 @@ else
                 {
                     var cellValue = sheet.Cells[i, j]?.Value;
 
-                    if (cellValue == null 
-                        || cellValue == DBNull.Value 
+                    if (cellValue == null
+                        || cellValue == DBNull.Value
                         || string.IsNullOrWhiteSpace(cellValue.ToString()))
                     {
                         row[j] = DBNull.Value;
@@ -602,34 +602,66 @@ else
     #region public static void GenerateClassFromDataTable(DataTable dt, string className)
     public static void GenerateClassFromDataTable(DataTable dt, string className)
     {
-        // Define directory for output
-        string directoryPath = Path.Combine("Data", "Classes");
-        Directory.CreateDirectory(directoryPath);
+        // ** Build the class definition and dictionary mapping
 
-        // Start building the class code
-        StringBuilder codeBuilder = new StringBuilder();
-        codeBuilder.AppendLine("using System;");
-        codeBuilder.AppendLine();
-        codeBuilder.AppendLine($"namespace Data");
-        codeBuilder.AppendLine("{");
-        codeBuilder.AppendLine($"    public class {className}");
-        codeBuilder.AppendLine("    {");
+        // Build the class definition
+        StringBuilder ClassDefinition = new StringBuilder();
+        ClassDefinition.AppendLine($"public class {className}");
+        ClassDefinition.AppendLine("    {");
+
+        // Add an Id property to the class
+        ClassDefinition.AppendLine("        public int Id { get; set; }");
 
         // For each column in the DataTable, create a string property
         foreach (DataColumn column in dt.Columns)
         {
             // Ensure the property name is a valid C# identifier
-            string propertyName = column.ColumnName.Replace(" ", "_"); 
+            string propertyName = column.ColumnName.Replace(" ", "_");
 
-            codeBuilder.AppendLine
+            ClassDefinition.AppendLine
             ($"        public string {propertyName} {{ get; set; }}");
         }
 
-        codeBuilder.AppendLine("    }");
-        codeBuilder.AppendLine("}");
+        ClassDefinition.AppendLine("    }");
+
+        // Build the dictionaryMapping
+        StringBuilder DictionaryMapping = new StringBuilder();
+
+        foreach (DataColumn column in dt.Columns)
+        {
+            // Replace spaces in the column name with underscores to make it a valid C# identifier
+            string propertyName = column.ColumnName.Replace(" ", "_");
+
+            // Build the line:
+            DictionaryMapping.AppendLine(
+                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") ? dict[\"{propertyName}\"]?.ToString() : null,"
+            );
+        }
+
+        // ** Open the Class.txt template from Templates\Class.txt and replace the content with the codeBuilder
+        string templatePath = Path.Combine("Templates", "Class.txt");
+
+        // Read the content of the template file
+        string templateContent = File.ReadAllText(templatePath);
+
+        // Replace the placeholders
+        string codeBuilder = "";
+
+        codeBuilder = templateContent.Replace("**CLASS NAME**", className);
+        codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
+        codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (className + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (className.ToLower() + "s"));
+        codeBuilder = codeBuilder.Replace("**FIRST FIELD**", dt.Columns[0].ColumnName);
+
+        // ** Write the class to a file
+
+        // Define directory for output
+        string directoryPath = Path.Combine("Data", "Classes");
+        Directory.CreateDirectory(directoryPath);
 
         // Set the file path
-        string filePath = 
+        string filePath =
         Path.Combine(directoryPath, className + ".cs");
 
         // Write the class to file
@@ -645,9 +677,9 @@ else
         if (string.IsNullOrEmpty(input))
             return string.Empty;
 
-        // Keep only letters, digits, and spaces (temporarily), 
+        // Keep only letters, digits, and spaces (temporarily),
         // removing all other characters
-        // We keep spaces initially to determine word boundaries 
+        // We keep spaces initially to determine word boundaries
         // for capitalization.
         char[] filteredChars = input
             .Where(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c))
@@ -656,7 +688,7 @@ else
         // Convert to a string to process spaces and capitalization
         string intermediate = new string(filteredChars);
 
-        // Remove spaces and capitalize the following character 
+        // Remove spaces and capitalize the following character
         // if it is a letter
         // We'll build the result using a StringBuilder for efficiency.
         var result = new System.Text.StringBuilder();
@@ -668,13 +700,13 @@ else
 
             if (char.IsWhiteSpace(c))
             {
-                // Encountered a space: the next valid letter 
+                // Encountered a space: the next valid letter
                 // should be capitalized if it's not a digit.
                 capitalizeNext = true;
             }
             else
             {
-                // This character is alphanumeric. If we are 
+                // This character is alphanumeric. If we are
                 // instructed to capitalize it and it's a letter:
                 if (capitalizeNext && char.IsLetter(c))
                 {

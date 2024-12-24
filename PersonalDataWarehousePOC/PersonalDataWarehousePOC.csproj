@@ -25,4 +25,8 @@
 		<ProjectReference Include="..\PersonalDataWarehousePOC.ServiceDefaults\PersonalDataWarehousePOC.ServiceDefaults.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Templates\" />
+	</ItemGroup>
+
 </Project>
