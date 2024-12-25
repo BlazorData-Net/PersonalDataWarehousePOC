@@ -1,4 +1,6 @@
-﻿using PersonalDataWarehousePOC.Services;
+﻿using CSScriptLib;
+using PersonalDataWarehousePOC.Services;
+using Renci.SshNet.Messages;
 using System.Data;
 using System.Linq;
 public class Dataloader
@@ -27,5 +29,14 @@ public class Dataloader
         }
 
         return response;
+    }
+
+    public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
+    {
+        dynamic script = CSScript.Evaluator.LoadMethod(paramCode);
+
+        var result = await script.ReturnResult();
+
+        return result as IEnumerable<IDictionary<string, object>>;
     }
 }
