@@ -285,6 +285,8 @@ else
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
 
+        Message = $"{CurrentViewName} saved!";
+
         ContentChanged = false;
         StateHasChanged();
     }
