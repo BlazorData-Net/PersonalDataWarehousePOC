@@ -727,9 +727,21 @@ else
     #region public static bool DetectDuplicate(string paramTableName)
     public static bool DetectDuplicate(string paramTableName)
     {
+        bool result = false;
+
         // Check if the table name already exists
         string fileName = $"Data/Parquet/{paramTableName}.parquet";
-        return System.IO.File.Exists(fileName);
+        var ParquetExists = System.IO.File.Exists(fileName);
+
+        fileName = $"Data/Views/{paramTableName}.view";
+        var ViewExists = System.IO.File.Exists(fileName);
+
+        if (ParquetExists || ViewExists)
+        {
+            result = true;
+        }
+
+        return result;
     }
     #endregion
 }

@@ -474,9 +474,9 @@ else
         var viewsFolder = Path.Combine("Data", "Views");
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
-        if (System.IO.File.Exists(fileName))
+        if (DetectDuplicate(CurrentViewName))
         {
-            Message = "View already exists.";
+            Message = "Name already exists.";
             return;
         }
 
@@ -579,6 +579,27 @@ else
             Message = ex.GetBaseException().Message;
             return null;
         }
+    }
+    #endregion
+
+    #region public static bool DetectDuplicate(string paramTableName)
+    public static bool DetectDuplicate(string paramTableName)
+    {
+        bool result = false;
+
+        // Check if the table name already exists
+        string fileName = $"Data/Parquet/{paramTableName}.parquet";
+        var ParquetExists = System.IO.File.Exists(fileName);
+
+        fileName = $"Data/Views/{paramTableName}.view";
+        var ViewExists = System.IO.File.Exists(fileName);
+
+        if (ParquetExists || ViewExists)
+        {
+            result = true;
+        }
+
+        return result;
     }
     #endregion
 
