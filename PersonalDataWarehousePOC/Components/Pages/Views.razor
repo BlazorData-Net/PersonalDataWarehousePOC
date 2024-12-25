@@ -261,6 +261,30 @@ else
 
         await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
+        // ** Open the View.txt template from Templates\View.txt
+        string templatePath = Path.Combine("Templates", "View.txt");
+
+        // Read the content of the template file
+        string templateContent = File.ReadAllText(templatePath);
+
+        // Replace the placeholders
+        string codeBuilder = "";
+
+        codeBuilder = templateContent.Replace("**CLASS NAME**", CurrentViewName);
+
+        // ** Write the class to a file
+
+        // Define directory for output
+        string directoryPath = Path.Combine("Data", "Classes");
+        Directory.CreateDirectory(directoryPath);
+
+        // Set the file path
+        string filePath =
+        Path.Combine(directoryPath, CurrentViewName + ".cs");
+
+        // Write the class to file
+        File.WriteAllText(filePath, codeBuilder.ToString());
+
         ContentChanged = false;
         StateHasChanged();
     }
@@ -450,7 +474,6 @@ else
         }
 
         await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
-
 
         // ** Open the View.txt template from Templates\View.txt 
         string templatePath = Path.Combine("Templates", "View.txt");
