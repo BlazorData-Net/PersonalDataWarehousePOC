@@ -38,6 +38,7 @@ static DateTime GenerateRandomBirthdate()
     return startDate.AddDays(random.Next(range));
 }
 
+
 static string GenerateRandomPosition()
 {
     var positions = new[] { "Developer", "Manager", "Designer", "Analyst", "Tester", "Support", "Admin" };

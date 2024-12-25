@@ -147,7 +147,7 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
-@if (IsNewTablePopupVisible)
+@if (IsNewViewPopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
         <div class="modal-dialog">
@@ -155,9 +155,9 @@ else
 
                 <div class="window glass active">
                     <div class="title-bar">
-                        <div class="title-bar-text">New Table</div>
+                        <div class="title-bar-text">New View</div>
                         <div class="title-bar-controls">
-                            <button aria-label="Close" @onclick="CloseNewTablePopup"></button>
+                            <button aria-label="Close" @onclick="CloseNewViewPopup"></button>
                         </div>
                     </div>
                     <div class="window-body has-space">
@@ -216,7 +216,7 @@ else
     private string CurrentViewName = "";
 
     private bool IsWizardVisible { get; set; } = false;
-    private bool IsNewTablePopupVisible { get; set; } = false;
+    private bool IsNewViewPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
     private string CurrentSelectedTableWizard = "";
 
@@ -249,13 +249,18 @@ else
         if (CurrentViewName == "")
         {
             // Open a popup to enter the view name
-            IsNewTablePopupVisible = true;
+            IsNewViewPopupVisible = true;
             return;
         }
 
         // Save to file in Data/Views
         var viewsFolder = Path.Combine("Data", "Views");
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
+
+        if (ContentChanged)
+        {
+            Message = $"{CurrentViewName} saved!";
+        }
 
         CurrentScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
 
@@ -284,8 +289,6 @@ else
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
-
-        Message = $"{CurrentViewName} saved!";
 
         ContentChanged = false;
         StateHasChanged();
@@ -445,9 +448,9 @@ else
         IsWizardVisible = true;
     }
 
-    private void CloseNewTablePopup()
+    private void CloseNewViewPopup()
     {
-        IsNewTablePopupVisible = false;
+        IsNewViewPopupVisible = false;
     }
 
     private void CloseOutputTablePopup()
@@ -508,8 +511,10 @@ else
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
 
+        Message = $"{CurrentViewName} saved!";
+
         // ** Close the popup if visible
-        IsNewTablePopupVisible = false;
+        IsNewViewPopupVisible = false;
 
         // Reload the dropdown
         ViewList = new List<string>();
@@ -535,7 +540,7 @@ else
             if (CurrentViewName == "")
             {
                 // Open a popup to enter the view name
-                IsNewTablePopupVisible = true;
+                IsNewViewPopupVisible = true;
                 return;
             }
 
@@ -584,16 +589,15 @@ else
     }
     #endregion
 
-    #region public static bool DetectDuplicate(string paramTableName)
-    public static bool DetectDuplicate(string paramTableName)
+    #region public static bool DetectDuplicate(string paramViewName)
+    public static bool DetectDuplicate(string paramViewName)
     {
         bool result = false;
 
-        // Check if the table name already exists
-        string fileName = $"Data/Parquet/{paramTableName}.parquet";
+        string fileName = $"Data/Parquet/{paramViewName}.parquet";
         var ParquetExists = System.IO.File.Exists(fileName);
 
-        fileName = $"Data/Views/{paramTableName}.view";
+        fileName = $"Data/Views/{paramViewName}.view";
         var ViewExists = System.IO.File.Exists(fileName);
 
         if (ParquetExists || ViewExists)
