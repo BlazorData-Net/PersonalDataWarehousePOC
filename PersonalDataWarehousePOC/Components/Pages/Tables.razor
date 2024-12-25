@@ -394,7 +394,10 @@ else
         ConvertSheetToDataTable();
 
         // Convert to Parquet
-        await ConvertToParquet();
+        string fileName = $"Data/Parquet/{CurrentTableName}.parquet";
+
+        DataService objDataService = new DataService();
+        await objDataService.WriteDataTableToParquetAsync(CurrentDataTable, fileName);
 
         // Create C# class from DataTable
         GenerateClassFromDataTable(CurrentDataTable, CurrentTableName);
@@ -540,61 +543,6 @@ else
             }
 
             CurrentDataTable.Rows.Add(row);
-        }
-    }
-    #endregion
-
-    #region private async Task ConvertToParquet
-    private async Task ConvertToParquet()
-    {
-        int columnCount = CurrentDataTable.Columns.Count;
-        int lastColumnIndex = columnCount - 1;
-
-        // Prepare fields for all columns
-
-        var parquetFields = new List<Field>(columnCount);
-        for (int i = 0; i < columnCount; i++)
-        {
-            string columnName = CurrentDataTable.Columns[i].ColumnName;
-            parquetFields.Add(new DataField<string>(columnName));
-        }
-
-        ParquetSchema parquetSchema = new ParquetSchema(parquetFields);
-        var parquetTable = new Parquet.Rows.Table(parquetSchema);
-
-        foreach (DataRow dataRow in CurrentDataTable.Rows)
-        {
-            // Initialize the row with a pre-sized string array
-            var row = new Parquet.Rows.Row(new string[columnCount]);
-
-            for (int j = 0; j < lastColumnIndex; j++)
-            {
-                string value = dataRow[j]?.ToString() ?? string.Empty;
-
-                if (!string.IsNullOrEmpty(value))
-                {
-                    // Using chained Replace calls for clarity and performance
-                    value = value.Replace("\r\n", " ")
-                                 .Replace("\t", " ")
-                                 .Replace("\r", " ")
-                                 .Replace("\n", " ")
-                                 .Trim();
-                }
-
-                row[j] = value;
-            }
-
-            parquetTable.Add(row);
-        }
-
-        using var ms = new MemoryStream();
-        await parquetTable.WriteAsync(ms); // Await for async write
-        ms.Position = 0;
-
-        string fileName = $"Data/Parquet/{CurrentTableName}.parquet";
-        using (var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
-        {
-            ms.CopyTo(fileStream);
         }
     }
     #endregion
