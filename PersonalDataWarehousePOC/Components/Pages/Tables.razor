@@ -394,10 +394,8 @@ else
         ConvertSheetToDataTable();
 
         // Convert to Parquet
-        string fileName = $"Data/Parquet/{CurrentTableName}.parquet";
-
         DataService objDataService = new DataService();
-        await objDataService.WriteDataTableToParquetAsync(CurrentDataTable, fileName);
+        await objDataService.WriteDataTableToParquetAsync(CurrentDataTable, CurrentTableName);
 
         // Create C# class from DataTable
         GenerateClassFromDataTable(CurrentDataTable, CurrentTableName);

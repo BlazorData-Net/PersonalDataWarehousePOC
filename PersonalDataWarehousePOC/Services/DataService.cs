@@ -63,73 +63,59 @@
         }
         #endregion
 
-        public async Task WriteDataTableToParquetAsync(DataTable currentDataTable, string outputPath)
+        public async Task WriteDataTableToParquetAsync(DataTable CurrentDataTable, string CurrentTableName)
         {
-            if (currentDataTable == null) throw new ArgumentNullException(nameof(currentDataTable));
+            if (CurrentDataTable == null) throw new ArgumentNullException(nameof(CurrentDataTable));
 
-            int rowCount = currentDataTable.Rows.Count;
-            int columnCount = currentDataTable.Columns.Count;
+            int columnCount = CurrentDataTable.Columns.Count;
 
-            // 1) Define the schema
-            //    Here, we assume everything is a string column for simplicity.
-            DataField[] dataFields = new DataField[columnCount];
+            // Prepare fields for all columns
+            var parquetFields = new List<Field>(columnCount);
+
             for (int i = 0; i < columnCount; i++)
             {
-                string columnName = currentDataTable.Columns[i].ColumnName;
-                dataFields[i] = new DataField<string>(columnName);
+                string columnName = CurrentDataTable.Columns[i].ColumnName;
+                parquetFields.Add(new DataField<string>(columnName));
             }
 
-            var schema = new ParquetSchema(dataFields);
+            ParquetSchema parquetSchema = new ParquetSchema(parquetFields);
 
-            // 2) Build each DataColumn from the DataTable
-            //    We'll gather the values for each column into a string[] array
-            //    and apply any "cleanup" of newlines, tabs, etc.
-            DataColumn[] parquetColumns = new DataColumn[columnCount];
-            for (int colIndex = 0; colIndex < columnCount; colIndex++)
+            var parquetTable = new Parquet.Rows.Table(parquetSchema);
+
+            foreach (DataRow dataRow in CurrentDataTable.Rows)
             {
-                // Prepare an array to hold all row values for this column
-                var columnValues = new string[rowCount];
+                // Initialize the row with a pre-sized string array
+                var row = new Parquet.Rows.Row(new string[columnCount]);
 
-                for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+                for (int j = 0; j < columnCount; j++)
                 {
-                    object cellValue = currentDataTable.Rows[rowIndex][colIndex];
-                    string value = cellValue?.ToString() ?? string.Empty;
-
+                    string value = dataRow[j]?.ToString() ?? string.Empty;
                     if (!string.IsNullOrEmpty(value))
                     {
+                        // Using chained Replace calls for clarity and performance
                         value = value.Replace("\r\n", " ")
                                      .Replace("\t", " ")
                                      .Replace("\r", " ")
                                      .Replace("\n", " ")
                                      .Trim();
                     }
-
-                    columnValues[rowIndex] = value;
+                    row[j] = value;
                 }
 
-                // Create a DataColumn object associated with the schema's DataField
-                parquetColumns[colIndex] = new DataColumn(schema.DataFields[colIndex], columnValues);
+                parquetTable.Add(row);
             }
 
-            // 3) Write to Parquet using an async pattern, row-group style
-            using (Stream fileStream = File.OpenWrite(outputPath))
-            {
-                // CreateAsync can be awaited
-                using (ParquetWriter parquetWriter = await ParquetWriter.CreateAsync(schema, fileStream))
-                {
-                    // Optional: set compression to Gzip with optimal level
-                    parquetWriter.CompressionMethod = CompressionMethod.Gzip;
-                    parquetWriter.CompressionLevel = CompressionLevel.Optimal;
+            using var ms = new MemoryStream();
 
-                    // Create a row group and write each column
-                    using (ParquetRowGroupWriter groupWriter = parquetWriter.CreateRowGroup())
-                    {
-                        foreach (DataColumn col in parquetColumns)
-                        {
-                            await groupWriter.WriteColumnAsync(col);
-                        }
-                    }
-                }
+            await parquetTable.WriteAsync(ms); // Await for async write
+
+            ms.Position = 0;
+
+            string fileName = $"Data/Parquet/{CurrentTableName}.parquet";
+
+            using (var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
+            {
+                ms.CopyTo(fileStream);
             }
         }
     }
