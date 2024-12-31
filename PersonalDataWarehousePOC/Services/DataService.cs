@@ -63,6 +63,7 @@
         }
         #endregion
 
+        #region public async Task WriteDataTableToParquetAsync(DataTable CurrentDataTable, string CurrentTableName)
         public async Task WriteDataTableToParquetAsync(DataTable CurrentDataTable, string CurrentTableName)
         {
             if (CurrentDataTable == null) throw new ArgumentNullException(nameof(CurrentDataTable));
@@ -117,6 +118,7 @@
             {
                 ms.CopyTo(fileStream);
             }
-        }
+        } 
+        #endregion
     }
 }
