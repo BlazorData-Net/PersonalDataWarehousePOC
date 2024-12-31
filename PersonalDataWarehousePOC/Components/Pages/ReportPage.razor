@@ -4,6 +4,8 @@
 @using System.Linq.Dynamic.Core
 @using CSScriptLib
 @using System.Reflection
+@using Microsoft.Reporting.NETCore
+@inject IJSRuntime jsRuntime
 
 <PageTitle>Reports</PageTitle>
 
@@ -77,7 +79,16 @@ else
                     </div>
                     <div class="window-body has-space">
 
-                        <p>Output goes here...</p>
+                        <div>
+                            Page: <span>@CurrentPage</span> / <span id="page_count">0</span> &nbsp;&nbsp;
+                            <button @onclick="PreviousPage">Previous</button>
+                            <button @onclick="NextPage">Next</button>
+                            <button @onclick="ZoomIn">Zoom In</button>
+                            <button @onclick="ZoomOut">Zoom Out</button>
+                            <button @onclick="PrintPdf">Print</button>
+                            <div @ref="pdfContainer" id="pdf-container"
+                                 style="border: 0px solid #ccc; width: 600px; height: 800px;"></div>
+                        </div>
 
                     </div>
                 </div>
@@ -179,6 +190,8 @@ else
 }
 
 @code {
+    private ElementReference pdfContainer;
+
     private bool ContentChanged { get; set; }
     private string CurrentReport { get; set; } = string.Empty;
 
@@ -193,6 +206,10 @@ else
     private bool IsNewReportPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
     private string CurrentSelectedReportWizard = "";
+
+    private bool isReportGenerated = false;
+    private int CurrentPage = 1;
+    private string ReportTitle = "Invoice 4/2025";
 
     string Message = "";
 
@@ -438,5 +455,121 @@ else
         return result;
     }
     #endregion
+
+    // Report Viewer
+
+    private async Task PrepareReportAsync()
+    {
+        // // Set the flag to indicate the report is generated
+        // isReportGenerated = true;
+
+        // // Create the report
+        // using var report = new LocalReport();
+
+        // // Define the report parameters
+        // var parameters = new[] { new ReportParameter("Title", ReportTitle) };
+
+        // // Load the report definition
+        // var reportPath = System.IO.Path.Combine("Reports", "Report.rdlc");
+        // if (!System.IO.File.Exists(reportPath))
+        // {
+        //     throw new FileNotFoundException("Report file not found.", reportPath);
+        // }
+
+        // // Load the report definition (the RDLC file)
+        // await using var reportStream = System.IO.File.OpenRead(reportPath);
+        // using var reportReader = new System.IO.StreamReader(reportStream);
+        // report.LoadReportDefinition(reportReader);
+
+        // // Get all the values from the sheet
+        // var items = new List<ReportItem>();
+
+        // // Iterate through the rows in the sheet
+        // for (int i = 0; i < sheet?.NumRows; i++)
+        // {
+        //     // Create a new report item
+        //     var item = new ReportItem
+        //         {
+        //             Description = sheet.Cells[i, 0].Value?.ToString() ?? string.Empty,
+        //             Price =
+        //                 decimal.TryParse(
+        //                     sheet.Cells[i, 1].Value?.ToString(), out var price) ? price : 0m,
+        //             Qty = int.TryParse(
+        //                     sheet.Cells[i, 2].Value?.ToString(), out var qty) ? qty : 0
+        //         };
+
+        //     // Only add items with a description
+        //     if (!string.IsNullOrWhiteSpace(item.Description))
+        //     {
+        //         // Add the item to the list
+        //         items.Add(item);
+        //     }
+        // }
+
+        // // Add the data source to the report
+        // report.DataSources.Add(new ReportDataSource("Items", items));
+        // report.SetParameters(parameters);
+
+        // // Render the report to a PDF byte array
+        // byte[] pdfBytes = report.Render("PDF");
+
+        // // To display properly we need to save the PDF as a file and re-load it
+
+        // var pdfPath = System.IO.Path.Combine("Reports",
+        // $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
+
+        // // Save the pdf to the temp file
+        // System.IO.File.WriteAllBytes(pdfPath, pdfBytes);
+
+        // // Open the temp PDF file and read the bytes
+        // await using (var pdfStream = System.IO.File.OpenRead(pdfPath))
+        // {
+        //     using (var memoryStream = new System.IO.MemoryStream())
+        //     {
+        //         await pdfStream.CopyToAsync(memoryStream);
+        //         pdfBytes = memoryStream.ToArray();
+        //     }
+        // }
+
+        // // Convert the PDF bytes to a base64 string
+        // var pdfBase64 = Convert.ToBase64String(pdfBytes);
+
+        // // Call the JavaScript function with the element reference and the PDF data
+        // await jsRuntime.InvokeVoidAsync("blazorPdfViewer.renderPdf", pdfContainer, pdfBase64);
+
+        // // Delete the temp pdf file
+        // System.IO.File.Delete(pdfPath);
+    }
+
+    private async Task PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            await jsRuntime.InvokeVoidAsync("blazorPdfViewer.previousPage", pdfContainer);
+        }
+    }
+
+    private async Task NextPage()
+    {
+        CurrentPage++;
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.nextPage", pdfContainer);
+    }
+
+    private async Task ZoomIn()
+    {
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.zoomIn", pdfContainer);
+    }
+
+    private async Task ZoomOut()
+    {
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.zoomOut", pdfContainer);
+    }
+
+    private async Task PrintPdf()
+    {
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.printPdf", pdfContainer);
+    }
+
 
 }
