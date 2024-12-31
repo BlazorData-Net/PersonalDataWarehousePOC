@@ -1,0 +1,442 @@
+﻿@page "/reports"
+@using Blazor.Monaco
+@using System.Text.Json
+@using System.Linq.Dynamic.Core
+@using CSScriptLib
+@using System.Reflection
+
+<PageTitle>Reports</PageTitle>
+
+<h4>Reports</h4>
+<br />
+@if (IsLoading)
+{
+    <div role="progressbar" class="marquee" style="width: 25%"></div>
+}
+else
+{
+    <div>
+        @if (ReportList.Count > 0)
+        {
+            <label>Select Report: </label>
+            <select @onchange="@(async (args) =>
+                    {
+                        CurrentReportName = args.Value?.ToString();
+                        await LoadReport(CurrentReportName);
+                    })">
+                @foreach (var Report in ReportList)
+                {
+                    <option value="@Report"
+                            selected="@(Report == CurrentReportName ? "selected" : null)">
+                        @Report
+                    </option>
+                }
+            </select>
+        }
+    </div>
+    <br />
+    <div>
+        @if (TableList.Count > 0)
+        {
+            <button @onclick="OpenWizard">Report Wizard</button>
+            <span>&nbsp;</span>
+        }
+        @if (CurrentReportName != "")
+        {
+            <span>&nbsp; &nbsp;</span>
+            <button @onclick="Delete">Delete Report</button>
+            <span>&nbsp; &nbsp;</span>
+            <button @onclick="Execute">Display Report</button>
+        }
+        @if (ContentChanged)
+        {
+            <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
+        }
+        <br />
+        <br />
+        @if (CurrentReportName != "")
+        {
+            <p>Report Name: @CurrentReportName</p>
+        }
+    </div>
+    <br />
+}
+
+<!-- POPUPS -->
+@if (IsNewOutputPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog" style="max-width: 90%; margin-top: 5%;">
+            <div class="modal-content">
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Output</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseOutputReportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+
+                        <p>Output goes here...</p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (IsWizardVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Report Wizard</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseReportWizardPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <label>Select Table: </label>
+                        <select @onchange="@(async (args) =>
+                            {
+                                CurrentSelectedTableWizard = args.Value?.ToString();
+                            })">
+                            @foreach (var table in TableList)
+                            {
+                                <option value="@table">
+                                    @table
+                                </option>
+                            }
+                        </select>
+                        &nbsp;&nbsp;
+                        <button @onclick="onReportWizard">Select</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (IsNewReportPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">New Report</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseNewReportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <form @onsubmit="SaveReportAsync">
+                            <div>
+                                <label for="ReportName">Report Name:</label>
+                                <input type="text" id="ReportName" maxlength="50" style="width: 300px;" @bind="CurrentReportName" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="submit">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (Message != "")
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Alert!</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 300px; height: 100px; overflow: auto">
+                            @Message
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private bool ContentChanged { get; set; }
+    private string CurrentReport { get; set; } = string.Empty;
+
+    private List<string> TableList = new List<string>();
+    private string CurrentSelectedTableWizard = "";
+
+    private bool IsLoading { get; set; } = false;
+    private List<string> ReportList = new List<string>();
+    private string CurrentReportName = "";
+
+    private bool IsWizardVisible { get; set; } = false;
+    private bool IsNewReportPopupVisible { get; set; } = false;
+    private bool IsNewOutputPopupVisible { get; set; } = false;
+    private string CurrentSelectedReportWizard = "";
+
+    string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReportsListDropdownSelectDefaultReport();
+        LoadReportListDropdown();
+        LoadTableListDropdown();
+    }
+
+    // Tables and Views Dropdown
+
+    private void LoadTableListDropdown()
+    {
+        TableList = new List<string>();
+
+        // Load files from the Parquet folder
+        var parquetFolder = Path.Combine("Data", "Parquet");
+        if (Directory.Exists(parquetFolder))
+        {
+            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        // Also load files from the Views folder (with .view extension)
+        var viewsFolder = Path.Combine("Data", "Views");
+        if (Directory.Exists(viewsFolder))
+        {
+            TableList.AddRange(Directory.GetFiles(viewsFolder, "*.view")
+                                        .Select(Path.GetFileNameWithoutExtension));
+        }
+    }
+
+
+    // Report Dropdown
+
+    private void LoadReportListDropdown()
+    {
+        ReportList = new List<string>();
+
+        // Load the ReportList data
+
+        if (Directory.Exists("Reports"))
+        {
+            ReportList = Directory.GetFiles("Reports", "*.rdlc")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+    }
+
+    // Reports Dropdown
+
+    private async Task LoadReportsListDropdownSelectDefaultReport()
+    {
+        if (ReportList.Count > 0)
+        {
+            CurrentReportName = ReportList.First();
+            await LoadReport(CurrentReportName);
+        }
+    }
+
+    private async Task LoadReport(string paramReport)
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        // Load the DataReport
+        var fileName = Path.Combine("Reports", $"{paramReport}.rdlc");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            // Read contents into CurrentScript
+            CurrentReport = await System.IO.File.ReadAllTextAsync(fileName);
+
+            // Set CurrentReportName
+            CurrentReportName = paramReport;
+        }
+        else
+        {
+            Message = "Report not found.";
+        }
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    // Delete
+
+    private async Task Delete()
+    {
+        if (CurrentReportName.Trim().Length == 0)
+        {
+            Message = "Must save Report first.";
+        }
+        else
+        {
+            // Delete the file
+            IsLoading = true;
+            StateHasChanged();
+
+            // Delete the file
+            var fileName = Path.Combine("Data", "Reports", $"{CurrentReportName}.Report");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            // Delete the C# class file
+            fileName = Path.Combine("Data", "Classes", $"{CurrentReportName}.cs");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            string deletedReportName = CurrentReportName;
+            CurrentReportName = string.Empty;
+
+            Message = $"{deletedReportName} deleted!";
+
+            await LoadReportsListDropdownSelectDefaultReport();
+        }
+    }
+
+    // Report Wizard
+
+    private async Task onReportWizard()
+    {
+        if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
+        {
+            Message = "Please select a table.";
+            return;
+        }
+
+        // Load into report viewer
+
+        CloseReportWizardPopup();
+
+        CurrentSelectedTableWizard = "";
+    }
+
+    // Popups
+
+    private void OpenWizard()
+    {
+        CurrentSelectedTableWizard = TableList.FirstOrDefault();
+        CurrentReportName = ""; // So the new Report name popup will show on Save
+        IsWizardVisible = true;
+    }
+
+    private void CloseNewReportPopup()
+    {
+        IsNewReportPopupVisible = false;
+    }
+
+    private void CloseOutputReportPopup()
+    {
+        IsNewOutputPopupVisible = false;
+    }
+
+    private void CloseReportWizardPopup()
+    {
+        IsWizardVisible = false;
+    }
+
+    private void CloseMessagePopup()
+    {
+        Message = "";
+    }
+
+    private async Task SaveReportAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentReportName))
+        {
+            Message = "Please enter a Report name.";
+            return;
+        }
+
+        var fileName = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
+
+        if (DetectDuplicate(CurrentReportName))
+        {
+            Message = "Name already exists.";
+            return;
+        }
+
+        Message = $"{CurrentReportName} saved!";
+
+        // ** Close the popup if visible
+        IsNewReportPopupVisible = false;
+
+        // Reload the dropdown
+        ReportList = new List<string>();
+
+        if (Directory.Exists("Reports"))
+        {
+            ReportList = Directory.GetFiles("Reports", "*.rdlc")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        // Load the Report
+        await LoadReport(CurrentReportName);
+    }
+
+    // Code Execution
+
+    #region RunCode
+    private async Task Execute()
+    {
+        try
+        {
+            if (CurrentReportName == "")
+            {
+                // Open a popup to enter the Report name
+                IsNewReportPopupVisible = true;
+                return;
+            }
+
+            // Show the output
+            IsNewOutputPopupVisible = true;
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+        }
+    }
+    #endregion
+
+    #region public static bool DetectDuplicate(string paramReportName)
+    public static bool DetectDuplicate(string paramReportName)
+    {
+        bool result = false;
+
+        string fileName = $"Reports/{paramReportName}.rdlc";
+        var ReportExists = System.IO.File.Exists(fileName);
+
+        if (ReportExists)
+        {
+            result = true;
+        }
+
+        return result;
+    }
+    #endregion
+
+}
