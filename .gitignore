@@ -370,3 +370,6 @@ FodyWeavers.xsd
 /PersonalDataWarehousePOC/Reports/Data/LAData2Schemas.xsd
 /PersonalDataWarehousePOC/Reports/Data/LAData3Schemas.xsd
 /PersonalDataWarehousePOC/Reports/Data/LADataSchemas.xsd
+/PersonalDataWarehousePOC/Reports/Data/LAData2ViewSchemas.xsd
+/PersonalDataWarehousePOC/Reports/Data/LADataViewSchemas.xsd
+/PersonalDataWarehousePOC/Reports/Data/SampleViewSchemas.xsd
