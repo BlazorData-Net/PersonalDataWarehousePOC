@@ -62,7 +62,8 @@
             var tablixHeaderCellsBuilder = new StringBuilder();
             var tablixDetailCellsBuilder = new StringBuilder();
 
-            foreach (var prop in properties)
+            // Get all properties except the Id property
+            foreach (var prop in properties.Where(x => x.Name.ToLower() != "id"))
             {
                 // Each property -> one column
                 tablixColumnsBuilder.AppendLine(@"
