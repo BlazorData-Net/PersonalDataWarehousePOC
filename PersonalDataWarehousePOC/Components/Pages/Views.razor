@@ -4,6 +4,7 @@
 @using System.Linq.Dynamic.Core
 @using CSScriptLib
 @using System.Reflection
+@using System.Text
 
 <PageTitle>Views</PageTitle>
 
@@ -27,7 +28,7 @@ else
                 @foreach (var view in ViewList)
                 {
                     <option value="@view"
-                    selected="@(view == CurrentViewName ? "selected" : null)">
+                            selected="@(view == CurrentViewName ? "selected" : null)">
                         @view
                     </option>
                 }
@@ -58,13 +59,13 @@ else
         <br />
         <br />
         <MonacoEditor ElementId="script-one"
-        @ref="_monacoEditorInstance"
-        Language="Language.CSharp"
-        OnContentChanged="OnEditorContentChanged"
-        OnSaveRequested="OnEditorSaveRequested"
-        ScriptContent="@CurrentScript"
-        EditorOptions="MonacoOptions"
-        Style="width: 90%; height:400px;" />
+                      @ref="_monacoEditorInstance"
+                      Language="Language.CSharp"
+                      OnContentChanged="OnEditorContentChanged"
+                      OnSaveRequested="OnEditorSaveRequested"
+                      ScriptContent="@CurrentScript"
+                      EditorOptions="MonacoOptions"
+                      Style="width: 90%; height:400px;" />
     </div>
     <br />
 }
@@ -85,16 +86,16 @@ else
                     <div class="window-body has-space">
 
                         <RadzenDataGrid Data="@objDataParameters.data"
-                        ColumnWidth="200px"
-                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
-                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
+                                        ColumnWidth="200px"
+                                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
+                                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
                             <Columns>
                                 @foreach (var column in objDataParameters.columns)
                                 {
                                     <RadzenDataGridColumn @key=@column.Key
-                                    Title="@column.Key"
-                                    Type="column.Value"
-                                    Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
+                                                          Title="@column.Key"
+                                                          Type="column.Value"
+                                                          Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
                                         <Template>
                                             @context[@column.Key]
                                         </Template>
@@ -266,7 +267,56 @@ else
 
         await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
-        // ** Open the View.txt template from Templates\View.txt
+        // Execute the code
+        var objResult = await RunDynamicCode(CurrentScript);
+
+        List<string> columns = new List<string>();
+
+        if (objResult != null)
+        {
+            // Parse objDataParametersResult.data to a list of dictionaries
+            var TempColumns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+            columns = TempColumns.Keys.ToList();
+        }
+
+        // ** Build the class definition and dictionary mapping
+
+        // Build the class definition
+        StringBuilder ClassDefinition = new StringBuilder();
+        ClassDefinition.AppendLine($"public class {CurrentViewName}");
+        ClassDefinition.AppendLine("    {");
+
+        // Add an Id property to the class
+        ClassDefinition.AppendLine("        public int Id { get; set; }");
+
+        // For each column in the DataTable, create a string property
+        foreach (var column in columns)
+        {
+            // Ensure the property name is a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            ClassDefinition.AppendLine
+            ($"        public string {propertyName} {{ get; set; }}");
+        }
+
+        ClassDefinition.AppendLine("    }");
+
+        // Build the dictionaryMapping
+        StringBuilder DictionaryMapping = new StringBuilder();
+
+        foreach (var column in columns)
+        {
+            // Replace spaces in the column name with underscores to make it a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            // Build the line:
+            DictionaryMapping.AppendLine(
+                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
+                + "? dict[\"{propertyName}\"]?.ToString() : null,");
+        }
+
+        // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
         string templatePath = Path.Combine("Templates", "View.txt");
 
         // Read the content of the template file
@@ -276,6 +326,11 @@ else
         string codeBuilder = "";
 
         codeBuilder = templateContent.Replace("**CLASS NAME**", CurrentViewName);
+        codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
+        codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (CurrentViewName + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (CurrentViewName.ToLower() + "s"));
+        codeBuilder = codeBuilder.Replace("**FIRST FIELD**", columns[0]);
 
         // ** Write the class to a file
 
@@ -507,7 +562,56 @@ else
 
         await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
-        // ** Open the View.txt template from Templates\View.txt 
+        // Execute the code
+        var objResult = await RunDynamicCode(CurrentScript);
+
+        List<string> columns = new List<string>();
+
+        if (objResult != null)
+        {
+            // Parse objDataParametersResult.data to a list of dictionaries
+            var TempColumns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+            columns = TempColumns.Keys.ToList();
+        }
+
+        // ** Build the class definition and dictionary mapping
+
+        // Build the class definition
+        StringBuilder ClassDefinition = new StringBuilder();
+        ClassDefinition.AppendLine($"public class {CurrentViewName}");
+        ClassDefinition.AppendLine("    {");
+
+        // Add an Id property to the class
+        ClassDefinition.AppendLine("        public int Id { get; set; }");
+
+        // For each column in the DataTable, create a string property
+        foreach (var column in columns)
+        {
+            // Ensure the property name is a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            ClassDefinition.AppendLine
+            ($"        public string {propertyName} {{ get; set; }}");
+        }
+
+        ClassDefinition.AppendLine("    }");
+
+        // Build the dictionaryMapping
+        StringBuilder DictionaryMapping = new StringBuilder();
+
+        foreach (var column in columns)
+        {
+            // Replace spaces in the column name with underscores to make it a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            // Build the line:
+            DictionaryMapping.AppendLine(
+                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
+                + "? dict[\"{propertyName}\"]?.ToString() : null,");
+        }
+
+        // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
         string templatePath = Path.Combine("Templates", "View.txt");
 
         // Read the content of the template file
@@ -517,6 +621,11 @@ else
         string codeBuilder = "";
 
         codeBuilder = templateContent.Replace("**CLASS NAME**", CurrentViewName);
+        codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
+        codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (CurrentViewName + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (CurrentViewName.ToLower() + "s"));
+        codeBuilder = codeBuilder.Replace("**FIRST FIELD**", columns[0]);
 
         // ** Write the class to a file
 
@@ -538,7 +647,8 @@ else
         // Load the class and generate the schema
         // Load the class by using its name and get its type
 
-        var ClassType = XsdGenerator.GetTypeFromCurrentDomain($"Controllers.{CurrentViewName}");
+        // Load the class using the contents in codeBuilder.ToString() and get its type
+        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), CurrentViewName);
 
         // Step 1: Generate the schema string
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);

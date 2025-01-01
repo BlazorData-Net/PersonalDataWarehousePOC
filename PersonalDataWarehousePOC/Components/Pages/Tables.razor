@@ -621,7 +621,8 @@ else
         // Load the class and generate the schema
         // Load the class by using its name and get its type
 
-        var ClassType = XsdGenerator.GetTypeFromCurrentDomain($"Controllers.{className}");
+        // Load the class using the contents in codeBuilder.ToString() and get its type
+        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), className);
 
         // Step 1: Generate the schema string
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);

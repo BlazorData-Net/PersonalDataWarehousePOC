@@ -2,21 +2,16 @@ namespace Controllers
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
-    using System.Threading.Tasks;  
+    using System.Threading.Tasks; 
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.OData.Query;
     using Microsoft.AspNetCore.OData.Routing.Controllers;
     using static PersonalDataWarehousePOC.Program;
 
     [ODataEntity]
-    public class **CLASS NAME**
-    {
-        // Model definition
-        // (not directly used if returning dictionaries, but left here for reference)
-        public int Id { get; set; }
-    }
-
+    **CLASS DEFINITION**    
     public class **CLASS NAME**s : ODataController
     {
         [EnableQuery]

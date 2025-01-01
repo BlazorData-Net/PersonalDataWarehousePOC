@@ -1,6 +1,10 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis;
+using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 public static class XsdGenerator
@@ -83,5 +87,48 @@ public static class XsdGenerator
         return AppDomain.CurrentDomain.GetAssemblies()
             .Select(assembly => assembly.GetType(fullyQualifiedClassName))
             .FirstOrDefault(t => t != null);
+    }
+
+    public static Type GetTypeFromCode(string code, string ClassName)
+    {
+        // 1. Parse the syntax tree
+        var syntaxTree = CSharpSyntaxTree.ParseText(code);
+
+        // 2. Set up references (you’ll need references to System, netstandard, etc.)
+        var references = AppDomain.CurrentDomain
+                                 .GetAssemblies()
+                                 .Where(a => !a.IsDynamic && !string.IsNullOrWhiteSpace(a.Location))
+                                 .Select(a => MetadataReference.CreateFromFile(a.Location))
+                                 .Cast<MetadataReference>()
+                                 .ToList();
+
+        // 3. Create the Roslyn compilation
+        var compilation = CSharpCompilation.Create(
+            assemblyName: "DynamicAssembly",
+            syntaxTrees: new[] { syntaxTree },
+            references: references,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+        );
+
+        // 4. Emit to an in-memory stream
+        using var ms = new MemoryStream();
+        EmitResult emitResult = compilation.Emit(ms);
+
+        if (!emitResult.Success)
+        {
+            foreach (var diagnostic in emitResult.Diagnostics)
+            {
+                Console.WriteLine(diagnostic.ToString());
+            }
+            throw new InvalidOperationException("Compilation failed!");
+        }
+
+        ms.Seek(0, SeekOrigin.Begin);
+
+        // 5. Load the assembly from the stream
+        Assembly assembly = Assembly.Load(ms.ToArray());
+
+        // 6. Get our newly compiled type
+        return assembly.GetType($"Controllers.{ClassName}");       
     }
 }
