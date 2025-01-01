@@ -10,26 +10,26 @@
     {
         // Minimal dictionary for mapping C# types to RDL-friendly data types
         private static readonly Dictionary<Type, string> RdlTypeNameMap = new Dictionary<Type, string>
-    {
-        { typeof(string), "System.String" },
-        { typeof(int), "System.Int32" },
-        { typeof(int?), "System.Int32" },
-        { typeof(double), "System.Double" },
-        { typeof(double?), "System.Double" },
-        { typeof(decimal), "System.Decimal" },
-        { typeof(decimal?), "System.Decimal" },
-        { typeof(DateTime), "System.DateTime" },
-        { typeof(DateTime?), "System.DateTime" },
-        // Add more if needed, otherwise default to System.String
-    };
+        {
+            { typeof(string), "System.String" },
+            { typeof(int), "System.Int32" },
+            { typeof(int?), "System.Int32" },
+            { typeof(double), "System.Double" },
+            { typeof(double?), "System.Double" },
+            { typeof(decimal), "System.Decimal" },
+            { typeof(decimal?), "System.Decimal" },
+            { typeof(DateTime), "System.DateTime" },
+            { typeof(DateTime?), "System.DateTime" },
+            // Add more if needed, otherwise default to System.String
+        };
 
         /// <summary>
-        /// Generates an RDL (as a string) based on the public properties of T.
+        /// Generates an RDL (as a string) based on the public properties of a given Type.
         /// This version creates:
         /// - One DataSet with a field for each property
-        /// - A Tablix with a column for each property, plus a header row and detail row
+        /// - A Tablix with a column for each property (except ID), plus a header row and detail row
         /// </summary>
-        /// <typeparam name="T">The class type whose public properties you want to reflect.</typeparam>
+        /// <param name="type">A System.Type representing the class whose public properties you want to reflect.</param>
         /// <param name="reportTitle">Used by the sample Title parameter in the RDL.</param>
         /// <param name="schemaPath">If you have an .xsd location, you can pass it here. Otherwise it’s optional.</param>
         /// <returns>A string containing valid RDL XML.</returns>
@@ -38,12 +38,12 @@
             string reportTitle = "Dynamic Report",
             string schemaPath = @"C:\MySchemas\DynamicDataSchema.xsd")
         {
-            // 1) Use reflection to get public properties of T
+            // 1) Use reflection to get public properties
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                     .Where(p => p.CanRead)
-                                     .ToArray();
+                                 .Where(p => p.CanRead)
+                                 .ToArray();
 
-            // 2) Build the <Fields> block
+            // 2) Build the <Fields> block for *all* properties
             var fieldsBuilder = new StringBuilder();
             foreach (var prop in properties)
             {
@@ -57,13 +57,15 @@
         </Field>");
             }
 
-            // 3) Build the Tablix columns, header row, and detail row
+            // 3) Build the Tablix columns (excluding ID), plus header & detail cells
             var tablixColumnsBuilder = new StringBuilder();
             var tablixHeaderCellsBuilder = new StringBuilder();
             var tablixDetailCellsBuilder = new StringBuilder();
 
-            // Get all properties except the Id property
-            foreach (var prop in properties.Where(x => x.Name.ToLower() != "id"))
+            // We'll skip "Id" property in the Tablix columns
+            var propertiesForColumns = properties.Where(x => x.Name.ToLower() != "id").ToArray();
+
+            foreach (var prop in propertiesForColumns)
             {
                 // Each property -> one column
                 tablixColumnsBuilder.AppendLine(@"
@@ -145,8 +147,11 @@
                     </TablixCell>");
             }
 
-            // 4) Put it all together as a valid RDL
-            //    - We’ll embed the above pieces into an RDL “template.”
+            // 4) Generate the <TablixMember /> elements for *only* the columns we are actually creating
+            //    That means skip "Id" here too, so we have the same count of members as columns.
+            var tablixMembers = propertiesForColumns.Select(_ => "                <TablixMember />" + Environment.NewLine);
+
+            // 5) Put it all together as a valid RDL
             string rdl = $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <Report xmlns=""http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"" 
         xmlns:rd=""http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"">
@@ -205,7 +210,7 @@
             </TablixBody>
             <TablixColumnHierarchy>
               <TablixMembers>
-{string.Join("", properties.Select(_ => "                <TablixMember />" + Environment.NewLine))}
+{string.Join("", tablixMembers)}
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -330,7 +335,7 @@
         private static string EscapeXml(string value)
         {
             if (string.IsNullOrEmpty(value)) return string.Empty;
-            // minimal XML escaping
+            // Minimal XML escaping
             return value
                     .Replace("&", "&amp;")
                     .Replace("\"", "&quot;")
