@@ -287,6 +287,9 @@ else
         ClassDefinition.AppendLine($"public class {CurrentViewName}");
         ClassDefinition.AppendLine("    {");
 
+        // Add an Id property to the class
+        ClassDefinition.AppendLine("        public int Id { get; set; }");
+
         // For each column in the DataTable, create a string property
         foreach (var column in columns)
         {
@@ -578,6 +581,9 @@ else
         StringBuilder ClassDefinition = new StringBuilder();
         ClassDefinition.AppendLine($"public class {CurrentViewName}");
         ClassDefinition.AppendLine("    {");
+
+        // Add an Id property to the class
+        ClassDefinition.AppendLine("        public int Id { get; set; }");
 
         // For each column in the DataTable, create a string property
         foreach (var column in columns)

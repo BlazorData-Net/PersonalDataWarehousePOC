@@ -5,6 +5,7 @@
 @using CSScriptLib
 @using System.Reflection
 @using Microsoft.Reporting.NETCore
+@using PersonalDataWarehousePOC.Services
 @inject IJSRuntime jsRuntime
 
 <PageTitle>Reports</PageTitle>
@@ -112,7 +113,7 @@ else
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        <label>Select Table: </label>
+                        <label>Select Table/View: </label>
                         <select @onchange="@(async (args) =>
                             {
                                 CurrentSelectedTableWizard = args.Value?.ToString();
@@ -336,7 +337,7 @@ else
 
     // Report Wizard
 
-    private async Task onReportWizard()
+    private void onReportWizard()
     {
         if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
         {
@@ -344,11 +345,8 @@ else
             return;
         }
 
-        // Load into report viewer
-
-        CloseReportWizardPopup();
-
-        CurrentSelectedTableWizard = "";
+        IsWizardVisible = false;
+        IsNewReportPopupVisible = true;
     }
 
     // Popups
@@ -356,7 +354,7 @@ else
     private void OpenWizard()
     {
         CurrentSelectedTableWizard = TableList.FirstOrDefault();
-        CurrentReportName = ""; // So the new Report name popup will show on Save
+        CurrentReportName = ""; 
         IsWizardVisible = true;
     }
 
@@ -395,6 +393,22 @@ else
             Message = "Name already exists.";
             return;
         }
+
+        // Get executing assembly path
+        var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+        // Get the Type for the class we want to generate the RDL for
+        var ClassType = XsdGenerator.GetTypeFromCurrentDomain($"Controllers.{CurrentSelectedTableWizard}");
+
+        // Generate an RDL string dynamically:
+        string rdlXml = DynamicRdlBuilder.GenerateDynamicRdl(
+            ClassType,
+            reportTitle: $"{CurrentReportName} Report",
+            schemaPath: @$"{assemblyPath}\Reports\Data\{CurrentSelectedTableWizard}.xsd"
+        );
+
+        // You can then save the string to a .rdl file:
+        System.IO.File.WriteAllText(@$"Reports/{CurrentReportName}.rdlc", rdlXml);
 
         Message = $"{CurrentReportName} saved!";
 
