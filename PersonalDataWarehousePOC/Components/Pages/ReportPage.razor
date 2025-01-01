@@ -26,7 +26,7 @@
             @foreach (var Report in ReportList)
             {
                 <option value="@Report"
-                selected="@(Report == CurrentReportName ? "selected" : null)">
+                        selected="@(Report == CurrentReportName ? "selected" : null)">
                     @Report
                 </option>
             }
@@ -60,7 +60,7 @@
 @if (IsNewOutputPopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
-        <div class="modal-dialog" style="max-width: 90%; margin-top: 5%;">
+        <div class="modal-dialog" style="max-width: 60%; margin-top: 5%;">
             <div class="modal-content">
                 <div class="window glass active">
                     <div class="title-bar">
@@ -70,23 +70,19 @@
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        @if (IsLoading)
-                        {
-                            <div role="progressbar" class="marquee" style="width: 25%"></div>
-                        }
-                        else
-                        {
-                            <div>
-                                Page: <span>@CurrentPage</span> / <span id="page_count">0</span> &nbsp;&nbsp;
-                                <button @onclick="PreviousPage">Previous</button>
-                                <button @onclick="NextPage">Next</button>
-                                <button @onclick="ZoomIn">Zoom In</button>
-                                <button @onclick="ZoomOut">Zoom Out</button>
-                                <button @onclick="PrintPdf">Print</button>
-                                <div @ref="pdfContainer" id="pdf-container"
-                                style="border: 0px solid #ccc; width: 600px; height: 800px;"></div>
-                            </div>
-                        }
+                        <div role="progressbar" class="marquee" style="width: 100%; display: @(IsLoading ? "block" : "none");"></div>
+
+                        <div style="display: @(IsLoading ? "none" : "block");">
+                            Page: <span>@CurrentPage</span> / <span id="page_count">0</span> &nbsp;&nbsp;
+                            <button @onclick="PreviousPage">Previous</button>
+                            <button @onclick="NextPage">Next</button>
+                            <button @onclick="ZoomIn">Zoom In</button>
+                            <button @onclick="ZoomOut">Zoom Out</button>
+                            <button @onclick="PrintPdf">Print</button>
+                            <div @ref="pdfContainer" id="pdf-container"
+                                 style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -415,7 +411,11 @@
             // Show the output
             IsNewOutputPopupVisible = true;
 
+            IsLoading = true;   
+
             await PrepareReportAsync();
+
+            IsLoading = false;
 
         }
         catch (Exception ex)
@@ -486,7 +486,7 @@
         if (ClassType == "Table")
         {
             // Get the data from the Parquet file
-            Dataloader dataloader = new Dataloader();   
+            Dataloader dataloader = new Dataloader();
             var result = await dataloader.LoadParquet(ClassName);
 
             // ************
