@@ -378,3 +378,5 @@ FodyWeavers.xsd
 /PersonalDataWarehousePOC/Reports/Report2.rdlc
 /PersonalDataWarehousePOC/Reports/LAData.rdlc
 /PersonalDataWarehousePOC/Reports/Report.rdlc
+*.xsd
+/PersonalDataWarehousePOC/Reports/ReportItem.cs
