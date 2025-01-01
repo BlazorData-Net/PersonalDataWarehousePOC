@@ -4,6 +4,7 @@
 @using System.Linq.Dynamic.Core
 @using CSScriptLib
 @using System.Reflection
+@using Controllers
 @using Microsoft.Reporting.NETCore
 @using PersonalDataWarehousePOC.Services
 @inject IJSRuntime jsRuntime
@@ -25,7 +26,7 @@
             @foreach (var Report in ReportList)
             {
                 <option value="@Report"
-                        selected="@(Report == CurrentReportName ? "selected" : null)">
+                selected="@(Report == CurrentReportName ? "selected" : null)">
                     @Report
                 </option>
             }
@@ -83,7 +84,7 @@
                                 <button @onclick="ZoomOut">Zoom Out</button>
                                 <button @onclick="PrintPdf">Print</button>
                                 <div @ref="pdfContainer" id="pdf-container"
-                                     style="border: 0px solid #ccc; width: 600px; height: 800px;"></div>
+                                style="border: 0px solid #ccc; width: 600px; height: 800px;"></div>
                             </div>
                         }
                     </div>
@@ -414,13 +415,8 @@
             // Show the output
             IsNewOutputPopupVisible = true;
 
-            IsLoading = true;
-            StateHasChanged();
-
             await PrepareReportAsync();
 
-            IsLoading = false;
-            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -493,8 +489,25 @@
             Dataloader dataloader = new Dataloader();   
             var result = await dataloader.LoadParquet(ClassName);
 
+            // ************
+            // Create a collection of sample date for the LAData class
+
+            var result2 = new List<LAData>();
+            for (int i = 0; i < 10; i++)
+            {
+                result2.Add(new LAData
+                    {
+                        Id = i,
+                        Test_1 = DateTime.Now.AddDays(i).ToString(),
+                        Test2 = "Los Angeles"
+                    });
+            }
+
+            // ************
+
+
             // Add the data source to the report
-            report.DataSources.Add(new ReportDataSource("Items", result));
+            report.DataSources.Add(new ReportDataSource("DataSet1", result2));
             report.SetParameters(parameters);
         }
         else
