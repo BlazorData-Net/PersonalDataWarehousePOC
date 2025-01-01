@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Xml.Linq;
 
 public static class XsdGenerator
 {
@@ -130,5 +131,21 @@ public static class XsdGenerator
 
         // 6. Get our newly compiled type
         return assembly.GetType($"Controllers.{ClassName}");       
+    }
+
+    public static string GetTableName(string rdlcFilePath)
+    {
+        // Load the RDLC file as an XDocument
+        XDocument document = XDocument.Load(rdlcFilePath);
+
+        // The 'rd' namespace is commonly used for Reporting Designer elements
+        XNamespace rdNamespace = "http://schemas.microsoft.com/SQLServer/reporting/reportdesigner";
+
+        // Attempt to find an element named "TableName" within that namespace
+        XElement schemaPathElement = document
+            .Descendants(rdNamespace + "TableName")
+            .FirstOrDefault();
+
+        return schemaPathElement?.Value;
     }
 }

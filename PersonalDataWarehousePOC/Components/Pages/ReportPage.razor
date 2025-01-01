@@ -12,54 +12,48 @@
 
 <h4>Reports</h4>
 <br />
-@if (IsLoading)
-{
-    <div role="progressbar" class="marquee" style="width: 25%"></div>
-}
-else
-{
-    <div>
-        @if (ReportList.Count > 0)
-        {
-            <label>Select Report: </label>
-            <select @onchange="@(async (args) =>
+
+<div>
+    @if (ReportList.Count > 0)
+    {
+        <label>Select Report: </label>
+        <select @onchange="@(async (args) =>
                     {
                         CurrentReportName = args.Value?.ToString();
-                        await LoadReport(CurrentReportName);
+                        LoadReport(CurrentReportName);
                     })">
-                @foreach (var Report in ReportList)
-                {
-                    <option value="@Report"
-                            selected="@(Report == CurrentReportName ? "selected" : null)">
-                        @Report
-                    </option>
-                }
-            </select>
-        }
-    </div>
+            @foreach (var Report in ReportList)
+            {
+                <option value="@Report"
+                        selected="@(Report == CurrentReportName ? "selected" : null)">
+                    @Report
+                </option>
+            }
+        </select>
+    }
+</div>
+<br />
+<div>
+    @if (TableList.Count > 0)
+    {
+        <button @onclick="OpenWizard">Report Wizard</button>
+        <span>&nbsp;</span>
+    }
+    @if (CurrentReportName != "")
+    {
+        <span>&nbsp; &nbsp;</span>
+        <button @onclick="Delete">Delete Report</button>
+        <span>&nbsp; &nbsp;</span>
+        <button @onclick="Execute">Display Report</button>
+    }
+    @if (ContentChanged)
+    {
+        <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
+    }
     <br />
-    <div>
-        @if (TableList.Count > 0)
-        {
-            <button @onclick="OpenWizard">Report Wizard</button>
-            <span>&nbsp;</span>
-        }
-        @if (CurrentReportName != "")
-        {
-            <span>&nbsp; &nbsp;</span>
-            <button @onclick="Delete">Delete Report</button>
-            <span>&nbsp; &nbsp;</span>
-            <button @onclick="Execute">Display Report</button>
-        }
-        @if (ContentChanged)
-        {
-            <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
-        }
-        <br />
-        <br />
-    </div>
     <br />
-}
+</div>
+<br />
 
 <!-- POPUPS -->
 @if (IsNewOutputPopupVisible)
@@ -75,18 +69,23 @@ else
                         </div>
                     </div>
                     <div class="window-body has-space">
-
-                        <div>
-                            Page: <span>@CurrentPage</span> / <span id="page_count">0</span> &nbsp;&nbsp;
-                            <button @onclick="PreviousPage">Previous</button>
-                            <button @onclick="NextPage">Next</button>
-                            <button @onclick="ZoomIn">Zoom In</button>
-                            <button @onclick="ZoomOut">Zoom Out</button>
-                            <button @onclick="PrintPdf">Print</button>
-                            <div @ref="pdfContainer" id="pdf-container"
-                                 style="border: 0px solid #ccc; width: 600px; height: 800px;"></div>
-                        </div>
-
+                        @if (IsLoading)
+                        {
+                            <div role="progressbar" class="marquee" style="width: 25%"></div>
+                        }
+                        else
+                        {
+                            <div>
+                                Page: <span>@CurrentPage</span> / <span id="page_count">0</span> &nbsp;&nbsp;
+                                <button @onclick="PreviousPage">Previous</button>
+                                <button @onclick="NextPage">Next</button>
+                                <button @onclick="ZoomIn">Zoom In</button>
+                                <button @onclick="ZoomOut">Zoom Out</button>
+                                <button @onclick="PrintPdf">Print</button>
+                                <div @ref="pdfContainer" id="pdf-container"
+                                     style="border: 0px solid #ccc; width: 600px; height: 800px;"></div>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -189,7 +188,6 @@ else
     private ElementReference pdfContainer;
 
     private bool ContentChanged { get; set; }
-    private string CurrentReport { get; set; } = string.Empty;
 
     private List<string> TableList = new List<string>();
     private string CurrentSelectedTableWizard = "";
@@ -203,7 +201,6 @@ else
     private bool IsNewOutputPopupVisible { get; set; } = false;
     private string CurrentSelectedReportWizard = "";
 
-    private bool isReportGenerated = false;
     private int CurrentPage = 1;
     private string ReportTitle = "";
 
@@ -211,7 +208,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadReportsListDropdownSelectDefaultReport();
+        LoadReportsListDropdownSelectDefaultReport();
         LoadTableListDropdown();
     }
 
@@ -237,7 +234,7 @@ else
             TableList.AddRange(Directory.GetFiles(viewsFolder, "*.view")
                                         .Select(Path.GetFileNameWithoutExtension));
         }
-        
+
         if (TableList.Count > 0)
         {
             CurrentSelectedTableWizard = TableList.First();
@@ -263,44 +260,35 @@ else
 
     // Reports Dropdown
 
-    private async Task LoadReportsListDropdownSelectDefaultReport()
+    private void LoadReportsListDropdownSelectDefaultReport()
     {
         LoadReportListDropdown();
 
         if (ReportList.Count > 0)
         {
-            CurrentReportName = ReportList.First();            
+            CurrentReportName = ReportList.First();
         }
     }
 
-    private async Task LoadReport(string paramReport)
+    private void LoadReport(string paramReport)
     {
-        IsLoading = true;
-        StateHasChanged();
-
         // Load the DataReport
         var fileName = Path.Combine("Reports", $"{paramReport}.rdlc");
 
         if (System.IO.File.Exists(fileName))
         {
-            // Read contents into CurrentScript
-            CurrentReport = await System.IO.File.ReadAllTextAsync(fileName);
-
             // Set CurrentReportName
             CurrentReportName = paramReport;
         }
         else
         {
             Message = "Report not found.";
-        }
-
-        IsLoading = false;
-        StateHasChanged();
+        };
     }
 
     // Delete
 
-    private async Task Delete()
+    private void Delete()
     {
         if (CurrentReportName.Trim().Length == 0)
         {
@@ -309,18 +297,7 @@ else
         else
         {
             // Delete the file
-            IsLoading = true;
-            StateHasChanged();
-
-            // Delete the file
-            var fileName = Path.Combine("Data", "Reports", $"{CurrentReportName}.Report");
-            if (System.IO.File.Exists(fileName))
-            {
-                System.IO.File.Delete(fileName);
-            }
-
-            // Delete the C# class file
-            fileName = Path.Combine("Data", "Classes", $"{CurrentReportName}.cs");
+            var fileName = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
@@ -331,7 +308,7 @@ else
 
             Message = $"{deletedReportName} deleted!";
 
-            await LoadReportsListDropdownSelectDefaultReport();
+            LoadReportsListDropdownSelectDefaultReport();
         }
     }
 
@@ -424,7 +401,7 @@ else
         }
 
         // Load the Report
-        await LoadReport(CurrentReportName);
+        LoadReport(CurrentReportName);
     }
 
     // Code Execution
@@ -434,15 +411,16 @@ else
     {
         try
         {
-            if (CurrentReportName == "")
-            {
-                // Open a popup to enter the Report name
-                IsNewReportPopupVisible = true;
-                return;
-            }
-
             // Show the output
             IsNewOutputPopupVisible = true;
+
+            IsLoading = true;
+            StateHasChanged();
+
+            await PrepareReportAsync();
+
+            IsLoading = false;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -472,85 +450,99 @@ else
 
     private async Task PrepareReportAsync()
     {
-        // // Set the flag to indicate the report is generated
-        // isReportGenerated = true;
+        // Create the report
+        using var report = new LocalReport();
 
-        // // Create the report
-        // using var report = new LocalReport();
+        // Define the report parameters
+        var parameters = new[] { new ReportParameter("Title", CurrentReportName) };
 
-        // // Define the report parameters
-        // var parameters = new[] { new ReportParameter("Title", ReportTitle) };
+        // Load the report definition
+        var reportPath = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
 
-        // // Load the report definition
-        // var reportPath = System.IO.Path.Combine("Reports", "Report.rdlc");
-        // if (!System.IO.File.Exists(reportPath))
-        // {
-        //     throw new FileNotFoundException("Report file not found.", reportPath);
-        // }
+        if (!System.IO.File.Exists(reportPath))
+        {
+            Message = "Report file not found.";
+            return;
+        }
 
-        // // Load the report definition (the RDLC file)
-        // await using var reportStream = System.IO.File.OpenRead(reportPath);
-        // using var reportReader = new System.IO.StreamReader(reportStream);
-        // report.LoadReportDefinition(reportReader);
+        // Load the report definition (the RDLC file)
+        await using var reportStream = System.IO.File.OpenRead(reportPath);
+        using var reportReader = new System.IO.StreamReader(reportStream);
+        report.LoadReportDefinition(reportReader);
 
-        // // Get all the values from the sheet
-        // var items = new List<ReportItem>();
+        // ************
+        // Get the report data
+        // ************
 
-        // // Iterate through the rows in the sheet
-        // for (int i = 0; i < sheet?.NumRows; i++)
-        // {
-        //     // Create a new report item
-        //     var item = new ReportItem
-        //         {
-        //             Description = sheet.Cells[i, 0].Value?.ToString() ?? string.Empty,
-        //             Price =
-        //                 decimal.TryParse(
-        //                     sheet.Cells[i, 1].Value?.ToString(), out var price) ? price : 0m,
-        //             Qty = int.TryParse(
-        //                     sheet.Cells[i, 2].Value?.ToString(), out var qty) ? qty : 0
-        //         };
+        // Determine if it is a Table or a View
+        // If the file is in the Parquet folder, it is a Table
+        // If the file is in the Views folder, it is a View
+        // Open the .rdlc file and get the SchemaPath to get the ClassName
+        String ClassType = "Table";
+        var ClassName = XsdGenerator.GetTableName(reportPath);
+        var fileName = Path.Combine("Data", "Views", $"{ClassName}.view");
+        if (System.IO.File.Exists(fileName))
+        {
+            ClassType = "View";
+        }
 
-        //     // Only add items with a description
-        //     if (!string.IsNullOrWhiteSpace(item.Description))
-        //     {
-        //         // Add the item to the list
-        //         items.Add(item);
-        //     }
-        // }
+        // Get the data based on the ClassType
+        if (ClassType == "Table")
+        {
+            // Get the data from the Parquet file
+            var parquetFile = Path.Combine("Data", "Parquet", $"{ClassName}.parquet");
+            DataService dataService = new DataService();
+            var result = await dataService.ReadParquetFileAsync(parquetFile);
 
-        // // Add the data source to the report
-        // report.DataSources.Add(new ReportDataSource("Items", items));
-        // report.SetParameters(parameters);
+            // Add the data source to the report
+            report.DataSources.Add(new ReportDataSource("Items", result));
+            report.SetParameters(parameters);
+        }
+        else
+        {
+            // Get the data from the View file
+            var viewFile = Path.Combine("Data", "Views", $"{ClassName}.view");
 
-        // // Render the report to a PDF byte array
-        // byte[] pdfBytes = report.Render("PDF");
+            // Read the view file
+            var viewContent = System.IO.File.ReadAllText(viewFile);
 
-        // // To display properly we need to save the PDF as a file and re-load it
+            // Execute the code
+            var objResult = await RunDynamicCode(viewContent);
 
-        // var pdfPath = System.IO.Path.Combine("Reports",
-        // $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
+            // Add the data source to the report
+            report.DataSources.Add(new ReportDataSource("Items", objResult));
+            report.SetParameters(parameters);
+        }
 
-        // // Save the pdf to the temp file
-        // System.IO.File.WriteAllBytes(pdfPath, pdfBytes);
+        // Render the report to a PDF byte array
+        byte[] pdfBytes = report.Render("PDF");
 
-        // // Open the temp PDF file and read the bytes
-        // await using (var pdfStream = System.IO.File.OpenRead(pdfPath))
-        // {
-        //     using (var memoryStream = new System.IO.MemoryStream())
-        //     {
-        //         await pdfStream.CopyToAsync(memoryStream);
-        //         pdfBytes = memoryStream.ToArray();
-        //     }
-        // }
+        // To display properly we need to save the PDF as a file and re-load it
 
-        // // Convert the PDF bytes to a base64 string
-        // var pdfBase64 = Convert.ToBase64String(pdfBytes);
+        var pdfPath = System.IO.Path.Combine("Reports",
+        $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
 
-        // // Call the JavaScript function with the element reference and the PDF data
-        // await jsRuntime.InvokeVoidAsync("blazorPdfViewer.renderPdf", pdfContainer, pdfBase64);
+        // Save the pdf to the temp file
+        System.IO.File.WriteAllBytes(pdfPath, pdfBytes);
 
-        // // Delete the temp pdf file
-        // System.IO.File.Delete(pdfPath);
+        // Open the temp PDF file and read the bytes
+        await using (var pdfStream = System.IO.File.OpenRead(pdfPath))
+        {
+            using (var memoryStream = new System.IO.MemoryStream())
+            {
+                await pdfStream.CopyToAsync(memoryStream);
+                pdfBytes = memoryStream.ToArray();
+            }
+        }
+
+        // Convert the PDF bytes to a base64 string
+        var pdfBase64 = Convert.ToBase64String(pdfBytes);
+
+        // Call the JavaScript function with the element reference and the PDF data
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.renderPdf", pdfContainer, pdfBase64);
+
+        // Delete the temp pdf file
+        System.IO.File.Delete(pdfPath);
     }
 
     private async Task PreviousPage()
@@ -583,5 +575,22 @@ else
         await jsRuntime.InvokeVoidAsync("blazorPdfViewer.printPdf", pdfContainer);
     }
 
+    #region public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
+    public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
+    {
+        try
+        {
+            dynamic script = CSScript.Evaluator.LoadMethod(paramCode);
 
+            var result = await script.ReturnResult();
+
+            return result as IEnumerable<IDictionary<string, object>>;
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+            return null;
+        }
+    }
+    #endregion
 }
