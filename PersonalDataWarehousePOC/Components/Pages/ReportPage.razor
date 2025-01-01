@@ -490,9 +490,8 @@
         if (ClassType == "Table")
         {
             // Get the data from the Parquet file
-            var parquetFile = Path.Combine("Data", "Parquet", $"{ClassName}.parquet");
-            DataService dataService = new DataService();
-            var result = await dataService.ReadParquetFileAsync(parquetFile);
+            Dataloader dataloader = new Dataloader();   
+            var result = await dataloader.LoadParquet(ClassName);
 
             // Add the data source to the report
             report.DataSources.Add(new ReportDataSource("Items", result));
