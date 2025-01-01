@@ -2,42 +2,62 @@
 <Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
-    <DataSource Name="LocalSource">
+    <DataSource Name="ReportItemSchemas">
       <ConnectionProperties>
         <DataProvider>System.Data.DataSet</DataProvider>
         <ConnectString>/* Local Connection */</ConnectString>
       </ConnectionProperties>
-      <rd:DataSourceID>bd60bef3-b3d9-477e-9052-ab58c6f1ec86</rd:DataSourceID>
+      <rd:DataSourceID>ec0fedfc-3f34-4203-bf08-6ed0e80bef2c</rd:DataSourceID>
     </DataSource>
   </DataSources>
   <DataSets>
-    <DataSet Name="Items">
+    <DataSet Name="DataSet1">
       <Query>
-        <DataSourceName>LocalSource</DataSourceName>
+        <DataSourceName>ReportItemSchemas</DataSourceName>
         <CommandText>/* Local Query */</CommandText>
       </Query>
       <Fields>
-        <Field Name="Description">
-          <DataField>Description</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Price">
-          <DataField>Price</DataField>
-          <rd:TypeName>System.Decimal</rd:TypeName>
-        </Field>
-        <Field Name="Qty">
-          <DataField>Qty</DataField>
+        <Field Name="Id">
+          <DataField>Id</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
-        <Field Name="Total">
-          <DataField>Total</DataField>
-          <rd:TypeName>System.Decimal</rd:TypeName>
+        <Field Name="STATION">
+          <DataField>STATION</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="NAME">
+          <DataField>NAME</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="DATE">
+          <DataField>DATE</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="DAPR">
+          <DataField>DAPR</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="MDPR">
+          <DataField>MDPR</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="PRCP">
+          <DataField>PRCP</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="SNOW">
+          <DataField>SNOW</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="SNWD">
+          <DataField>SNWD</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
       <rd:DataSetInfo>
-        <rd:DataSetName>LocalSource</rd:DataSetName>
-        <rd:TableName>Items</rd:TableName>
-        <rd:ObjectDataSourceType>ReportViewerCore.ReportItem</rd:ObjectDataSourceType>
+        <rd:DataSetName>ReportItemSchemas</rd:DataSetName>
+        <rd:SchemaPath>C:\Users\webma\Source\Repos\PersonalDataWarehousePOC\PersonalDataWarehousePOC\Reports\Data\LAData2ViewSchemas.xsd</rd:SchemaPath>
+        <rd:TableName>LAData2View</rd:TableName>
       </rd:DataSetInfo>
     </DataSet>
   </DataSets>
@@ -49,56 +69,19 @@
             <TablixBody>
               <TablixColumns>
                 <TablixColumn>
-                  <Width>8.31785cm</Width>
+                  <Width>2.54cm</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>2.51905cm</Width>
+                  <Width>2.54cm</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>2.51905cm</Width>
-                </TablixColumn>
-                <TablixColumn>
-                  <Width>2.51905cm</Width>
+                  <Width>2.54cm</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
                 <TablixRow>
                   <Height>0.67938cm</Height>
                   <TablixCells>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox1">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>Description</Value>
-                                  <Style>
-                                    <FontFamily>Cambria</FontFamily>
-                                    <FontWeight>Bold</FontWeight>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox1</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
                     <TablixCell>
                       <CellContents>
                         <Textbox Name="Textbox3">
@@ -108,7 +91,7 @@
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Price</Value>
+                                  <Value>STATION</Value>
                                   <Style>
                                     <FontFamily>Cambria</FontFamily>
                                     <FontWeight>Bold</FontWeight>
@@ -142,7 +125,7 @@
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Qty</Value>
+                                  <Value>NAME</Value>
                                   <Style>
                                     <FontFamily>Cambria</FontFamily>
                                     <FontWeight>Bold</FontWeight>
@@ -169,14 +152,14 @@
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox2">
+                        <Textbox Name="Textbox8">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Total</Value>
+                                  <Value>DATE</Value>
                                   <Style>
                                     <FontFamily>Cambria</FontFamily>
                                     <FontWeight>Bold</FontWeight>
@@ -188,7 +171,7 @@
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox2</rd:DefaultName>
+                          <rd:DefaultName>Textbox8</rd:DefaultName>
                           <Style>
                             <Border>
                               <Style>Solid</Style>
@@ -208,23 +191,25 @@
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Description">
+                        <Textbox Name="STATION">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Description.Value</Value>
+                                  <Value>=Fields!STATION.Value</Value>
                                   <Style>
                                     <FontFamily>Cambria</FontFamily>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Right</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Description</rd:DefaultName>
+                          <rd:DefaultName>STATION</rd:DefaultName>
                           <Style>
                             <Border>
                               <Style>Solid</Style>
@@ -239,14 +224,14 @@
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Price">
+                        <Textbox Name="NAME">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Price.Value</Value>
+                                  <Value>=Fields!NAME.Value</Value>
                                   <Style>
                                     <FontFamily>Cambria</FontFamily>
                                   </Style>
@@ -257,7 +242,7 @@
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Price</rd:DefaultName>
+                          <rd:DefaultName>NAME</rd:DefaultName>
                           <Style>
                             <Border>
                               <Style>Solid</Style>
@@ -272,14 +257,14 @@
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Qty">
+                        <Textbox Name="DATE">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Qty.Value</Value>
+                                  <Value>=Fields!DATE.Value</Value>
                                   <Style>
                                     <FontFamily>Cambria</FontFamily>
                                   </Style>
@@ -290,40 +275,7 @@
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Qty</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Total">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!Total.Value</Value>
-                                  <Style>
-                                    <FontFamily>Cambria</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Right</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Total</rd:DefaultName>
+                          <rd:DefaultName>DATE</rd:DefaultName>
                           <Style>
                             <Border>
                               <Style>Solid</Style>
@@ -345,7 +297,6 @@
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
-                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -358,11 +309,11 @@
                 </TablixMember>
               </TablixMembers>
             </TablixRowHierarchy>
-            <DataSetName>Items</DataSetName>
+            <DataSetName>DataSet1</DataSetName>
             <Top>2.85433cm</Top>
             <Left>0.3175cm</Left>
             <Height>1.35876cm</Height>
-            <Width>15.875cm</Width>
+            <Width>7.62cm</Width>
             <Style>
               <Border>
                 <Style>None</Style>
