@@ -380,3 +380,4 @@ FodyWeavers.xsd
 /PersonalDataWarehousePOC/Reports/Report.rdlc
 *.xsd
 /PersonalDataWarehousePOC/Reports/ReportItem.cs
+*.rdlc
