@@ -540,10 +540,46 @@
             var viewContent = System.IO.File.ReadAllText(viewFile);
 
             // Execute the code
-            var objResult = await RunDynamicCode(viewContent);
+            var result = await RunDynamicCode(viewContent);
+
+            // Get the fields from the first record (ensure result is not empty)
+            var fields = result.Any()
+                ? result.First().Keys.ToList()
+                : new List<string>();
+
+            // Create a DataTable
+            DataTable dt = new DataTable("MyDataTable");
+
+            // Add an Id column
+            dt.Columns.Add("Id", typeof(int));
+
+            // Add columns for all fields (replace spaces with underscores)
+            foreach (var field in fields)
+            {
+                string columnName = field.Replace(" ", "_");
+                dt.Columns.Add(columnName, typeof(object));
+            }
+
+            // Fill the DataTable rows
+            int i = 0;
+            foreach (var item in result)
+            {
+                DataRow newRow = dt.NewRow();
+                newRow["Id"] = i++;
+
+                foreach (var field in fields)
+                {
+                    string columnName = field.Replace(" ", "_");
+                    newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
+                }
+
+                dt.Rows.Add(newRow);
+            }
 
             // Add the data source to the report
-            report.DataSources.Add(new ReportDataSource("Items", objResult));
+            report.DataSources.Add(new ReportDataSource("DataSet1", dt));
+
+            // Set any report parameters (if needed)
             report.SetParameters(parameters);
         }
 
