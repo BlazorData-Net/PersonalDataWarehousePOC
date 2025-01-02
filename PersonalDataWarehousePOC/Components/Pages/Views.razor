@@ -444,7 +444,6 @@ else
         }
         else
         {
-            // Delete the file
             IsLoading = true;
             StateHasChanged();
 
@@ -457,6 +456,13 @@ else
 
             // Delete the C# class file
             fileName = Path.Combine("Data", "Classes", $"{CurrentViewName}.cs");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            // Delete the XSD file
+            fileName = Path.Combine("Reports", "Data", $"{CurrentViewName}Schemas.xsd");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);

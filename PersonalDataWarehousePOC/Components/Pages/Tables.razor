@@ -443,6 +443,13 @@ else
                 System.IO.File.Delete(fileName);
             }
 
+            // Delete the XSD file
+            fileName = Path.Combine("Reports", "Data", $"{CurrentTableName}Schemas.xsd");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
             string deletedTableName = CurrentTableName;
             CurrentTableName = string.Empty;
 
