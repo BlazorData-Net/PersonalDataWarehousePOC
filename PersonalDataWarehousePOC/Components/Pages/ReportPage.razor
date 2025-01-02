@@ -7,6 +7,8 @@
 @using Controllers
 @using Microsoft.Reporting.NETCore
 @using PersonalDataWarehousePOC.Services
+@using System.Dynamic
+@using System.Data
 @inject IJSRuntime jsRuntime
 
 <PageTitle>Reports</PageTitle>
@@ -411,7 +413,7 @@
             // Show the output
             IsNewOutputPopupVisible = true;
 
-            IsLoading = true;   
+            IsLoading = true;
 
             await PrepareReportAsync();
 
@@ -489,25 +491,44 @@
             Dataloader dataloader = new Dataloader();
             var result = await dataloader.LoadParquet(ClassName);
 
-            // ************
-            // Create a collection of sample date for the LAData class
+            // Get the fields from the first record (ensure result is not empty)
+            var fields = result.Any()
+                ? result.First().Keys.ToList()
+                : new List<string>();
 
-            var result2 = new List<LAData>();
-            for (int i = 0; i < 10; i++)
+            // Create a DataTable
+            DataTable dt = new DataTable("MyDataTable");
+
+            // Add an Id column
+            dt.Columns.Add("Id", typeof(int));
+
+            // Add columns for all fields (replace spaces with underscores)
+            foreach (var field in fields)
             {
-                result2.Add(new LAData
-                    {
-                        Id = i,
-                        Test_1 = DateTime.Now.AddDays(i).ToString(),
-                        Test2 = "Los Angeles"
-                    });
+                string columnName = field.Replace(" ", "_");
+                dt.Columns.Add(columnName, typeof(object));
             }
 
-            // ************
+            // Fill the DataTable rows
+            int i = 0;
+            foreach (var item in result)
+            {
+                DataRow newRow = dt.NewRow();
+                newRow["Id"] = i++;
 
+                foreach (var field in fields)
+                {
+                    string columnName = field.Replace(" ", "_");
+                    newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
+                }
+
+                dt.Rows.Add(newRow);
+            }
 
             // Add the data source to the report
-            report.DataSources.Add(new ReportDataSource("DataSet1", result2));
+            report.DataSources.Add(new ReportDataSource("DataSet1", dt));
+
+            // Set any report parameters (if needed)
             report.SetParameters(parameters);
         }
         else
