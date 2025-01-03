@@ -16,6 +16,13 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.AddServiceDefaults();
 
+        // Load appsettings.json and UserSecrets
+        builder.Configuration
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings{builder.Environment.EnvironmentName}.json", optional: true)
+            .AddEnvironmentVariables()
+            .AddUserSecrets(Assembly.GetExecutingAssembly(), true);
+
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
