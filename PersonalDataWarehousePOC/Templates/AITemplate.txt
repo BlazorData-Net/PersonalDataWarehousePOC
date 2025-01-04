@@ -1,0 +1,88 @@
+## TEMPLATE FOR PROMPT CONSTRUCTION ##
+
+### Description ###
+This template is designed for generating C# LINQ to Objects methods with the specified signature and functionality. Follow the structure and include comments to ensure clarity and adherence to requirements.
+
+---
+
+### SPECIFICATIONS ###
+
+1. **Method Signature**:
+   ```csharp
+   public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
+   ```
+
+2. **Table Loading**:
+   - Tables need to be loaded using the `Dataloader`.
+   - Example of loading data from a table:
+     ```csharp
+     var colTableName = await Dataloader.LoadParquet("TableName");
+     ```
+
+3. **Schema Information**:
+   - Describe the schema(s) of all existing tables (not views).
+
+4. **Sections in the Prompt**:
+   - **CURRENT CODE**: Include the current implementation if available.
+   - **CURRENT REQUEST**: Specify the new request or modification needed.
+
+5. **Explanations in Code**:
+   - All clarifications and logic must be included as inline code comments.
+
+6. **Response Format**:
+   - JSON format with two fields: `Code` and `Error`.
+   - Example:
+     ```json
+     {
+       "Code": "",
+       "Error": ""
+     }
+     ```
+
+---
+
+### TEMPLATE ###
+
+**Prompt Structure:**
+
+#### SCHEMA INFORMATION ####
+Provide a description of the schema(s) of all existing tables.
+
+#### CURRENT CODE ####
+Include the current implementation here (if any). If none exists, indicate that the implementation starts from scratch.
+
+#### CURRENT REQUEST ####
+Describe the new functionality or modifications required in detail.
+
+---
+
+### RESPONSE EXAMPLES ###
+
+#### Example 1: ####
+
+**Prompt:** Create a collection of 10 random people.
+
+**Result:**
+```json
+{
+  "Code": "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Threading.Tasks;\n\npublic class RandomDataGenerator\n{\n    private static readonly Random Random = new Random();\n    private static readonly string[] FirstNames = { \"John\", \"Jane\", \"Alice\", \"Bob\", \"Eve\", \"Charlie\", \"Mia\", \"Liam\", \"Noah\", \"Emma\" };\n    private static readonly string[] LastNames = { \"Smith\", \"Johnson\", \"Williams\", \"Brown\", \"Jones\", \"Garcia\", \"Miller\", \"Davis\", \"Martinez\", \"Hernandez\" };\n\n    public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n    {\n        return await Task.FromResult(Enumerable.Range(1, 10).Select(id => new Dictionary<string, object>\n        {\n            { \"EmployeeId\", id.ToString(\"D4\") }, // Generates IDs like \"0001\", \"0002\"\n            { \"FirstName\", FirstNames[Random.Next(FirstNames.Length)] },\n            { \"LastName\", LastNames[Random.Next(LastNames.Length)] }\n        }));\n    }\n}",
+  "Error": ""
+}
+```
+
+#### Example 2: ####
+
+**Prompt:** Join LAData2 and LAData3 on the NAME field. Group the results by NAME and calculate the count of non-null DATE fields across both datasets for each group.
+
+**Result:**
+```json
+{
+  "Code": "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Threading.Tasks;\n\npublic async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n{\n    // Create a Dataloader \n    Dataloader objDataloader = new Dataloader();\n\n    // Load LAData1 and LAData2 parquet files\n    var colLAData1 = await objDataloader.LoadParquet(\"LAData2\");\n    var colLAData2 = await objDataloader.LoadParquet(\"LAData3\");\n\n    // Perform join on the NAME field\n    var joinedData = colLAData1\n        .Join(\n            colLAData2,\n            row1 => row1[\"NAME\"],        // Key selector for LAData1\n            row2 => row2[\"NAME\"],        // Key selector for LAData2\n            (row1, row2) => new          // Create a result object\n            {\n                Name = row1[\"NAME\"],\n                DateFromRow1 = row1.ContainsKey(\"DATE\") ? row1[\"DATE\"] : null,\n                DateFromRow2 = row2.ContainsKey(\"DATE\") ? row2[\"DATE\"] : null\n            });\n\n    // Group by NAME and calculate the count of DATE fields\n    var result = joinedData\n        .GroupBy(item => item.Name)\n        .Select(group => new Dictionary<string, object>\n        {\n            { \"NAME\", group.Key },\n            { \"DATE_COUNT\", group.Count(item => item.DateFromRow1 != null || item.DateFromRow2 != null) }\n        });\n\n    // Return the results as IEnumerable<IDictionary<string, object>>\n    return result.ToList();\n}",
+  "Error": ""
+}
+```
+
+---
+
+### END TEMPLATE ###
+
