@@ -1,7 +1,6 @@
-## TEMPLATE FOR PROMPT CONSTRUCTION ##
-
 ### Description ###
-This template is designed for generating C# LINQ to Objects methods with the specified signature and functionality. Follow the structure and include comments to ensure clarity and adherence to requirements.
+Please create a json response containing code for generating C# LINQ to Objects method with the specified signature and functionality. 
+Follow the structure and include inline code comments to make it understandable.
 
 ---
 
@@ -18,16 +17,14 @@ This template is designed for generating C# LINQ to Objects methods with the spe
      ```csharp
      var colTableName = await Dataloader.LoadParquet("TableName");
      ```
+3. This is the current Table schema information for all existing tables:
+   - ## CURRENT SCHEMA ##.
 
-3. **Schema Information**:
-   - Describe the schema(s) of all existing tables (not views).
+4. This is the current code that should be considered (this may be blank):
+- ## CURRENT CODE ##.
 
-4. **Sections in the Prompt**:
-   - **CURRENT CODE**: Include the current implementation if available.
-   - **CURRENT REQUEST**: Specify the new request or modification needed.
-
-5. **Explanations in Code**:
-   - All clarifications and logic must be included as inline code comments.
+5. This is the current request:
+- ## CURRENT REQUEST ##.
 
 6. **Response Format**:
    - JSON format with two fields: `Code` and `Error`.
@@ -38,22 +35,6 @@ This template is designed for generating C# LINQ to Objects methods with the spe
        "Error": ""
      }
      ```
-
----
-
-### TEMPLATE ###
-
-**Prompt Structure:**
-
-#### SCHEMA INFORMATION ####
-Provide a description of the schema(s) of all existing tables.
-
-#### CURRENT CODE ####
-Include the current implementation here (if any). If none exists, indicate that the implementation starts from scratch.
-
-#### CURRENT REQUEST ####
-Describe the new functionality or modifications required in detail.
-
 ---
 
 ### RESPONSE EXAMPLES ###
@@ -81,8 +62,3 @@ Describe the new functionality or modifications required in detail.
   "Error": ""
 }
 ```
-
----
-
-### END TEMPLATE ###
-
