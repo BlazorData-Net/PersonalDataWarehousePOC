@@ -142,7 +142,7 @@
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        <form @onsubmit="SaveReportAsync">
+                        <form @onsubmit="SaveReport">
                             <div>
                                 <label for="ReportName">Report Name:</label>
                                 <input type="text" id="ReportName" maxlength="50" style="width: 150px;" @bind="CurrentReportName" />
@@ -198,14 +198,12 @@
     private bool IsWizardVisible { get; set; } = false;
     private bool IsNewReportPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
-    private string CurrentSelectedReportWizard = "";
 
     private int CurrentPage = 1;
-    private string ReportTitle = "";
 
     string Message = "";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         LoadReportsListDropdownSelectDefaultReport();
         LoadTableListDropdown();
@@ -352,7 +350,7 @@
         Message = "";
     }
 
-    private async Task SaveReportAsync()
+    private void SaveReport()
     {
         if (string.IsNullOrEmpty(CurrentReportName))
         {
