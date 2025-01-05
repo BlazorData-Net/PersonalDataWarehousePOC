@@ -44,13 +44,13 @@ else
 
     private string ReportTitle = "Invoice 4/2025";
 
-    private Sheet? sheet;
+    private Sheet sheet;
 
     public class MyReportRequest
     {
-        public byte[]? RdlcBytes { get; set; }
-        public string? Title { get; set; }
-        public List<Dictionary<string, object>>? Rows { get; set; }
+        public byte[] RdlcBytes { get; set; }
+        public string Title { get; set; }
+        public List<Dictionary<string, object>> Rows { get; set; }
     }
 
     protected override void OnInitialized()
@@ -109,7 +109,7 @@ else
         // The resource name depends on your project's default namespace + folder structure.
         string resourceName = "BlazorRDLCViewerWebAssembly.Client.Reports.Report.rdlc";
 
-        using Stream? reportStream = assembly.GetManifestResourceStream(resourceName);
+        using Stream reportStream = assembly.GetManifestResourceStream(resourceName);
 
         // Check that reportStream is not null
         if (reportStream == null)

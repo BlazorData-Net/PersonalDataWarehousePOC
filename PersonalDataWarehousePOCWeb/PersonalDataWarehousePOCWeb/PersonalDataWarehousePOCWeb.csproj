@@ -7,8 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\PersonalDataWarehousePOC.ServiceDefaults\PersonalDataWarehousePOC.ServiceDefaults.csproj" />
     <ProjectReference Include="..\PersonalDataWarehousePOCWeb.Client\PersonalDataWarehousePOCWeb.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Radzen.Blazor" Version="5.7.2" />
+		<PackageReference Include="ReportViewerCore.NETCore" Version="15.1.25" />
+	</ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\js\site.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

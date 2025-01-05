@@ -1,5 +1,5 @@
 ﻿using CSScriptLib;
-using PersonalDataWarehousePOC.Services;
+using PersonalDataWarehousePOCWeb.Client.Services;
 using Renci.SshNet.Messages;
 using System.Data;
 using System.Linq;

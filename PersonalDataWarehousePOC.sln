@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOC", "PersonalDataWarehousePOC\PersonalDataWarehousePOC.csproj", "{7B9FDDFD-C432-4D93-BA60-2E50CDE05507}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOC.AppHost", "PersonalDataWarehousePOC.AppHost\PersonalDataWarehousePOC.AppHost.csproj", "{B4B5086C-465A-4E77-829B-44F919C6C4A6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOC.ServiceDefaults", "PersonalDataWarehousePOC.ServiceDefaults\PersonalDataWarehousePOC.ServiceDefaults.csproj", "{8C18D0CD-99E8-4B34-99E3-994E1CE42382}"
@@ -19,10 +17,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7B9FDDFD-C432-4D93-BA60-2E50CDE05507}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7B9FDDFD-C432-4D93-BA60-2E50CDE05507}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7B9FDDFD-C432-4D93-BA60-2E50CDE05507}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7B9FDDFD-C432-4D93-BA60-2E50CDE05507}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B4B5086C-465A-4E77-829B-44F919C6C4A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B4B5086C-465A-4E77-829B-44F919C6C4A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4B5086C-465A-4E77-829B-44F919C6C4A6}.Release|Any CPU.ActiveCfg = Release|Any CPU

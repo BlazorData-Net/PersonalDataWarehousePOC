@@ -1,5 +1,7 @@
 using BlazorDatasheet.Extensions;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using PersonalDataWarehousePOCWeb.Client.Services;
+using Radzen;
 
 namespace PersonalDataWarehousePOCWeb.Client
 {
@@ -10,6 +12,10 @@ namespace PersonalDataWarehousePOCWeb.Client
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
             builder.Services.AddBlazorDatasheet();
+            builder.Services.AddRadzenComponents();
+
+            // DataService Service
+            builder.Services.AddSingleton<DataService>();
 
             // <-- This line registers HttpClient in DI
             builder.Services.AddScoped(sp =>

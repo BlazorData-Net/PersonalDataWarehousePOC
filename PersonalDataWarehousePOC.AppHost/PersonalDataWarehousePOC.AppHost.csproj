@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PersonalDataWarehousePOC\PersonalDataWarehousePOC.csproj" />
+    <ProjectReference Include="..\PersonalDataWarehousePOCWeb\PersonalDataWarehousePOCWeb\PersonalDataWarehousePOCWeb.csproj" />
   </ItemGroup>
 
 </Project>

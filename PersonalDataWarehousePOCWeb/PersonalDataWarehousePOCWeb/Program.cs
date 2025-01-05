@@ -1,6 +1,8 @@
 using BlazorDatasheet.Extensions;
 using PersonalDataWarehousePOCWeb.Client.Pages;
 using PersonalDataWarehousePOCWeb.Components;
+using Radzen;
+using System.Reflection;
 
 namespace PersonalDataWarehousePOCWeb
 {
@@ -9,6 +11,14 @@ namespace PersonalDataWarehousePOCWeb
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.AddServiceDefaults();
+
+            // Load appsettings.json and UserSecrets
+            builder.Configuration
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"appsettings{builder.Environment.EnvironmentName}.json", optional: true)
+                .AddEnvironmentVariables()
+                .AddUserSecrets(Assembly.GetExecutingAssembly(), true);
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
@@ -39,7 +49,11 @@ namespace PersonalDataWarehousePOCWeb
 
             builder.Services.AddControllers();
 
+            builder.Services.AddRadzenComponents();
+
             var app = builder.Build();
+
+            app.MapDefaultEndpoints();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

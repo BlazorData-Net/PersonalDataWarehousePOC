@@ -21,6 +21,7 @@ function renderPdfInDiv(container, pdfData) {
         document.getElementById('page_count').textContent = pdfDoc.numPages;
 
         // Render the first page
+        pageNum = 1;
         renderPage(pageNum, container);
     }).catch(error => {
         console.error("Error rendering PDF:", error);
@@ -160,6 +161,11 @@ function onPrintPdf() {
     });
 }
 
+function ongetPageCount() {
+    var NumberOfPages = pdfDoc.numPages;
+    return NumberOfPages;
+}
+
 // Expose the functions to the global scope
 window.renderPdfInDiv = renderPdfInDiv;
 window.onPrevPage = onPrevPage;
@@ -167,6 +173,7 @@ window.onNextPage = onNextPage;
 window.onZoomIn = onZoomIn;
 window.onZoomOut = onZoomOut;
 window.onPrintPdf = onPrintPdf;
+window.ongetPageCount = ongetPageCount;
 
 window.pdfDoc = pdfDoc;
 window.pageNum = pageNum;

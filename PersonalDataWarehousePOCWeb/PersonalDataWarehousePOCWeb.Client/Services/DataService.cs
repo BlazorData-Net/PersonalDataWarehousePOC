@@ -1,4 +1,4 @@
-﻿namespace PersonalDataWarehousePOC.Services
+﻿namespace PersonalDataWarehousePOCWeb.Client.Services
 {
     using System;
     using System.Data;

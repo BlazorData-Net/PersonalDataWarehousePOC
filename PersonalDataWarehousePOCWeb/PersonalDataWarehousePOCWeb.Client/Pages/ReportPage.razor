@@ -1,14 +1,12 @@
 ﻿@page "/reports"
-@using Blazor.Monaco
 @using System.Text.Json
 @using System.Linq.Dynamic.Core
 @using CSScriptLib
 @using System.Reflection
-@using Controllers
 @using Microsoft.Reporting.NETCore
-@using PersonalDataWarehousePOC.Services
 @using System.Dynamic
 @using System.Data
+@using PersonalDataWarehousePOCWeb.Client.Services
 @inject IJSRuntime jsRuntime
 
 <PageTitle>Reports</PageTitle>
@@ -41,6 +39,10 @@
     {
         <button @onclick="OpenWizard">Report Wizard</button>
         <span>&nbsp;</span>
+    }
+    else
+    {
+        <span>Must have at least one Table to create a report</span>
     }
     @if (CurrentReportName != "")
     {
