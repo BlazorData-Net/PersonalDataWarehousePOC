@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOC.Ap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOC.ServiceDefaults", "PersonalDataWarehousePOC.ServiceDefaults\PersonalDataWarehousePOC.ServiceDefaults.csproj", "{8C18D0CD-99E8-4B34-99E3-994E1CE42382}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOCWeb", "PersonalDataWarehousePOCWeb\PersonalDataWarehousePOCWeb\PersonalDataWarehousePOCWeb.csproj", "{1D0A8FA4-D000-477C-BD79-9C63620A4961}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOCWeb.Client", "PersonalDataWarehousePOCWeb\PersonalDataWarehousePOCWeb.Client\PersonalDataWarehousePOCWeb.Client.csproj", "{1CB74903-504A-4173-8C2E-5EC5F87EB357}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{8C18D0CD-99E8-4B34-99E3-994E1CE42382}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C18D0CD-99E8-4B34-99E3-994E1CE42382}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C18D0CD-99E8-4B34-99E3-994E1CE42382}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D0A8FA4-D000-477C-BD79-9C63620A4961}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D0A8FA4-D000-477C-BD79-9C63620A4961}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D0A8FA4-D000-477C-BD79-9C63620A4961}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D0A8FA4-D000-477C-BD79-9C63620A4961}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CB74903-504A-4173-8C2E-5EC5F87EB357}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CB74903-504A-4173-8C2E-5EC5F87EB357}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CB74903-504A-4173-8C2E-5EC5F87EB357}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CB74903-504A-4173-8C2E-5EC5F87EB357}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
