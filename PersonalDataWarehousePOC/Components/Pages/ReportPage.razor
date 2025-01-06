@@ -1,0 +1,669 @@
+﻿@page "/reports"
+@using Blazor.Monaco
+@using System.Text.Json
+@using System.Linq.Dynamic.Core
+@using CSScriptLib
+@using System.Reflection
+@using Microsoft.Reporting.NETCore
+@using PersonalDataWarehousePOC.Services
+@using System.Dynamic
+@using System.Data
+@inject IJSRuntime jsRuntime
+
+
+<PageTitle>Reports</PageTitle>
+
+<h4>Reports</h4>
+<br />
+
+<div>
+    @if (ReportList.Count > 0)
+    {
+        <label>Select Report: </label>
+        <select @onchange="@(async (args) =>
+                    {
+                        CurrentReportName = args.Value?.ToString();
+                        LoadReport(CurrentReportName);
+                    })">
+            @foreach (var Report in ReportList)
+            {
+                <option value="@Report"
+                selected="@(Report == CurrentReportName ? "selected" : null)">
+                    @Report
+                </option>
+            }
+        </select>
+    }
+</div>
+<br />
+<div>
+    @if (TableList.Count > 0)
+    {
+        <button @onclick="OpenWizard">Report Wizard</button>
+        <span>&nbsp;</span>
+    }
+    @if (CurrentReportName != "")
+    {
+        <span>&nbsp; &nbsp;</span>
+        <button @onclick="Delete">Delete Report</button>
+        <span>&nbsp; &nbsp;</span>
+        <button @onclick="Execute">Display Report</button>
+    }
+    @if (ContentChanged)
+    {
+        <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
+    }
+    <br />
+    <br />
+</div>
+<br />
+
+<!-- POPUPS -->
+@if (IsNewOutputPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog" style="max-width: 60%; margin-top: 5%;">
+            <div class="modal-content">
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Output</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseOutputReportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div role="progressbar" class="marquee" style="width: 100%; display: @(IsLoading ? "block" : "none");"></div>
+
+                        <div style="display: @(IsLoading ? "none" : "block");">
+                            Page: <span>@CurrentPage</span> / <span id="page_count">0</span> &nbsp;&nbsp;
+                            <button @onclick="PreviousPage">Previous</button>
+                            <button @onclick="NextPage">Next</button>
+                            <button @onclick="ZoomIn">Zoom In</button>
+                            <button @onclick="ZoomOut">Zoom Out</button>
+                            <button @onclick="PrintPdf">Print</button>
+                            <div @ref="pdfContainer" id="pdf-container"
+                            style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (IsWizardVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Report Wizard</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseReportWizardPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <label>Select Table/View: </label>
+                        <select @onchange="@(async (args) =>
+                            {
+                                CurrentSelectedTableWizard = args.Value?.ToString();
+                            })">
+                            @foreach (var table in TableList)
+                            {
+                                <option value="@table">
+                                    @table
+                                </option>
+                            }
+                        </select>
+                        &nbsp;&nbsp;
+                        <button @onclick="onReportWizard">Select</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (IsNewReportPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">New Report</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseNewReportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <form @onsubmit="SaveReport">
+                            <div>
+                                <label for="ReportName">Report Name:</label>
+                                <input type="text" id="ReportName" maxlength="50" style="width: 150px;" @bind="CurrentReportName" />
+                                &nbsp;&nbsp;
+                                <button type="submit">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (Message != "")
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Alert!</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 100%; height: 100px; overflow: auto">
+                            @Message
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private ElementReference pdfContainer;
+
+    private bool ContentChanged { get; set; }
+
+    private List<string> TableList = new List<string>();
+    private string CurrentSelectedTableWizard = "";
+
+    private bool IsLoading { get; set; } = false;
+    private List<string> ReportList = new List<string>();
+    private string CurrentReportName = "";
+
+    private bool IsWizardVisible { get; set; } = false;
+    private bool IsNewReportPopupVisible { get; set; } = false;
+    private bool IsNewOutputPopupVisible { get; set; } = false;
+
+    private int CurrentPage = 1;
+
+    string Message = "";
+
+    protected override void OnInitialized()
+    {
+        LoadReportsListDropdownSelectDefaultReport();
+        LoadTableListDropdown();
+    }
+
+    // Tables and Views Dropdown
+
+    private void LoadTableListDropdown()
+    {
+        TableList = new List<string>();
+
+        // Load files from the Parquet folder
+        var parquetFolder = Path.Combine("Data", "Parquet");
+        if (Directory.Exists(parquetFolder))
+        {
+            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        // Also load files from the Views folder (with .view extension)
+        var viewsFolder = Path.Combine("Data", "Views");
+        if (Directory.Exists(viewsFolder))
+        {
+            TableList.AddRange(Directory.GetFiles(viewsFolder, "*.view")
+                                        .Select(Path.GetFileNameWithoutExtension));
+        }
+
+        if (TableList.Count > 0)
+        {
+            CurrentSelectedTableWizard = TableList.First();
+        }
+    }
+
+
+    // Report Dropdown
+
+    private void LoadReportListDropdown()
+    {
+        ReportList = new List<string>();
+
+        // Load the ReportList data
+
+        if (Directory.Exists("Reports"))
+        {
+            ReportList = Directory.GetFiles("Reports", "*.rdlc")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+    }
+
+    // Reports Dropdown
+
+    private void LoadReportsListDropdownSelectDefaultReport()
+    {
+        LoadReportListDropdown();
+
+        if (ReportList.Count > 0)
+        {
+            CurrentReportName = ReportList.First();
+        }
+    }
+
+    private void LoadReport(string paramReport)
+    {
+        // Load the DataReport
+        var fileName = Path.Combine("Reports", $"{paramReport}.rdlc");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            // Set CurrentReportName
+            CurrentReportName = paramReport;
+        }
+        else
+        {
+            Message = "Report not found.";
+        };
+    }
+
+    // Delete
+
+    private void Delete()
+    {
+        if (CurrentReportName.Trim().Length == 0)
+        {
+            Message = "Must save Report first.";
+        }
+        else
+        {
+            // Delete the file
+            var fileName = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            string deletedReportName = CurrentReportName;
+            CurrentReportName = string.Empty;
+
+            Message = $"{deletedReportName} deleted!";
+
+            LoadReportsListDropdownSelectDefaultReport();
+        }
+    }
+
+    // Report Wizard
+
+    private void onReportWizard()
+    {
+        if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
+        {
+            Message = "Please select a table.";
+            return;
+        }
+
+        IsWizardVisible = false;
+        IsNewReportPopupVisible = true;
+    }
+
+    // Popups
+
+    private void OpenWizard()
+    {
+        IsWizardVisible = true;
+    }
+
+    private void CloseNewReportPopup()
+    {
+        IsNewReportPopupVisible = false;
+    }
+
+    private void CloseOutputReportPopup()
+    {
+        IsNewOutputPopupVisible = false;
+    }
+
+    private void CloseReportWizardPopup()
+    {
+        IsWizardVisible = false;
+    }
+
+    private void CloseMessagePopup()
+    {
+        Message = "";
+    }
+
+    private void SaveReport()
+    {
+        if (string.IsNullOrEmpty(CurrentReportName))
+        {
+            Message = "Please enter a Report name.";
+            return;
+        }
+
+        var fileName = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
+
+        if (DetectDuplicate(CurrentReportName))
+        {
+            Message = "Name already exists.";
+            return;
+        }
+
+        // Get executing assembly path
+        var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+        // Get the Type for the class we want to generate the RDL for
+        var ClassType = XsdGenerator.GetTypeFromCurrentDomain($"Controllers.{CurrentSelectedTableWizard}");
+
+        // Generate an RDL string dynamically:
+        string rdlXml = DynamicRdlBuilder.GenerateDynamicRdl(
+            ClassType,
+            reportTitle: $"{CurrentReportName} Report",
+            schemaPath: @$"{assemblyPath}\Reports\Data\{CurrentSelectedTableWizard}.xsd"
+        );
+
+        // You can then save the string to a .rdl file:
+        System.IO.File.WriteAllText(@$"Reports/{CurrentReportName}.rdlc", rdlXml);
+
+        Message = $"{CurrentReportName} saved!";
+
+        // ** Close the popup if visible
+        IsNewReportPopupVisible = false;
+
+        // Reload the dropdown
+        ReportList = new List<string>();
+
+        if (Directory.Exists("Reports"))
+        {
+            ReportList = Directory.GetFiles("Reports", "*.rdlc")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        // Load the Report
+        LoadReport(CurrentReportName);
+    }
+
+    // Code Execution
+
+    #region RunCode
+    private async Task Execute()
+    {
+        try
+        {
+            IsNewOutputPopupVisible = true;
+
+            IsLoading = true;
+
+            await PrepareReportAsync();
+
+            IsLoading = false;
+
+            CurrentPage = 1;
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+        }
+    }
+    #endregion
+
+    #region public static bool DetectDuplicate(string paramReportName)
+    public static bool DetectDuplicate(string paramReportName)
+    {
+        bool result = false;
+
+        string fileName = $"Reports/{paramReportName}.rdlc";
+        var ReportExists = System.IO.File.Exists(fileName);
+
+        if (ReportExists)
+        {
+            result = true;
+        }
+
+        return result;
+    }
+    #endregion
+
+    // Report Viewer
+
+    private async Task PrepareReportAsync()
+    {
+        // Create the report
+        using var report = new LocalReport();
+
+        // Define the report parameters
+        var parameters = new[] { new ReportParameter("Title", CurrentReportName) };
+
+        // Load the report definition
+        var reportPath = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
+
+        if (!System.IO.File.Exists(reportPath))
+        {
+            Message = "Report file not found.";
+            return;
+        }
+
+        // Load the report definition (the RDLC file)
+        await using var reportStream = System.IO.File.OpenRead(reportPath);
+        using var reportReader = new System.IO.StreamReader(reportStream);
+        report.LoadReportDefinition(reportReader);
+
+        // ************
+        // Get the report data
+        // ************
+
+        // Determine if it is a Table or a View
+        // If the file is in the Parquet folder, it is a Table
+        // If the file is in the Views folder, it is a View
+        // Open the .rdlc file and get the SchemaPath to get the ClassName
+        String ClassType = "Table";
+        var ClassName = XsdGenerator.GetTableName(reportPath);
+        var fileName = Path.Combine("Data", "Views", $"{ClassName}.view");
+        if (System.IO.File.Exists(fileName))
+        {
+            ClassType = "View";
+        }
+
+        // Get the data based on the ClassType
+        if (ClassType == "Table")
+        {
+            // Get the data from the Parquet file
+            Dataloader dataloader = new Dataloader();
+            var result = await dataloader.LoadParquet(ClassName);
+
+            // Get the fields from the first record (ensure result is not empty)
+            var fields = result.Any()
+                ? result.First().Keys.ToList()
+                : new List<string>();
+
+            // Create a DataTable
+            DataTable dt = new DataTable("MyDataTable");
+
+            // Add an Id column
+            dt.Columns.Add("Id", typeof(int));
+
+            // Add columns for all fields (replace spaces with underscores)
+            foreach (var field in fields)
+            {
+                string columnName = field.Replace(" ", "_");
+                dt.Columns.Add(columnName, typeof(object));
+            }
+
+            // Fill the DataTable rows
+            int i = 0;
+            foreach (var item in result)
+            {
+                DataRow newRow = dt.NewRow();
+                newRow["Id"] = i++;
+
+                foreach (var field in fields)
+                {
+                    string columnName = field.Replace(" ", "_");
+                    newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
+                }
+
+                dt.Rows.Add(newRow);
+            }
+
+            // Add the data source to the report
+            report.DataSources.Add(new ReportDataSource("DataSet1", dt));
+
+            // Set any report parameters (if needed)
+            report.SetParameters(parameters);
+        }
+        else
+        {
+            // Get the data from the View file
+            var viewFile = Path.Combine("Data", "Views", $"{ClassName}.view");
+
+            // Read the view file
+            var viewContent = System.IO.File.ReadAllText(viewFile);
+
+            // Execute the code
+            var result = await RunDynamicCode(viewContent);
+
+            // Get the fields from the first record (ensure result is not empty)
+            var fields = result.Any()
+                ? result.First().Keys.ToList()
+                : new List<string>();
+
+            // Create a DataTable
+            DataTable dt = new DataTable("MyDataTable");
+
+            // Add an Id column
+            dt.Columns.Add("Id", typeof(int));
+
+            // Add columns for all fields (replace spaces with underscores)
+            foreach (var field in fields)
+            {
+                string columnName = field.Replace(" ", "_");
+                dt.Columns.Add(columnName, typeof(object));
+            }
+
+            // Fill the DataTable rows
+            int i = 0;
+            foreach (var item in result)
+            {
+                DataRow newRow = dt.NewRow();
+                newRow["Id"] = i++;
+
+                foreach (var field in fields)
+                {
+                    string columnName = field.Replace(" ", "_");
+                    newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
+                }
+
+                dt.Rows.Add(newRow);
+            }
+
+            // Add the data source to the report
+            report.DataSources.Add(new ReportDataSource("DataSet1", dt));
+
+            // Set any report parameters (if needed)
+            report.SetParameters(parameters);
+        }
+
+        // Render the report to a PDF byte array
+        byte[] pdfBytes = report.Render("PDF");
+
+        // To display properly we need to save the PDF as a file and re-load it
+
+        var pdfPath = System.IO.Path.Combine("Reports",
+        $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
+
+        // Save the pdf to the temp file
+        System.IO.File.WriteAllBytes(pdfPath, pdfBytes);
+
+        // Open the temp PDF file and read the bytes
+        await using (var pdfStream = System.IO.File.OpenRead(pdfPath))
+        {
+            using (var memoryStream = new System.IO.MemoryStream())
+            {
+                await pdfStream.CopyToAsync(memoryStream);
+                pdfBytes = memoryStream.ToArray();
+            }
+        }
+
+        // Convert the PDF bytes to a base64 string
+        var pdfBase64 = Convert.ToBase64String(pdfBytes);
+
+        // Call the JavaScript function with the element reference and the PDF data
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.renderPdf", pdfContainer, pdfBase64);
+
+        // Delete the temp pdf file
+        System.IO.File.Delete(pdfPath);
+    }
+
+    private async Task PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            await jsRuntime.InvokeVoidAsync("blazorPdfViewer.previousPage", pdfContainer);
+        }
+    }
+
+    private async Task NextPage()
+    {
+        // get the number of pages
+        var pageCount = await jsRuntime.InvokeAsync<int>("blazorPdfViewer.getPageCount", pdfContainer);
+
+        if (CurrentPage < pageCount)
+        {
+            CurrentPage++;
+            await jsRuntime.InvokeVoidAsync("blazorPdfViewer.nextPage", pdfContainer);
+        }
+    }
+
+    private async Task ZoomIn()
+    {
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.zoomIn", pdfContainer);
+    }
+
+    private async Task ZoomOut()
+    {
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.zoomOut", pdfContainer);
+    }
+
+    private async Task PrintPdf()
+    {
+        await jsRuntime.InvokeVoidAsync("blazorPdfViewer.printPdf", pdfContainer);
+    }
+
+    #region public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
+    public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
+    {
+        try
+        {
+            dynamic script = CSScript.Evaluator.LoadMethod(paramCode);
+
+            var result = await script.ReturnResult();
+
+            return result as IEnumerable<IDictionary<string, object>>;
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+            return null;
+        }
+    }
+    #endregion
+}
