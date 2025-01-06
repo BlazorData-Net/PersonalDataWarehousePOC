@@ -1,6 +1,5 @@
 ### Description ###
-Please create a json response containing code for generating a C# LINQ to Objects method, with the specified signature and functionality.
-The code can also contain supporting methods.
+Please create a json response containing code for generating C# LINQ to Objects method with the specified signature and functionality. 
 Follow the structure and include inline code comments to make it understandable.
 
 ---
