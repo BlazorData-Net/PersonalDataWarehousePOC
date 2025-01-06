@@ -86,3 +86,17 @@ h1:focus {
         padding-left: env(safe-area-inset-left);
     }
 }
+
+.monaco-editor-container {
+    height: 500px;
+    border: 1px solid gray;
+    position: relative;
+}
+
+.decorationGlyphMarginClass {
+    background: red;
+}
+
+.decorationContentClass {
+    background: lightblue;
+}

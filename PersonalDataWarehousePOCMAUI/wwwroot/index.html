@@ -3,11 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>PersonalDataWarehousePOCMAUI</title>
+    <title>Personal DataWarehouse POC MAUI</title>
     <base href="/" />
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="PersonalDataWarehousePOCMAUI.styles.css" />
+    <link rel="stylesheet" href="_content/BlazorDatasheet/sheet-styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf_viewer.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/7.css" />
     <link rel="icon" href="data:,">
 </head>
 
@@ -23,8 +26,46 @@
         <a class="dismiss">🗙</a>
     </div>
 
-    <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <!-- Loading modules for BLAZOR MONACO -->
+    <script src="_content/BlazorMonaco/jsInterop.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
 
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script src="_content/BlazorDatasheet/blazor-datasheet.js" type="text/javascript"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs"></script>
+    <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs"></script>
+    <script type="module" src="js/site.js"></script>
+    <script>
+        window.blazorPdfViewer = {
+            renderPdf: (containerRef, pdfData) => {
+                if (typeof renderPdfInDiv === "function") {
+                    renderPdfInDiv(containerRef, pdfData);
+                } else {
+                    console.error("renderPdfInDiv is not defined or not accessible.");
+                }
+            },
+            previousPage: (containerRef) => {
+                onPrevPage(containerRef);
+            },
+            nextPage: (containerRef) => {
+                onNextPage(containerRef);
+            },
+            zoomIn: (containerRef) => {
+                onZoomIn(containerRef);
+            },
+            zoomOut: (containerRef) => {
+                onZoomOut(containerRef);
+            },
+            printPdf: (containerRef) => {
+                onPrintPdf(containerRef);
+            },
+            getPageCount: (containerRef) => {
+                return ongetPageCount(containerRef);
+            }
+        };
+    </script>
 </body>
 
 </html>

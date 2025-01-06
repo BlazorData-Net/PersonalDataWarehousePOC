@@ -1,0 +1,897 @@
+﻿@page "/views"
+@using System.Text.Json
+@using System.Linq.Dynamic.Core
+@using CSScriptLib
+@using System.Reflection
+@using System.Text
+@using OpenAI;
+@using Microsoft.Extensions.AI;
+@using System.Diagnostics.CodeAnalysis
+
+<PageTitle>Views</PageTitle>
+
+<h4>Views</h4>
+<br />
+@if (IsLoading)
+{
+    <div role="progressbar" class="marquee" style="width: 25%"></div>
+}
+else
+{
+    <div>
+        @if (ViewList.Count > 0)
+        {
+            <label>Select View: </label>
+            <select @onchange="@(async (args) =>
+                    {
+                        CurrentViewName = args.Value?.ToString();
+                        await LoadView(CurrentViewName);
+                    })">
+                @foreach (var view in ViewList)
+                {
+                    <option value="@view"
+                            selected="@(view == CurrentViewName ? "selected" : null)">
+                        @view
+                    </option>
+                }
+            </select>
+        }
+    </div>
+    <br />
+    <div>
+        @if (TableList.Count > 0)
+        {
+            <button @onclick="OpenWizard">Table Wizard</button>
+            <span>&nbsp;</span>
+        }
+        <button @onclick="NewScript">New</button>
+        &nbsp;
+        <button @onclick="OnEditorSaveRequested">Save</button>
+        @if (CurrentViewName != "")
+        {
+            <span>&nbsp; &nbsp;</span>
+            <button @onclick="Delete">Delete</button>
+        }
+        &nbsp;
+        <button @onclick="Execute">Execute</button>
+        &nbsp;
+        <button @onclick="OpenAIPopup">AI</button>
+        @if (ContentChanged)
+        {
+            <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
+        }
+        <br />
+        <br />
+        <StandaloneCodeEditor @ref="_editor"
+                              Id="sample-code-editor"
+                              ConstructionOptions="EditorConstructionOptions"
+                              OnDidInit="EditorOnDidInit" />
+    </div>
+    <br />
+}
+
+<!-- POPUPS -->
+@if (IsNewOutputPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog" style="max-width: 90%; margin-top: 5%;">
+            <div class="modal-content">
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Output</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseOutputTablePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+
+                        <RadzenDataGrid Data="@objDataParameters.data"
+                                        ColumnWidth="200px"
+                                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
+                                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
+                            <Columns>
+                                @foreach (var column in objDataParameters.columns)
+                                {
+                                    <RadzenDataGridColumn @key=@column.Key
+                                                          Title="@column.Key"
+                                                          Type="column.Value"
+                                                          Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
+                                        <Template>
+                                            @context[@column.Key]
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                }
+                            </Columns>
+                        </RadzenDataGrid>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (IsWizardVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Table Wizard</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseTableWizardPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <label>Select Table: </label>
+                        <select @onchange="@(async (args) =>
+                            {
+                                CurrentSelectedTableWizard = args.Value?.ToString();
+                            })">
+                            @foreach (var table in TableList)
+                            {
+                                <option value="@table">
+                                    @table
+                                </option>
+                            }
+                        </select>
+                        &nbsp;&nbsp;
+                        <button @onclick="onTableWizard">Select</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (IsNewViewPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">New View</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseNewViewPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <form @onsubmit="SaveViewAsync">
+                            <div>
+                                <label for="tableName">View Name:</label>
+                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentViewName" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="submit">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (ShowAI)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">AI Prompt</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseAIPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 100%; height: 200px; overflow: auto">
+                            <textarea @bind="AIMessage" maxlength="1000"
+                                      style="width: 100%; height: 190px; overflow: auto; resize: vertical;">
+                                        </textarea>
+                        </div>
+                        <br />
+                        <button @onclick="AIbtn">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (Message != "")
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Alert!</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 100%; height: 100px; overflow: auto">
+                            @Message
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [AllowNull]
+    private StandaloneCodeEditor _editor;
+
+    private bool ContentChanged { get; set; }
+    private string CurrentScript { get; set; } = string.Empty;
+
+    private DataParameters objDataParameters = new DataParameters();
+
+    private bool IsLoading { get; set; } = false;
+    private List<string> TableList = new List<string>();
+    private List<string> ViewList = new List<string>();
+    private string CurrentViewName = "";
+
+    private bool IsWizardVisible { get; set; } = false;
+    private bool IsNewViewPopupVisible { get; set; } = false;
+    private bool IsNewOutputPopupVisible { get; set; } = false;
+    private string CurrentSelectedTableWizard = "";
+
+    private bool ShowAI { get; set; } = false;
+    private string AIMessage = "";
+
+    string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        objDataParameters = new DataParameters();
+        objDataParameters.data = new List<IDictionary<string, object>>();
+        objDataParameters.columns = new Dictionary<string, Type>();
+
+        await LoadViewsListDropdown();
+        LoadTableListDropdown();
+    }
+
+    // Monaco Editor
+
+    private static StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+            {
+                Language = "csharp",
+                GlyphMargin = true,
+                AutomaticLayout = true,
+                Value = @"    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
+    {
+        // Generate random data
+        return Enumerable.Range(1, 1).Select(id => new Dictionary<string, object>
+        {
+            { ""EmployeeId"", ""1234"" },
+            { ""FirstName"", ""John"" },
+            { ""LastName"", ""Doe"" }
+        });
+    }"
+            };
+    }
+
+    private async Task EditorOnDidInit()
+    {
+        await _editor.AddCommand((int)KeyMod.CtrlCmd | (int)KeyCode.KeyH, (args) =>
+        {
+            Console.WriteLine("Ctrl+H : Initial editor command is triggered.");
+        });
+
+        var newDecorations = new ModelDeltaDecoration[]
+        {
+            new() {
+                Range = new BlazorMonaco.Range(3,1,3,1),
+                Options = new ModelDecorationOptions
+                {
+                    IsWholeLine = true,
+                    ClassName = "decorationContentClass",
+                    GlyphMarginClassName = "decorationGlyphMarginClass"
+                }
+            }
+        };
+
+        var decorationIds = await _editor.DeltaDecorations(null, newDecorations);
+        // You can now use '_decorationIds' to change or remove the decorations
+    }
+
+    private async Task OnEditorSaveRequested()
+    {
+        if (CurrentViewName == "")
+        {
+            // Open a popup to enter the view name
+            IsNewViewPopupVisible = true;
+            return;
+        }
+
+        // Save to file in Data/Views
+        var viewsFolder = Path.Combine("Data", "Views");
+        var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
+
+        if (ContentChanged)
+        {
+            Message = $"{CurrentViewName} saved!";
+        }
+
+        //CurrentScript = await _monacoEditorInstance.GetEditorContent(resetChangedOnRead: true);
+
+        await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
+
+        // Execute the code
+        var objResult = await RunDynamicCode(CurrentScript);
+
+        List<string> columns = new List<string>();
+
+        if (objResult != null)
+        {
+            // Parse objDataParametersResult.data to a list of dictionaries
+            var TempColumns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+            columns = TempColumns.Keys.ToList();
+        }
+
+        // ** Build the class definition and dictionary mapping
+
+        // Build the class definition
+        StringBuilder ClassDefinition = new StringBuilder();
+        ClassDefinition.AppendLine($"public class {CurrentViewName}");
+        ClassDefinition.AppendLine("    {");
+
+        // Add an Id property to the class
+        ClassDefinition.AppendLine("        public int Id { get; set; }");
+
+        // For each column in the DataTable, create a string property
+        foreach (var column in columns)
+        {
+            // Ensure the property name is a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            ClassDefinition.AppendLine
+            ($"        public string {propertyName} {{ get; set; }}");
+        }
+
+        ClassDefinition.AppendLine("    }");
+
+        // Build the dictionaryMapping
+        StringBuilder DictionaryMapping = new StringBuilder();
+
+        foreach (var column in columns)
+        {
+            // Replace spaces in the column name with underscores to make it a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            // Build the line:
+            DictionaryMapping.AppendLine(
+                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
+                + "? dict[\"{propertyName}\"]?.ToString() : null,");
+        }
+
+        // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
+        string templatePath = Path.Combine("Templates", "View.txt");
+
+        // Read the content of the template file
+        string templateContent = File.ReadAllText(templatePath);
+
+        // Replace the placeholders
+        string codeBuilder = "";
+
+        codeBuilder = templateContent.Replace("**CLASS NAME**", CurrentViewName);
+        codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
+        codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (CurrentViewName + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (CurrentViewName.ToLower() + "s"));
+        codeBuilder = codeBuilder.Replace("**FIRST FIELD**", columns[0]);
+
+        // ** Write the class to a file
+
+        // Define directory for output
+        string directoryPath = Path.Combine("Data", "Classes");
+        Directory.CreateDirectory(directoryPath);
+
+        // Set the file path
+        string filePath =
+        Path.Combine(directoryPath, CurrentViewName + ".cs");
+
+        // Write the class to file
+        File.WriteAllText(filePath, codeBuilder.ToString());
+
+        // **********************
+        // ** Create the xsd file
+        // **********************
+
+        // Load the class and generate the schema
+        // Load the class by using its name and get its type
+
+        var ClassType = XsdGenerator.GetTypeFromCurrentDomain($"Controllers.{CurrentViewName}");
+
+        // Step 1: Generate the schema string
+        string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
+
+        // Step 2: Create the output directory if it does not exist
+        directoryPath = Path.Combine("Reports", "Data");
+        Directory.CreateDirectory(directoryPath);
+
+        // Step 3: Save the file
+        filePath = Path.Combine(directoryPath, $"{CurrentViewName}Schemas.xsd");
+        File.WriteAllText(filePath, schemaString);
+
+        ContentChanged = false;
+        StateHasChanged();
+    }
+
+    // Table Dropdown
+
+    private void LoadTableListDropdown()
+    {
+        TableList = new List<string>();
+
+        // Load the TableList data
+        var parquetFolder = Path.Combine("Data", "Parquet");
+        if (Directory.Exists(parquetFolder))
+        {
+            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+    }
+
+    // Views Dropdown
+
+    private async Task LoadViewsListDropdown()
+    {
+        ViewList = new List<string>();
+
+        // Load the ViewList data
+        var viewsFolder = Path.Combine("Data", "Views");
+
+        if (Directory.Exists(viewsFolder))
+        {
+            ViewList = Directory.GetFiles(viewsFolder, "*.view")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        if (ViewList.Count > 0)
+        {
+            CurrentViewName = ViewList.First();
+            await LoadView(CurrentViewName);
+        }
+    }
+
+    private async Task LoadView(string paramView)
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        // Load the DataTable
+        var viewsFolder = Path.Combine("Data", "Views");
+        var fileName = Path.Combine(viewsFolder, $"{paramView}.view");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            // Read contents into CurrentScript
+            CurrentScript = await System.IO.File.ReadAllTextAsync(fileName);
+
+            // Set CurrentViewName
+            CurrentViewName = paramView;
+        }
+        else
+        {
+            Message = "View not found.";
+        }
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    // Delete
+
+    private async Task Delete()
+    {
+        if (CurrentViewName.Trim().Length == 0)
+        {
+            Message = "Must save view first.";
+        }
+        else
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            // Delete the file
+            var fileName = Path.Combine("Data", "Views", $"{CurrentViewName}.view");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            // Delete the C# class file
+            fileName = Path.Combine("Data", "Classes", $"{CurrentViewName}.cs");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            // Delete the XSD file
+            fileName = Path.Combine("Reports", "Data", $"{CurrentViewName}Schemas.xsd");
+            if (System.IO.File.Exists(fileName))
+            {
+                System.IO.File.Delete(fileName);
+            }
+
+            string deletedViewName = CurrentViewName;
+            CurrentViewName = string.Empty;
+
+            Message = $"{deletedViewName} deleted!";
+
+            await LoadViewsListDropdown();
+        }
+    }
+
+    // New Script
+
+    private void NewScript()
+    {
+        //await _monacoEditorInstance.SetEditorContent(SampleCode);
+        CurrentScript = SampleCode;
+        CurrentViewName = "";
+    }
+
+    // Table Wizard
+
+    private void onTableWizard()
+    {
+        if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
+        {
+            Message = "Please select a table.";
+            return;
+        }
+
+        CurrentScript = $"using System;\n";
+        CurrentScript += $"using System.Collections.Generic;\n";
+        CurrentScript += $"using System.Linq;\n";
+        CurrentScript += $"using System.Threading.Tasks;\n";
+        CurrentScript += $"\n";
+        CurrentScript += $"public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n";
+        CurrentScript += "{\n";
+        CurrentScript += $"    // Create a Dataloader \n";
+        CurrentScript += $"    Dataloader objDataloader = new Dataloader();\n";
+        CurrentScript += $"    // Call LoadParquet to load {CurrentSelectedTableWizard} into col{CurrentSelectedTableWizard} \n";
+        CurrentScript += $@"    var col{CurrentSelectedTableWizard} = await objDataloader.LoadParquet(""{CurrentSelectedTableWizard}"");";
+        CurrentScript += $"\n";
+        CurrentScript += $"    // Return the results ToDictionary()  \n";
+        CurrentScript += $"    return col{CurrentSelectedTableWizard}.Select(row => row.ToDictionary()).Take(100).ToList();";
+        CurrentScript += "\n";
+        CurrentScript += "}\n";
+
+        //await _monacoEditorInstance.SetEditorContent(CurrentScript);
+
+        CloseTableWizardPopup();
+
+        CurrentSelectedTableWizard = "";
+    }
+
+    // Popups
+
+    private void OpenWizard()
+    {
+        CurrentSelectedTableWizard = TableList.FirstOrDefault();
+        CurrentViewName = ""; // So the new View name popup will show on Save
+        IsWizardVisible = true;
+    }
+
+    private void CloseNewViewPopup()
+    {
+        IsNewViewPopupVisible = false;
+    }
+
+    private void CloseOutputTablePopup()
+    {
+        IsNewOutputPopupVisible = false;
+    }
+
+    private void CloseTableWizardPopup()
+    {
+        IsWizardVisible = false;
+    }
+
+    private void CloseMessagePopup()
+    {
+        Message = "";
+    }
+
+    private async Task SaveViewAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentViewName))
+        {
+            Message = "Please enter a view name.";
+            return;
+        }
+
+        var viewsFolder = Path.Combine("Data", "Views");
+        var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
+
+        if (DetectDuplicate(CurrentViewName))
+        {
+            Message = "Name already exists.";
+            return;
+        }
+
+        await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
+
+        // Execute the code
+        var objResult = await RunDynamicCode(CurrentScript);
+
+        List<string> columns = new List<string>();
+
+        if (objResult != null)
+        {
+            // Parse objDataParametersResult.data to a list of dictionaries
+            var TempColumns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+            columns = TempColumns.Keys.ToList();
+        }
+
+        // ** Build the class definition and dictionary mapping
+
+        // Build the class definition
+        StringBuilder ClassDefinition = new StringBuilder();
+        ClassDefinition.AppendLine($"public class {CurrentViewName}");
+        ClassDefinition.AppendLine("    {");
+
+        // Add an Id property to the class
+        ClassDefinition.AppendLine("        public int Id { get; set; }");
+
+        // For each column in the DataTable, create a string property
+        foreach (var column in columns)
+        {
+            // Ensure the property name is a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            ClassDefinition.AppendLine
+            ($"        public string {propertyName} {{ get; set; }}");
+        }
+
+        ClassDefinition.AppendLine("    }");
+
+        // Build the dictionaryMapping
+        StringBuilder DictionaryMapping = new StringBuilder();
+
+        foreach (var column in columns)
+        {
+            // Replace spaces in the column name with underscores to make it a valid C# identifier
+            string propertyName = column.Replace(" ", "_");
+
+            // Build the line:
+            DictionaryMapping.AppendLine(
+                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
+                + "? dict[\"{propertyName}\"]?.ToString() : null,");
+        }
+
+        // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
+        string templatePath = Path.Combine("Templates", "View.txt");
+
+        // Read the content of the template file
+        string templateContent = File.ReadAllText(templatePath);
+
+        // Replace the placeholders
+        string codeBuilder = "";
+
+        codeBuilder = templateContent.Replace("**CLASS NAME**", CurrentViewName);
+        codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
+        codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (CurrentViewName + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (CurrentViewName.ToLower() + "s"));
+        codeBuilder = codeBuilder.Replace("**FIRST FIELD**", columns[0]);
+
+        // ** Write the class to a file
+
+        // Define directory for output
+        string directoryPath = Path.Combine("Data", "Classes");
+        Directory.CreateDirectory(directoryPath);
+
+        // Set the file path
+        string filePath =
+        Path.Combine(directoryPath, CurrentViewName + ".cs");
+
+        // Write the class to file
+        File.WriteAllText(filePath, codeBuilder.ToString());
+
+        // **********************
+        // ** Create the xsd file
+        // **********************
+
+        // Load the class and generate the schema
+        // Load the class by using its name and get its type
+
+        // Load the class using the contents in codeBuilder.ToString() and get its type
+        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), CurrentViewName);
+
+        // Step 1: Generate the schema string
+        string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
+
+        // Step 2: Create the output directory if it does not exist
+        directoryPath = Path.Combine("Reports", "Data");
+        Directory.CreateDirectory(directoryPath);
+
+        // Step 3: Save the file
+        filePath = Path.Combine(directoryPath, $"{CurrentViewName}Schemas.xsd");
+        File.WriteAllText(filePath, schemaString);
+
+        Message = $"{CurrentViewName} saved!";
+
+        // ** Close the popup if visible
+        IsNewViewPopupVisible = false;
+
+        // Reload the dropdown
+        ViewList = new List<string>();
+
+        if (Directory.Exists(viewsFolder))
+        {
+            ViewList = Directory.GetFiles(viewsFolder, "*.view")
+                                 .Select(Path.GetFileNameWithoutExtension)
+                                 .ToList();
+        }
+
+        // Load the view
+        await LoadView(CurrentViewName);
+    }
+
+    // Code Execution
+
+    #region RunCode
+    private async Task Execute()
+    {
+        try
+        {
+            if (CurrentViewName == "")
+            {
+                // Open a popup to enter the view name
+                IsNewViewPopupVisible = true;
+                return;
+            }
+
+            //  Save the content before executing
+            await OnEditorSaveRequested();
+
+            // Execute the code
+            var objResult = await RunDynamicCode(CurrentScript);
+
+            if (objResult != null)
+            {
+                // Parse objDataParametersResult.data to a list of dictionaries
+                var columns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+                objDataParameters = new DataParameters
+                    {
+                        data = objResult,
+                        columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
+                    };
+            }
+
+            // Show the output
+            IsNewOutputPopupVisible = true;
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+        }
+    }
+
+    public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
+    {
+        try
+        {
+            dynamic script = CSScript.Evaluator.LoadMethod(paramCode);
+
+            var result = await script.ReturnResult();
+
+            return result as IEnumerable<IDictionary<string, object>>;
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+            return null;
+        }
+    }
+    #endregion
+
+    #region AI
+    private async Task AIbtn()
+    {
+        try
+        {
+            var OPENAI_API_KEY = "";
+
+            if (string.IsNullOrEmpty(OPENAI_API_KEY))
+            {
+                Message = "Please set the OPENAI_API_KEY in appsettings.json";
+                return;
+            }
+
+            IsLoading = true;
+
+            IChatClient client = new OpenAIClient(OPENAI_API_KEY).AsChatClient(modelId: "gpt-4o-mini");
+            var response = await client.CompleteAsync(AIMessage);
+
+            IsLoading = false;
+            ShowAI = false;
+
+            Message = response.Choices[0].Text;
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+        }
+    }
+
+    private void OpenAIPopup()
+    {
+        AIMessage = "";
+        ShowAI = true;
+    }
+
+    private void CloseAIPopup()
+    {
+        ShowAI = false;
+        Message = "";
+    }
+    #endregion
+
+    #region public static bool DetectDuplicate(string paramViewName)
+    public static bool DetectDuplicate(string paramViewName)
+    {
+        bool result = false;
+
+        string fileName = $"Data/Parquet/{paramViewName}.parquet";
+        var ParquetExists = System.IO.File.Exists(fileName);
+
+        fileName = $"Data/Views/{paramViewName}.view";
+        var ViewExists = System.IO.File.Exists(fileName);
+
+        if (ParquetExists || ViewExists)
+        {
+            result = true;
+        }
+
+        return result;
+    }
+    #endregion
+
+    private string SampleCode = @"    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
+    {
+        // Generate random data
+        return Enumerable.Range(1, 1).Select(id => new Dictionary<string, object>
+        {
+            { ""EmployeeId"", ""1234"" },
+            { ""FirstName"", ""John"" },
+            { ""LastName"", ""Doe"" }
+        });
+    }";
+}
