@@ -30,7 +30,7 @@ namespace PersonalDataWarehousePOCMAUI
     		builder.Logging.AddDebug();
 #endif
             // Add services to the container.
-            AppMetadata appMetadata = new AppMetadata() { Version = "01.00.00" };
+            AppMetadata appMetadata = new AppMetadata() { Version = "01.02.00" };
             builder.Services.AddSingleton(appMetadata);
 
             // Blazor Datasheet
