@@ -19,7 +19,7 @@
         <SingleProject>true</SingleProject>
         <ImplicitUsings>enable</ImplicitUsings>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
-        <Nullable>enable</Nullable>
+        <Nullable>disable</Nullable>
 
         <!-- Display name -->
         <ApplicationTitle>PersonalDataWarehousePOCMAUI</ApplicationTitle>
