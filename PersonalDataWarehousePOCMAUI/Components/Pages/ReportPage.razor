@@ -41,6 +41,10 @@
         <button @onclick="OpenWizard">Report Wizard</button>
         <span>&nbsp;</span>
     }
+    else
+    {
+        <span style="color:red">No tables found. At least one table is required to create a report.</span>
+    }
     @if (CurrentReportName != "")
     {
         <span>&nbsp; &nbsp;</span>
