@@ -9,7 +9,7 @@
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new MainPage()) { Title = "PersonalDataWarehousePOCMAUI" };
+            return new Window(new MainPage()) { Title = "Personal Data Warehouse" };
         }
     }
 }

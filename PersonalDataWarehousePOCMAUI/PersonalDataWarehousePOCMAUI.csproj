@@ -67,6 +67,7 @@
     </ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Maui" Version="7.0.1" />
 		<PackageReference Include="BlazorMonaco" Version="3.3.0" />
 		<PackageReference Include="BlazorDatasheet" Version="0.5.2.5" />
 		<PackageReference Include="CS-Script" Version="4.8.21" />
