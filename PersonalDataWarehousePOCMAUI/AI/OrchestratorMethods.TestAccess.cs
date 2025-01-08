@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.AI;
 
 namespace PersonalDataWarehouse.AI
 {
@@ -13,6 +14,12 @@ namespace PersonalDataWarehouse.AI
         #region public async Task<bool> TestAccess(string GPTModel)
         public async Task<bool> TestAccess(string GPTModel)
         {
+            var client = CreateOpenAIClient();
+            var chatClient = client.AsChatClient(modelId: "gpt-4o");
+            string SystemMessage = "Please return the following as json: \"This is successful\" in this format {\r\n  'message': message\r\n}";
+            var response = await chatClient.CompleteAsync(SystemMessage);
+
+
             //string SystemMessage = "";
 
             //LogService.WriteToLog($"TestAccess using {GPTModel} - Start");
@@ -64,7 +71,7 @@ namespace PersonalDataWarehouse.AI
             //    catch (Exception ex)
             //    {
             //        LogService.WriteToLog($"Azure OpenAI - Test the embedding model - Error: {ex.Message}");
-                                        
+
             //        throw new Exception("Error: You must set a proper Azure OpenAI embedding model");
             //    }
             //}          
