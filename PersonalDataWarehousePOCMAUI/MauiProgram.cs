@@ -3,6 +3,7 @@ using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Parquet.Schema;
 using PersonalDataWarehousePOC.Services;
+using PersonalDataWarehousePOCMAUI.Services;
 using PersonalDataWarehousePOCMAUI.Models;
 using Radzen;
 
@@ -36,8 +37,9 @@ namespace PersonalDataWarehousePOCMAUI
             // Blazor Datasheet
             builder.Services.AddBlazorDatasheet();
 
-            // DataService Service
+            // Services
             builder.Services.AddSingleton<DataService>();
+            builder.Services.AddSingleton<SettingsService>();
 
             // This is required by Excel service to parse strings in binary BIFF2-5 Excel documents
             // encoded with DOS-era code pages.
