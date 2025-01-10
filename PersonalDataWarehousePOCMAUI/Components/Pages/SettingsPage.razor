@@ -8,59 +8,132 @@
 @inject SettingsService SettingsService
 @inject IJSRuntime JSRuntime
 <h3>Settings</h3>
-<RadzenRow AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap" Gap="1rem" Class="rz-p-sm-12">
-    <RadzenColumn Size="8" SizeSM="4">
-        <RadzenStack>
-            <RadzenFormField Text="OpenAI Service Type:" Variant="@variant">
-                <RadzenDropDown Data=@colAITypes @bind-Value="@AIType" Style="width:300px" Change="@(args => ChangeAIType(args))" />
-            </RadzenFormField>
-            <RadzenFormField Text="ApiKey:" Variant="@variant">
-                <RadzenTextBox @bind-Value="@ApiKey" @onkeydown="APIKeyDetection" style="width:450px;" />
-            </RadzenFormField>
+<!-- Include 7.css in your project if not already included -->
+<link rel="stylesheet" href="https://unpkg.com/7.css">
+
+<div class="grid gap-md p-sm-12">
+    <div class="col-8 col-sm-4">
+        <div class="stack gap-md">
+
+            <!-- OpenAI Service Type -->
+            <div class="form-group">
+                <label for="aiType">OpenAI Service Type:</label>
+                <select id="aiType"
+                        class="form-control"
+                        style="width:300px"
+                        @bind="AIType">
+                    @foreach (var type in colAITypes)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+            <br />
+            <!-- ApiKey -->
+            <div class="form-group">
+                <label for="apiKey">ApiKey:</label>
+                <input id="apiKey"
+                       type="text"
+                       class="form-control"
+                       style="width:450px"
+                       @bind="ApiKey"
+                       @onkeydown="APIKeyDetection" />
+            </div>
+            <br />
+            <!-- Conditional Fields Based on AIType -->
             @if (AIType == "OpenAI")
             {
-                    <RadzenFormField Text="Default AI Model:" Variant="@variant">
-                        <RadzenDropDown Data=@colModels @bind-Value="@AIModel" Style="width:300px" />
-                    </RadzenFormField>
-                    <RadzenLabel Text="Note: GPT 3.5 is faster and cost less than GPT 4, but does not perform as well." style="font-size:x-small" />
+                <!-- Default AI Model -->
+                <div class="form-group">
+                    <label for="aiModel">Default AI Model:</label>
+                    <select id="aiModel"
+                            class="form-control"
+                            style="width:300px"
+                            @bind="AIModel">
+                        @foreach (var model in colModels)
+                        {
+                            <option value="@model">@model</option>
+                        }
+                    </select>
+                </div>
             }
             else if (AIType == "Azure OpenAI")
             {
-                    <RadzenFormField Text="Azure OpenAI Model Deployment Name:" Variant="@variant">
-                        <RadzenTextBox @bind-Value="@AIModel" style="width:450px;" />
-                    </RadzenFormField>
-                    <RadzenFormField Text="Azure OpenAI Embedding Model Deployment Name:" Variant="@variant">
-                        <RadzenTextBox @bind-Value="@AIEmbeddingModel" style="width:450px;" />
-                    </RadzenFormField>
-                    <RadzenFormField Text="Azure OpenAI Endpoint:" Variant="@variant">
-                        <RadzenTextBox @bind-Value="@Endpoint" style="width:450px;" />
-                    </RadzenFormField>
-                    <RadzenFormField Text="Azure OpenAI Api Version:" Variant="@variant">
-                        <RadzenTextBox @bind-Value="@ApiVersion" style="width:450px;" />
-                    </RadzenFormField>
+                <!-- Azure OpenAI Model Deployment Name -->
+                <div class="form-group">
+                    <label for="azureModel">Azure OpenAI Model Deployment Name:</label>
+                    <input id="azureModel"
+                           type="text"
+                           class="form-control"
+                           style="width:450px"
+                           @bind="AIModel" />
+                </div>
+
+                <!-- Azure OpenAI Embedding Model Deployment Name -->
+                <div class="form-group">
+                    <label for="azureEmbeddingModel">Azure OpenAI Embedding Model Deployment Name:</label>
+                    <input id="azureEmbeddingModel"
+                           type="text"
+                           class="form-control"
+                           style="width:450px"
+                           @bind="AIEmbeddingModel" />
+                </div>
+
+                <!-- Azure OpenAI Endpoint -->
+                <div class="form-group">
+                    <label for="endpoint">Azure OpenAI Endpoint:</label>
+                    <input id="endpoint"
+                           type="text"
+                           class="form-control"
+                           style="width:450px"
+                           @bind="Endpoint" />
+                </div>
+
+                <!-- Azure OpenAI API Version -->
+                <div class="form-group">
+                    <label for="apiVersion">Azure OpenAI API Version:</label>
+                    <input id="apiVersion"
+                           type="text"
+                           class="form-control"
+                           style="width:450px"
+                           @bind="ApiVersion" />
+                </div>
             }
+            <br />
+            <!-- Conditional Buttons Based on Settings -->
             @if (!IsSettingsEntered)
             {
                 @if (AIType == "OpenAI")
                 {
-                            <RadzenButton Text="An OpenAI API Key is required (Click here to get one)" ButtonStyle="ButtonStyle.Secondary"
-                                          Click="GetAPIKey"
-                                          Style="margin-bottom: 10px; width: 500px" />
+                    <button type="button"
+                            @onclick="GetAPIKey"
+                            style="margin-bottom: 10px; width: 500px">
+                        An OpenAI API Key is required (Click here to get one)
+                    </button>
                 }
                 else if (AIType == "Azure OpenAI")
                 {
-                            <RadzenButton Text="An Azure OpenAI API Key is required (Click here to get one)" ButtonStyle="ButtonStyle.Secondary"
-                                          Click="GetAzureAPIKey"
-                                          Style="margin-bottom: 10px; width: 500px" />
+                    <button type="button"
+                            @onclick="GetAzureAPIKey"
+                            style="margin-bottom: 10px; width: 500px">
+                        An Azure OpenAI API Key is required (Click here to get one)
+                    </button>
                 }
             }
             else
             {
-                    <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="SettingsSave" Style="margin-bottom: 10px; width: 500px" />
+                <br />
+                <button type="button"
+                        @onclick="SettingsSave"
+                        style="margin-bottom: 10px; width: 500px">
+                    Save
+                </button>
             }
-        </RadzenStack>
-    </RadzenColumn>
-</RadzenRow>
+
+        </div>
+    </div>
+</div>
+
 @code {
     [Parameter] public EventCallback SettingsChanged { get; set; }
     OrchestratorMethods OrchestratorMethods;
@@ -70,7 +143,7 @@
 
     string Organization = "";
     string ApiKey = "";
-    string AIModel = "";
+    string AIModel = "gpt-4o";
     string AIType = "OpenAI";
     string Endpoint = "";
     string AIEmbeddingModel = "";
@@ -83,7 +156,7 @@
 
     List<string> colModels = new List<string>()
                 {
-                   "gpt-4o","gpt-3.5-turbo"
+                   "gpt-4o","gpt-4o-mini","gpt-4-turbo"
                 };
 
     bool IsSettingsEntered = false;

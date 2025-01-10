@@ -797,7 +797,7 @@ else
 
             IsLoading = true;   
 
-            IChatClient client = new OpenAIClient(OPENAI_API_KEY).AsChatClient(modelId: "gpt-4o-mini");
+            IChatClient client = new OpenAIClient(OPENAI_API_KEY).AsChatClient(modelId: "gpt-4o");
             var response = await client.CompleteAsync(AIMessage);            
 
             IsLoading = false;

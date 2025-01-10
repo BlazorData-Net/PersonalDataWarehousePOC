@@ -1,15 +1,15 @@
 using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
 using OpenAI;
-using OpenAI.Chat;
-using OpenAI.Files;
-using OpenAI.FineTuning;
-using OpenAI.Models;
+using Azure.AI.OpenAI;
+using Microsoft.Extensions.AI;
+using Azure.Identity;
 using PersonalDataWarehousePOCMAUI.Model;
 using PersonalDataWarehousePOCMAUI.Services;
 using System.ClientModel;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Azure;
 
 namespace PersonalDataWarehouse.AI
 {
@@ -33,8 +33,8 @@ namespace PersonalDataWarehouse.AI
 
         // Utility Methods
 
-        #region public OpenAIClient CreateOpenAIClient()
-        public OpenAIClient CreateOpenAIClient()
+        #region public IChatClient CreateAIChatClient()
+        public IChatClient CreateAIChatClient()
         {
             string Organization = SettingsService.Organization;
             string ApiKey = SettingsService.ApiKey;
@@ -43,20 +43,25 @@ namespace PersonalDataWarehouse.AI
             string AIEmbeddingModel = SettingsService.AIEmbeddingModel;
             string AIModel = SettingsService.AIModel;
 
-            OpenAIClient api = null;
+            OpenAIClientOptions options = new OpenAIClientOptions();
+            options.NetworkTimeout = TimeSpan.FromSeconds(520);
+
+            ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
 
             if (SettingsService.AIType == "OpenAI")
             {
-                OpenAIClientOptions options = new OpenAIClientOptions();
-                options.NetworkTimeout = TimeSpan.FromSeconds(520);
-
-                ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
-
-                return new OpenAIClient(apiKeyCredential, options);
+                return new OpenAIClient(
+                    apiKeyCredential)
+                    .AsChatClient(AIModel);
             }
-
-            return api;
-        } 
+            else // Azure OpenAI
+            {
+                return new AzureOpenAIClient(
+                    new Uri(Endpoint),
+                    apiKeyCredential)
+                    .AsChatClient(AIModel);
+            }
+        }
         #endregion
 
         #region public float CosineSimilarity(float[] vector1, float[] vector2)

@@ -25,7 +25,7 @@ namespace PersonalDataWarehousePOCMAUI.Services
             // Get OpenAI API key from appsettings.json
             // PersonalDataWarehouse Directory
             String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse";
-            var PersonalDataWarehouseSettingsPath = $"{folderPath}/PersonalDataWarehouseSettings.config";
+            var PersonalDataWarehouseSettingsPath = $"{folderPath}/PersonalDataWarehouse.config";
 
             string PersonalDataWarehouseSettings = "";
 
@@ -56,7 +56,7 @@ namespace PersonalDataWarehousePOCMAUI.Services
         {
             // Get OpenAI API key from appsettings.json
             // PersonalDataWarehouse Directory
-            var PersonalDataWarehouseSettingsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/PersonalDataWarehouseSettings.config";
+            var PersonalDataWarehouseSettingsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/PersonalDataWarehouse.config";
 
             string PersonalDataWarehouseSettings = "";
 

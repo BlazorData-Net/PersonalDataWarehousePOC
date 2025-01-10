@@ -80,6 +80,8 @@
 		<PackageReference Include="Microsoft.Extensions.AI" Version="9.0.1-preview.1.24570.5" />
 		<PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="9.0.1-preview.1.24570.5" />
 		<PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="9.0.1-preview.1.24570.5" />
+		<PackageReference Include="Azure.AI.OpenAI" Version="2.0.0" />
+		<PackageReference Include="Azure.Identity" Version="1.12.1" />
 		<PackageReference Include="Radzen.Blazor" Version="5.7.2" />
 		<PackageReference Include="ReportViewerCore.NETCore" Version="15.1.25" />
 		<PackageReference Include="SSH.NET" Version="2024.2.0" />
