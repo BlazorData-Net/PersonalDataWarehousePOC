@@ -1,8 +1,10 @@
 ﻿@using PersonalDataWarehousePOCMAUI.Models
 @inherits LayoutComponentBase
 @inject AppMetadata _AppMetadata
+<HeadContent>
+    <RadzenTheme Theme="default" />
+</HeadContent>
 <div class="page">
-
     <main>
         <div>
             <ul role="menubar" style="width: 100%;">
@@ -40,6 +42,7 @@
         </article>
     </main>
 </div>
+<RadzenComponents />
 @code {
     bool UpdateAvailable = false;
     private string versionLocal = "";

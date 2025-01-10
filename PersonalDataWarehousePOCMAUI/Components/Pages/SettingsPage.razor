@@ -17,7 +17,7 @@
 
             <!-- OpenAI Service Type -->
             <div class="form-group">
-                <label for="aiType">OpenAI Service Type:</label>
+                <label for="aiType"><b>OpenAI Service Type:</b></label>
                 <select id="aiType"
                         class="form-control"
                         style="width:300px"
@@ -31,7 +31,7 @@
             <br />
             <!-- ApiKey -->
             <div class="form-group">
-                <label for="apiKey">ApiKey:</label>
+                <label for="apiKey"><b>ApiKey:</b></label>
                 <input id="apiKey"
                        type="text"
                        class="form-control"
@@ -45,7 +45,7 @@
             {
                 <!-- Default AI Model -->
                 <div class="form-group">
-                    <label for="aiModel">Default AI Model:</label>
+                    <label for="aiModel"><b>Default AI Model:</b></label>
                     <select id="aiModel"
                             class="form-control"
                             style="width:300px"
@@ -56,48 +56,42 @@
                         }
                     </select>
                 </div>
+                <br />
             }
             else if (AIType == "Azure OpenAI")
             {
                 <!-- Azure OpenAI Model Deployment Name -->
                 <div class="form-group">
-                    <label for="azureModel">Azure OpenAI Model Deployment Name:</label>
+                    <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label>
                     <input id="azureModel"
                            type="text"
                            class="form-control"
                            style="width:450px"
                            @bind="AIModel" />
                 </div>
-
-                <!-- Azure OpenAI Embedding Model Deployment Name -->
-                <div class="form-group">
-                    <label for="azureEmbeddingModel">Azure OpenAI Embedding Model Deployment Name:</label>
-                    <input id="azureEmbeddingModel"
-                           type="text"
-                           class="form-control"
-                           style="width:450px"
-                           @bind="AIEmbeddingModel" />
-                </div>
+                <br />
 
                 <!-- Azure OpenAI Endpoint -->
                 <div class="form-group">
-                    <label for="endpoint">Azure OpenAI Endpoint:</label>
+                    <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label>
                     <input id="endpoint"
                            type="text"
                            class="form-control"
                            style="width:450px"
                            @bind="Endpoint" />
                 </div>
+                <br />
 
                 <!-- Azure OpenAI API Version -->
                 <div class="form-group">
-                    <label for="apiVersion">Azure OpenAI API Version:</label>
+                    <label for="apiVersion"><b>Azure OpenAI API Version:</b></label>
                     <input id="apiVersion"
                            type="text"
                            class="form-control"
                            style="width:450px"
                            @bind="ApiVersion" />
                 </div>
+                <br />
             }
             <br />
             <!-- Conditional Buttons Based on Settings -->
@@ -122,7 +116,6 @@
             }
             else
             {
-                <br />
                 <button type="button"
                         @onclick="SettingsSave"
                         style="margin-bottom: 10px; width: 500px">
