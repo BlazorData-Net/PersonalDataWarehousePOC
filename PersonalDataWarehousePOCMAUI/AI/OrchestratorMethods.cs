@@ -2,7 +2,6 @@ using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
 using OpenAI;
 using Azure.AI.OpenAI;
-using Microsoft.Extensions.AI;
 using Azure.Identity;
 using PersonalDataWarehousePOCMAUI.Model;
 using PersonalDataWarehousePOCMAUI.Services;

@@ -6,6 +6,8 @@ using PersonalDataWarehousePOC.Services;
 using PersonalDataWarehousePOCMAUI.Services;
 using PersonalDataWarehousePOCMAUI.Models;
 using Radzen;
+using PersonalDataWarehousePOCMAUI.Model;
+using PersonalDataWarehouse.AI;
 
 namespace PersonalDataWarehousePOCMAUI
 {
@@ -28,7 +30,7 @@ namespace PersonalDataWarehousePOCMAUI
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
             // Add services to the container.
             AppMetadata appMetadata = new AppMetadata() { Version = "01.02.00" };
@@ -40,6 +42,8 @@ namespace PersonalDataWarehousePOCMAUI
             // Services
             builder.Services.AddSingleton<DataService>();
             builder.Services.AddSingleton<SettingsService>();
+            builder.Services.AddSingleton<LogService>();
+            builder.Services.AddSingleton<OrchestratorMethods>();
 
             // This is required by Excel service to parse strings in binary BIFF2-5 Excel documents
             // encoded with DOS-era code pages.
@@ -54,11 +58,21 @@ namespace PersonalDataWarehousePOCMAUI
                 Directory.CreateDirectory(folderPath);
             }
 
-            // PersonalDataWarehouse.config
-            string filePath = Path.Combine(folderPath, "PersonalDataWarehouse.config");
-            if (!File.Exists(filePath))
+            // PersonalDataWarehouseLog.csv
+            string PersonalDataWarehouseLogFilePath = Path.Combine(folderPath, "PersonalDataWarehouseLog.csv");
+            if (!File.Exists(PersonalDataWarehouseLogFilePath))
             {
-                using (var streamWriter = new StreamWriter(filePath))
+                using (var streamWriter = new StreamWriter(PersonalDataWarehouseLogFilePath))
+                {
+                    streamWriter.WriteLine("Date,Time,Event");
+                }
+            }
+
+            // PersonalDataWarehouse.config
+            string PersonalDataWarehouseFilePath = Path.Combine(folderPath, "PersonalDataWarehouse.config");
+            if (!File.Exists(PersonalDataWarehouseFilePath))
+            {
+                using (var streamWriter = new StreamWriter(PersonalDataWarehouseFilePath))
                 {
                     streamWriter.WriteLine(
                     """
