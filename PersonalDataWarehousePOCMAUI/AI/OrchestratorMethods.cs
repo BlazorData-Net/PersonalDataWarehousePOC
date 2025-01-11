@@ -42,22 +42,25 @@ namespace PersonalDataWarehouse.AI
             string AIEmbeddingModel = SettingsService.AIEmbeddingModel;
             string AIModel = SettingsService.AIModel;
 
-            OpenAIClientOptions options = new OpenAIClientOptions();
-            options.NetworkTimeout = TimeSpan.FromSeconds(520);
-
             ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
 
             if (SettingsService.AIType == "OpenAI")
             {
+                OpenAIClientOptions options = new OpenAIClientOptions();
+                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+
                 return new OpenAIClient(
-                    apiKeyCredential)
+                    apiKeyCredential, options)
                     .AsChatClient(AIModel);
             }
             else // Azure OpenAI
             {
+                AzureOpenAIClientOptions options = new AzureOpenAIClientOptions();
+                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+
                 return new AzureOpenAIClient(
                     new Uri(Endpoint),
-                    apiKeyCredential)
+                    apiKeyCredential, options)
                     .AsChatClient(AIModel);
             }
         }
