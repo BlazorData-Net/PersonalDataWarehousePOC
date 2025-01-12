@@ -5,7 +5,7 @@ namespace Controllers
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks; 
-    using static PersonalDataWarehousePOCMAUI.Program;
+    using static PersonalDataWarehousePOCMAUI.MauiProgram;
 
     **CLASS DEFINITION**    
     public class **CLASS NAME**s 

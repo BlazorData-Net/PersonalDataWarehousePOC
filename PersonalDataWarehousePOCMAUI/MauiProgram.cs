@@ -51,11 +51,47 @@ namespace PersonalDataWarehousePOCMAUI
 
             builder.Services.AddRadzenComponents();
 
-            // Data Directory
+            // Data Directories
             String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse";
+
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
+            }
+
+            String ParquetPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+
+            if (!Directory.Exists(ParquetPath))
+            {
+                Directory.CreateDirectory(ParquetPath);
+            }
+
+            String ViewsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
+            if (!Directory.Exists(ViewsPath))
+            {
+                Directory.CreateDirectory(ViewsPath);
+            }
+
+            String ClassesPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+
+            if (!Directory.Exists(ClassesPath))
+            {
+                Directory.CreateDirectory(ClassesPath);
+            }
+
+            String ReportsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+
+            if (!Directory.Exists(ReportsPath))
+            {
+                Directory.CreateDirectory(ReportsPath);
+            }
+
+            String ReportsDataPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
+
+            if (!Directory.Exists(ReportsDataPath))
+            {
+                Directory.CreateDirectory(ReportsDataPath);
             }
 
             // PersonalDataWarehouseLog.csv

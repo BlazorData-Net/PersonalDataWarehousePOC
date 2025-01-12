@@ -101,7 +101,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Reports\Data\" />
+      <None Update="Templates\AITemplate.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Templates\Class.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Templates\View.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

@@ -575,7 +575,7 @@ else
 
         // Build the class definition
         StringBuilder ClassDefinition = new StringBuilder();
-        ClassDefinition.AppendLine($"public class {className}");
+        ClassDefinition.AppendLine($"public class {DataService.FirstCharToUpper(className)}");
         ClassDefinition.AppendLine("    {");
 
         // Add an Id property to the class
@@ -616,22 +616,21 @@ else
         // Replace the placeholders
         string codeBuilder = "";
 
-        codeBuilder = templateContent.Replace("**CLASS NAME**", className);
+        codeBuilder = templateContent.Replace("**CLASS NAME**", DataService.FirstCharToUpper(className));
         codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
         codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
-        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (className + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (DataService.FirstCharToUpper(className) + "s"));
         codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (className.ToLower() + "s"));
         codeBuilder = codeBuilder.Replace("**FIRST FIELD**", dt.Columns[0].ColumnName);
 
         // ** Write the class to a file
 
         // Define directory for output
-        string directoryPath = Path.Combine("Data", "Classes");
-        Directory.CreateDirectory(directoryPath);
+        String ClassesPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
 
         // Set the file path
         string filePath =
-        Path.Combine(directoryPath, className + ".cs");
+        Path.Combine(ClassesPath, className + ".cs");
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
@@ -644,17 +643,15 @@ else
         // Load the class by using its name and get its type
 
         // Load the class using the contents in codeBuilder.ToString() and get its type
-        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), className);
+        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), DataService.FirstCharToUpper(className));
 
         // Step 1: Generate the schema string
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
 
-        // Step 2: Create the output directory if it does not exist
-        directoryPath = Path.Combine("Reports", "Data");
-        Directory.CreateDirectory(directoryPath);
+        // Step 2: Save the file
+        String ReportsDataPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
 
-        // Step 3: Save the file
-        filePath = Path.Combine(directoryPath, $"{className}Schemas.xsd");
+        filePath = Path.Combine(ReportsDataPath, $"{className}Schemas.xsd");
         File.WriteAllText(filePath, schemaString);
     }
     #endregion
@@ -720,7 +717,9 @@ else
         bool result = false;
 
         // Check if the table name already exists
-        string fileName = $"Data/Parquet/{paramTableName}.parquet";
+        String folderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+
+        string fileName = $"{folderPath}/{paramTableName}.parquet";
         var ParquetExists = System.IO.File.Exists(fileName);
 
         fileName = $"Data/Views/{paramTableName}.view";

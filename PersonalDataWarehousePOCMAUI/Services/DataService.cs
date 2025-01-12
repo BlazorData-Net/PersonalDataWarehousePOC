@@ -187,13 +187,25 @@
 
             ms.Position = 0;
 
-            string fileName = $"Data/Parquet/{CurrentTableName}.parquet";
+            // Data Directory
+            String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+            
+            string fileName = $"{folderPath}/{CurrentTableName}.parquet";
 
             using (var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
             {
                 ms.CopyTo(fileStream);
             }
         }
+        #endregion
+
+        // Utility
+
+        #region public static string FirstCharToUpper(string input)
+        public static string FirstCharToUpper(string input)
+        {
+            return input.First().ToString().ToUpper() + input.Substring(1);
+        } 
         #endregion
     }
 }
