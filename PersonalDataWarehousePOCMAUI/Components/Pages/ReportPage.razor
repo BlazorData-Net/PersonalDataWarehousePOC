@@ -219,7 +219,8 @@
         TableList = new List<string>();
 
         // Load files from the Parquet folder
-        var parquetFolder = Path.Combine("Data", "Parquet");
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+
         if (Directory.Exists(parquetFolder))
         {
             TableList = Directory.GetFiles(parquetFolder, "*.parquet")
@@ -228,7 +229,8 @@
         }
 
         // Also load files from the Views folder (with .view extension)
-        var viewsFolder = Path.Combine("Data", "Views");
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
         if (Directory.Exists(viewsFolder))
         {
             TableList.AddRange(Directory.GetFiles(viewsFolder, "*.view")
@@ -273,7 +275,8 @@
     private void LoadReport(string paramReport)
     {
         // Load the DataReport
-        var fileName = Path.Combine("Reports", $"{paramReport}.rdlc");
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        var fileName = Path.Combine(ReportsFolder, $"{paramReport}.rdlc");
 
         if (System.IO.File.Exists(fileName))
         {
@@ -297,7 +300,8 @@
         else
         {
             // Delete the file
-            var fileName = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+            var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
@@ -361,7 +365,8 @@
             return;
         }
 
-        var fileName = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
 
         if (DetectDuplicate(CurrentReportName))
         {
@@ -456,7 +461,8 @@
         var parameters = new[] { new ReportParameter("Title", CurrentReportName) };
 
         // Load the report definition
-        var reportPath = Path.Combine("Reports", $"{CurrentReportName}.rdlc");
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        var reportPath = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
 
         if (!System.IO.File.Exists(reportPath))
         {
@@ -479,7 +485,8 @@
         // Open the .rdlc file and get the SchemaPath to get the ClassName
         String ClassType = "Table";
         var ClassName = XsdGenerator.GetTableName(reportPath);
-        var fileName = Path.Combine("Data", "Views", $"{ClassName}.view");
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+        var fileName = Path.Combine(viewsFolder, $"{ClassName}.view");
         if (System.IO.File.Exists(fileName))
         {
             ClassType = "View";
@@ -535,7 +542,8 @@
         else
         {
             // Get the data from the View file
-            var viewFile = Path.Combine("Data", "Views", $"{ClassName}.view");
+            viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+            var viewFile = Path.Combine(viewsFolder, $"{ClassName}.view");
 
             // Read the view file
             var viewContent = System.IO.File.ReadAllText(viewFile);
@@ -588,9 +596,8 @@
         byte[] pdfBytes = report.Render("PDF");
 
         // To display properly we need to save the PDF as a file and re-load it
-
-        var pdfPath = System.IO.Path.Combine("Reports",
-        $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
+        ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        var pdfPath = System.IO.Path.Combine(ReportsFolder, $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
 
         // Save the pdf to the temp file
         System.IO.File.WriteAllBytes(pdfPath, pdfBytes);

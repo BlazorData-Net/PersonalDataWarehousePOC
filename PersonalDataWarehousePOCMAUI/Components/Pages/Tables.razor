@@ -633,8 +633,7 @@ else
         String ClassesPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
 
         // Set the file path
-        string filePath =
-        Path.Combine(ClassesPath, className + ".cs");
+        string filePath = Path.Combine(ClassesPath, className + ".cs");
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());

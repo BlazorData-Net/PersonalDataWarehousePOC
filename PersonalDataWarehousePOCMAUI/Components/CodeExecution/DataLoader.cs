@@ -10,7 +10,7 @@ public class Dataloader
         IEnumerable<IDictionary<string, object>> response = new List<IDictionary<string, object>>();
 
         // Load the DataTable
-        var parquetFolder = Path.Combine("Data", "Parquet");
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
         var fileName = Path.Combine(parquetFolder, $"{TableName}.parquet");
 
         if (System.IO.File.Exists(fileName))

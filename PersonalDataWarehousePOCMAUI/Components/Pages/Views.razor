@@ -328,7 +328,7 @@ else
         }
 
         // Save to file in Data/Views
-        var viewsFolder = Path.Combine("Data", "Views");
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
         if (ContentChanged)
@@ -409,11 +409,9 @@ else
 
         // Define directory for output
         String directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Data/Classes";
-        Directory.CreateDirectory(directoryPath);
 
         // Set the file path
-        string filePath =
-        Path.Combine(directoryPath, CurrentViewName + ".cs");
+        string filePath = Path.Combine(directoryPath, CurrentViewName + ".cs");
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
@@ -446,7 +444,7 @@ else
         TableList = new List<string>();
 
         // Load the TableList data
-        var parquetFolder = Path.Combine("Data", "Parquet");
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
         if (Directory.Exists(parquetFolder))
         {
             TableList = Directory.GetFiles(parquetFolder, "*.parquet")
@@ -462,7 +460,7 @@ else
         ViewList = new List<string>();
 
         // Load the ViewList data
-        var viewsFolder = Path.Combine("Data", "Views");
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
 
         if (Directory.Exists(viewsFolder))
         {
@@ -484,7 +482,8 @@ else
         StateHasChanged();
 
         // Load the DataTable
-        var viewsFolder = Path.Combine("Data", "Views");
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
         var fileName = Path.Combine(viewsFolder, $"{paramView}.view");
 
         if (System.IO.File.Exists(fileName))
@@ -518,21 +517,27 @@ else
             StateHasChanged();
 
             // Delete the file
-            var fileName = Path.Combine("Data", "Views", $"{CurrentViewName}.view");
+            String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
+            var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the C# class file
-            fileName = Path.Combine("Data", "Classes", $"{CurrentViewName}.cs");
+            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+
+            fileName = Path.Combine(ClassesFolder, $"{CurrentViewName}.cs");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the XSD file
-            fileName = Path.Combine("Reports", "Data", $"{CurrentViewName}Schemas.xsd");
+            String ReportsDataFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
+
+            fileName = Path.Combine(ReportsDataFolder, $"{CurrentViewName}Schemas.xsd");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
