@@ -63,6 +63,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="KustoLoco.Core" Version="1.1.0" />
+        <PackageReference Include="KustoLoco.Rendering" Version="1.1.0" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
@@ -89,6 +91,7 @@
 		<PackageReference Include="SSH.NET" Version="2024.2.0" />
 		<PackageReference Include="CsvHelper" Version="33.0.1" />
 		<PackageReference Include="Parquet.Net" Version="4.23.5" />
+		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
 	</ItemGroup>
 
     <ItemGroup>

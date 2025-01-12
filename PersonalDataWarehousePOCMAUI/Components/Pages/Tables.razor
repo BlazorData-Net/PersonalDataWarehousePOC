@@ -22,8 +22,9 @@
     <label style="@(IsShowFileUpload ? "" : "display:none;")">Open Excel File: </label>
     <br />
     <InputFile @key="resetInputFileFlag"
-    OnChange="HandleFileSelectedAsync"
-    style="@(IsShowFileUpload ? "" : "display:none;")" />
+               OnChange="HandleFileSelectedAsync"
+               accept=".xls,.xlsx,.parquet"
+               style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label>Selected File: @CurrentFileName</label>
@@ -157,6 +158,8 @@ else
     bool IsLoadingSheet = false;
     bool IsNewTablePopupVisible = false;
 
+    string UploadVisibility => IsShowFileUpload ? "display:block;" : "display:none;";
+
     SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
         {
             InsertColsEnabled = false,
@@ -229,16 +232,28 @@ else
         await fileStream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        using var reader = ExcelReaderFactory.CreateReader(memoryStream);
-        var result = reader.AsDataSet(new ExcelDataSetConfiguration()
-            {
-                ConfigureDataTable = _ => new ExcelDataTableConfiguration()
+        // If the file is an Excel file, load the data into a DataTable
+        if (CurrentFileName.EndsWith(".xls") || CurrentFileName.EndsWith(".xlsx"))
+        {
+            using var reader = ExcelReaderFactory.CreateReader(memoryStream);
+            var result = reader.AsDataSet(new ExcelDataSetConfiguration()
                 {
-                    UseHeaderRow = true
-                }
-            });
+                    ConfigureDataTable = _ => new ExcelDataTableConfiguration()
+                    {
+                        UseHeaderRow = true
+                    }
+                });
 
-        dataSet = result;
+            dataSet = result;
+        }
+
+        // If the file is a Parquet file, load the data into a DataTable
+        if (CurrentFileName.EndsWith(".parquet"))
+        {
+            var Table = await ParquetReader.ReadTableFromStreamAsync(memoryStream);
+            
+            dataSet = await DataService.ConvertParquetTableToDataSetAsync(Table, CurrentFileName);
+        }
 
         // Load dataSet into DataTable
         if (dataSet != null && dataSet.Tables.Count > 0)

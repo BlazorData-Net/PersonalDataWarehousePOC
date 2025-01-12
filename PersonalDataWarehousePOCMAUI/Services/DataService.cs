@@ -63,6 +63,81 @@
         }
         #endregion
 
+        #region public async Task<DataSet> ConvertParquetTableToDataSetAsync(Parquet.Rows.Table table)
+        public async Task<DataSet> ConvertParquetTableToDataSetAsync(Parquet.Rows.Table table, string filename)
+        {
+            if (table == null)
+                throw new ArgumentNullException(nameof(table));
+
+            if (string.IsNullOrWhiteSpace(filename))
+                throw new ArgumentException("Filename cannot be null or whitespace.", nameof(filename));
+
+            var dt = new DataTable(filename);
+
+            // Retrieve schema information
+            DataField[] dataFields = table.Schema.GetDataFields();
+
+            // Add columns to the DataTable once
+            foreach (var field in dataFields)
+            {
+                // Handle nullable types
+                Type columnType = Nullable.GetUnderlyingType(field.ClrType) ?? field.ClrType;
+                dt.Columns.Add(field.Name, columnType);
+            }
+
+            // Optimize DataTable loading
+            dt.BeginLoadData();
+
+            // Convert table to stream
+            using var ms = new MemoryStream();
+            await table.WriteAsync(ms);
+
+            try
+            {
+                using (var reader = await ParquetReader.CreateAsync(ms))
+                {
+                    for (int rgIndex = 0; rgIndex < reader.RowGroupCount; rgIndex++)
+                    {
+                        using (var rowGroupReader = reader.OpenRowGroupReader(rgIndex))
+                        {
+                            // Read each column asynchronously from this row group
+                            Parquet.Data.DataColumn[] parquetColumns = new Parquet.Data.DataColumn[dataFields.Length];
+
+                            for (int colIndex = 0; colIndex < dataFields.Length; colIndex++)
+                            {
+                                parquetColumns[colIndex] = await rowGroupReader.ReadColumnAsync(dataFields[colIndex]);
+                            }
+
+                            long rowCount = rowGroupReader.RowCount;
+
+                            // Build rows from the column data
+                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+                            {
+                                object[] rowValues = new object[dataFields.Length];
+                                for (int colIndex = 0; colIndex < dataFields.Length; colIndex++)
+                                {
+                                    rowValues[colIndex] = parquetColumns[colIndex].Data.GetValue(rowIndex);
+                                }
+                                dt.Rows.Add(rowValues);
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // End optimized loading
+                dt.EndLoadData();
+            }
+
+            // Convert DataTable to DataSet
+            var ds = new DataSet();
+            ds.Tables.Add(dt);
+
+            return ds;
+        }
+        #endregion
+
         #region public async Task WriteDataTableToParquetAsync(DataTable CurrentDataTable, string CurrentTableName)
         public async Task WriteDataTableToParquetAsync(DataTable CurrentDataTable, string CurrentTableName)
         {
@@ -118,7 +193,7 @@
             {
                 ms.CopyTo(fileStream);
             }
-        } 
+        }
         #endregion
     }
 }
