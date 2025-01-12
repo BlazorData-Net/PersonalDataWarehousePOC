@@ -280,7 +280,8 @@ else
         TableList = new List<string>();
 
         // Load the TableList data
-        var parquetFolder = Path.Combine("Data", "Parquet");
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+
         if (Directory.Exists(parquetFolder))
         {
             TableList = Directory.GetFiles(parquetFolder, "*.parquet")
@@ -295,7 +296,7 @@ else
         StateHasChanged();
 
         // Load the DataTable
-        var parquetFolder = Path.Combine("Data", "Parquet");
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
         var fileName = Path.Combine(parquetFolder, $"{paramTable}.parquet");
 
         if (System.IO.File.Exists(fileName))
@@ -445,21 +446,24 @@ else
             StateHasChanged();
 
             // Delete the Parquet file
-            var fileName = Path.Combine("Data", "Parquet", $"{CurrentTableName}.parquet");
+            String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+            var fileName = Path.Combine(parquetFolder, $"{CurrentTableName}.parquet");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the C# class file
-            fileName = Path.Combine("Data", "Classes", $"{CurrentTableName}.cs");
+            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+            fileName = Path.Combine(ClassesFolder, $"{CurrentTableName}.cs");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the XSD file
-            fileName = Path.Combine("Reports", "Data", $"{CurrentTableName}Schemas.xsd");
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
+            fileName = Path.Combine(ReportsFolder, $"{CurrentTableName}Schemas.xsd");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
