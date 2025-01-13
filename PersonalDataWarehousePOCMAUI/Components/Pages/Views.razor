@@ -259,12 +259,19 @@ else
 
     protected override void OnInitialized()
     {
+        CurrentScript = SampleCode;
+
         objDataParameters = new DataParameters();
         objDataParameters.data = new List<IDictionary<string, object>>();
         objDataParameters.columns = new Dictionary<string, Type>();
 
-        LoadViewsListDropdown();
         LoadTableListDropdown();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Wait for the editor to be initialized
+        await Task.Delay(100).ContinueWith(t => LoadViewsListDropdown());
     }
 
     // Monaco Editor
@@ -275,7 +282,22 @@ else
             {
                 Language = "csharp",
                 GlyphMargin = true,
-                AutomaticLayout = true
+                AutomaticLayout = true,
+                Value = @"    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
+    {
+        // Generate random data
+        return Enumerable.Range(1, 1).Select(id => new Dictionary<string, object>
+        {
+            { ""EmployeeId"", ""1234"" },
+            { ""FirstName"", ""John"" },
+            { ""LastName"", ""Doe"" }
+        });
+    }"
             };
     }
 
@@ -284,22 +306,7 @@ else
         await _editor.AddCommand((int)KeyMod.CtrlCmd | (int)KeyCode.KeyH, (args) =>
         {
             Console.WriteLine("Ctrl+H : Initial editor command is triggered.");
-        });
-
-        var newDecorations = new ModelDeltaDecoration[]
-        {
-            new() {
-                Range = new BlazorMonaco.Range(3,1,3,1),
-                Options = new ModelDecorationOptions
-                {
-                    IsWholeLine = true,
-                    ClassName = "decorationContentClass",
-                    GlyphMarginClassName = "decorationGlyphMarginClass"
-                }
-            }
-        };
-
-        var decorationIds = await _editor.DeltaDecorations(null, newDecorations);   
+        }); 
     }
 
     private async Task OnEditorSaveRequested()
@@ -482,8 +489,6 @@ else
 
     private void LoadView(string paramView)
     {
-        IsLoading = true;
-
         // Load the DataTable
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
 
@@ -506,8 +511,6 @@ else
         {
             Message = "View not found.";
         }
-
-        IsLoading = false;
     }
 
     // Delete
