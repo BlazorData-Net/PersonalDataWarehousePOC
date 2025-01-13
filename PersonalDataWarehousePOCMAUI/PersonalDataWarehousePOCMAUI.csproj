@@ -80,6 +80,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.OData" Version="9.1.1" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
 		<PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.12.0" />
+		<PackageReference Include="Microsoft.OData.Core" Version="8.2.3" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Microsoft.Extensions.AI" Version="9.0.1-preview.1.24570.5" />
 		<PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="9.0.1-preview.1.24570.5" />

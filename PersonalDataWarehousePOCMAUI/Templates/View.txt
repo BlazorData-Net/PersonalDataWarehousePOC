@@ -10,7 +10,7 @@ namespace Controllers
     **CLASS DEFINITION**    
     public class **CLASS NAME**s 
     {
-        public async Task<ActionResult<IEnumerable<IDictionary<string, object>>>> Get()
+        public async Task<IEnumerable<IDictionary<string, object>>> Get()
         {
             string CurrentScript = "";
 
@@ -28,7 +28,7 @@ namespace Controllers
 
             var result = await objDataloader.RunDynamicCode(CurrentScript);
 
-            return Ok(result);
+            return result;
         }
     }
 }

@@ -263,7 +263,7 @@ else
         objDataParameters.data = new List<IDictionary<string, object>>();
         objDataParameters.columns = new Dictionary<string, Type>();
 
-        await LoadViewsListDropdown();
+        LoadViewsListDropdown();
         LoadTableListDropdown();
     }
 
@@ -275,22 +275,7 @@ else
             {
                 Language = "csharp",
                 GlyphMargin = true,
-                AutomaticLayout = true,
-                Value = @"    using System;
-                using System.Collections.Generic;
-                using System.Linq;
-                using System.Threading.Tasks;
-
-                public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
-                {
-                    // Generate random data
-                    return Enumerable.Range(1, 1).Select(id => new Dictionary<string, object>
-                    {
-                        { ""EmployeeId"", ""1234"" },
-                        { ""FirstName"", ""John"" },
-                        { ""LastName"", ""Doe"" }
-                    });
-                }"
+                AutomaticLayout = true
             };
     }
 
@@ -317,10 +302,7 @@ else
         var decorationIds = await _editor.DeltaDecorations(null, newDecorations);
         // You can now use '_decorationIds' to change or remove the decorations
 
-        if (_editor != null)
-        {
-            await _editor.SetValue(CurrentScript);
-        }
+        NewScript();
     }
 
     private async Task OnEditorSaveRequested()
@@ -331,6 +313,9 @@ else
             IsNewViewPopupVisible = true;
             return;
         }
+
+        // Remove any spaces from CurrentViewName
+        CurrentViewName = CurrentViewName.Replace(" ", "");
 
         // Save to file in Data/Views
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
@@ -476,7 +461,7 @@ else
 
     // Views Dropdown
 
-    private async Task LoadViewsListDropdown()
+    private void LoadViewsListDropdown()
     {
         ViewList = new List<string>();
 
@@ -574,7 +559,7 @@ else
 
             Message = $"{deletedViewName} deleted!";
 
-            await LoadViewsListDropdown();
+            LoadViewsListDropdown();
         }
     }
 
@@ -666,6 +651,9 @@ else
         }
 
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
+        // Remove any spaces from CurrentViewName
+        CurrentViewName = CurrentViewName.Replace(" ", "");
 
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
