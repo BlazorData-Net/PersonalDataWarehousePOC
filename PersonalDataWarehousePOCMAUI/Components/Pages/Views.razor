@@ -408,7 +408,7 @@ else
         // ** Write the class to a file
 
         // Define directory for output
-        String directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Data/Classes";
+        String directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
 
         // Set the file path
         string filePath = Path.Combine(directoryPath, CurrentViewName + ".cs");
@@ -725,7 +725,7 @@ else
         // ** Write the class to a file
 
         // Set the file path
-        string directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Data/Classes";
+        string directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
 
         string filePath =  Path.Combine(directoryPath, CurrentViewName + ".cs");
 
@@ -876,10 +876,14 @@ else
     {
         bool result = false;
 
-        string fileName = $"Data/Parquet/{paramViewName}.parquet";
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+
+        string fileName = $"{parquetFolder}/{paramViewName}.parquet";
         var ParquetExists = System.IO.File.Exists(fileName);
 
-        fileName = $"Data/Views/{paramViewName}.view";
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
+        fileName = $"{viewsFolder}/{paramViewName}.view";
         var ViewExists = System.IO.File.Exists(fileName);
 
         if (ParquetExists || ViewExists)
