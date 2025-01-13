@@ -257,7 +257,7 @@ else
 
     string Message = "";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         objDataParameters = new DataParameters();
         objDataParameters.data = new List<IDictionary<string, object>>();
@@ -299,10 +299,7 @@ else
             }
         };
 
-        var decorationIds = await _editor.DeltaDecorations(null, newDecorations);
-        // You can now use '_decorationIds' to change or remove the decorations
-
-        NewScript();
+        var decorationIds = await _editor.DeltaDecorations(null, newDecorations);   
     }
 
     private async Task OnEditorSaveRequested()
@@ -319,6 +316,7 @@ else
 
         // Save to file in Data/Views
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
         if (ContentChanged)
@@ -404,7 +402,7 @@ else
         String directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
 
         // Set the file path
-        string filePath = Path.Combine(directoryPath, CurrentViewName + ".cs");
+        string filePath = $@"{directoryPath}/{CurrentViewName}.cs";
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
@@ -417,7 +415,7 @@ else
         // Load the class by using its name and get its type
 
         String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
-        var codeFile = Path.Combine(ClassesFolder, $"{CurrentSelectedTableWizard}.cs");
+        var codeFile = Path.Combine(ClassesFolder, $"{CurrentViewName}.cs");
 
         if (!System.IO.File.Exists(codeFile))
         {
@@ -429,7 +427,7 @@ else
         var code = System.IO.File.ReadAllText(codeFile);
 
         // Get the Type for the class we want to generate the RDL for
-        var ClassType = XsdGenerator.GetTypeFromCode(code, $"Controllers.{DataService.FirstCharToUpper(CurrentViewName)}");
+        var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(CurrentViewName));
 
         // Step 1: Generate the schema string
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
@@ -440,7 +438,6 @@ else
         File.WriteAllText(filePath, schemaString);
 
         ContentChanged = false;
-        StateHasChanged();
     }
 
     // Table Dropdown
@@ -451,6 +448,7 @@ else
 
         // Load the TableList data
         String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+        
         if (Directory.Exists(parquetFolder))
         {
             TableList = Directory.GetFiles(parquetFolder, "*.parquet")
@@ -485,7 +483,6 @@ else
     private void LoadView(string paramView)
     {
         IsLoading = true;
-        StateHasChanged();
 
         // Load the DataTable
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
@@ -511,12 +508,11 @@ else
         }
 
         IsLoading = false;
-        StateHasChanged();
     }
 
     // Delete
 
-    private async Task Delete()
+    private void Delete()
     {
         if (CurrentViewName.Trim().Length == 0)
         {
