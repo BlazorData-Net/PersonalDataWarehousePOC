@@ -409,7 +409,7 @@
         // Reload the dropdown
         ReportList = new List<string>();
 
-        if (Directory.Exists("Reports"))
+        if (Directory.Exists(ReportsFolder))
         {
             ReportList = Directory.GetFiles(ReportsFolder, "*.rdlc")
                                  .Select(Path.GetFileNameWithoutExtension)

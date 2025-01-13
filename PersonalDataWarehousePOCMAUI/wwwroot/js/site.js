@@ -104,9 +104,6 @@ function onPrintPdf() {
         return;
     }
 
-    const printContainer = document.createElement("div");
-    document.body.appendChild(printContainer);
-
     pdfDoc.getPage(pageNum).then(page => {
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
@@ -121,40 +118,38 @@ function onPrintPdf() {
         };
 
         page.render(renderContext).promise.then(() => {
-            const img = document.createElement("img");
-            img.src = canvas.toDataURL();
-            printContainer.appendChild(img);
+            const imgData = canvas.toDataURL();
 
-            const printWindow = window.open("", "_blank");
-            if (printWindow) {
-                // Use a delay to ensure the print dialog works consistently in Chromium browsers
-                printWindow.document.open();
-                printWindow.document.write(`
-                    <html>
-                        <head>
-                            <title>Print PDF</title>
-                            <style>
-                                body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-                                img { max-width: 100%; max-height: 100%; }
-                            </style>
-                        </head>
-                        <body>${printContainer.innerHTML}</body>
-                    </html>
-                `);
-                printWindow.document.close();
+            // Create a hidden iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'absolute';
+            iframe.style.left = '-9999px';
+            document.body.appendChild(iframe);
 
-                // Wait for the content to fully load before triggering the print dialog
-                setTimeout(() => {
-                    printWindow.focus();
-                    printWindow.print();
-                    printWindow.close();
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(`
+                <html>
+                    <head>
+                        <title>Print PDF</title>
+                        <style>
+                            body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+                            img { max-width: 100%; max-height: 100%; }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${imgData}" />
+                    </body>
+                </html>
+            `);
+            iframeDoc.close();
 
-                    // Cleanup after printing
-                    document.body.removeChild(printContainer);
-                }, 500); // Adjust the delay if needed
-            } else {
-                console.error("Failed to open a new window. Please check your browser settings.");
-            }
+            // Wait for the image to load before printing
+            iframe.onload = () => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                document.body.removeChild(iframe);
+            };
         });
     }).catch(error => {
         console.error("Error while rendering page for printing:", error);
