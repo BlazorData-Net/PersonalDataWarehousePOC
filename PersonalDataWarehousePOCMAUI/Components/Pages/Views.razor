@@ -523,9 +523,6 @@ else
         }
         else
         {
-            IsLoading = true;
-            StateHasChanged();
-
             // Delete the file
             String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
 
@@ -681,7 +678,7 @@ else
 
         // Build the class definition
         StringBuilder ClassDefinition = new StringBuilder();
-        ClassDefinition.AppendLine($"public class {CurrentViewName}");
+        ClassDefinition.AppendLine($"public class {DataService.FirstCharToUpper(CurrentViewName)}");
         ClassDefinition.AppendLine("    {");
 
         // Add an Id property to the class
@@ -736,6 +733,7 @@ else
 
         string filePath =  Path.Combine(directoryPath, CurrentViewName + ".cs");
 
+        // Write the class to file
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
 
