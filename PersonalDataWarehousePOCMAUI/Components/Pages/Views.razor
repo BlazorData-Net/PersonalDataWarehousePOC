@@ -26,7 +26,7 @@ else
             <select @onchange="@(async (args) =>
                     {
                         CurrentViewName = args.Value?.ToString();
-                        await LoadView(CurrentViewName);
+                        LoadView(CurrentViewName);
                     })">
                 @foreach (var view in ViewList)
                 {
@@ -316,6 +316,11 @@ else
 
         var decorationIds = await _editor.DeltaDecorations(null, newDecorations);
         // You can now use '_decorationIds' to change or remove the decorations
+
+        if (_editor != null)
+        {
+            await _editor.SetValue(CurrentScript);
+        }
     }
 
     private async Task OnEditorSaveRequested()
@@ -488,11 +493,11 @@ else
         if (ViewList.Count > 0)
         {
             CurrentViewName = ViewList.First();
-            await LoadView(CurrentViewName);
+            LoadView(CurrentViewName);
         }
     }
 
-    private async Task LoadView(string paramView)
+    private void LoadView(string paramView)
     {
         IsLoading = true;
         StateHasChanged();
@@ -505,11 +510,11 @@ else
         if (System.IO.File.Exists(fileName))
         {
             // Read contents into CurrentScript
-            CurrentScript = await System.IO.File.ReadAllTextAsync(fileName);
+            CurrentScript = System.IO.File.ReadAllText(fileName);
 
             if (_editor != null)
             {
-                await _editor.SetValue(CurrentScript);
+                _editor.SetValue(CurrentScript);
             }
 
             // Set CurrentViewName
@@ -782,7 +787,7 @@ else
         }
 
         // Load the view
-        await LoadView(CurrentViewName);
+        LoadView(CurrentViewName);
     }
 
     // Code Execution
