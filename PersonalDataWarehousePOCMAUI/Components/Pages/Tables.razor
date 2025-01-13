@@ -144,7 +144,7 @@ else
     private IBrowserFile CurrentFile;
 
     List<string> TableList = new List<string>();
-    List<string> TableColumns = new List<string>();
+    Dictionary<string, string> TableColumns = new Dictionary<string, string>();
     List<string> colGeneralErrors = new List<string>();
     DataTable CurrentDataTable = new DataTable();
     string CurrentTableName = string.Empty;
@@ -318,9 +318,12 @@ else
         Message = "";
 
         // Get a list of the columns from the DataTable
-        TableColumns =
-        CurrentDataTable.Columns.Cast<DataColumn>()
-        .Select(x => x.ColumnName).ToList();
+        TableColumns = CurrentDataTable.Columns
+        .Cast<DataColumn>()
+        .ToDictionary(
+            column => column.ColumnName,
+            column => column.DataType.Name
+        );
 
         // Create sheet with the number of columns
         sheet = new Sheet(CurrentDataTable.Rows.Count, TableColumns.Count);
@@ -334,7 +337,7 @@ else
         sheet.Commands.PauseHistory();
 
         int i = 0;
-        foreach (string objDatabaseColumn in TableColumns)
+        foreach (string objDatabaseColumn in TableColumns.Keys)
         {
             sheet.Columns.SetHeadings(i, i, objDatabaseColumn);
             i++;
@@ -344,12 +347,12 @@ else
         foreach (DataRow dataRow in CurrentDataTable.Rows)
         {
             i = 0;
-            foreach (string objDatabaseColumn in TableColumns)
+            foreach (var objDatabaseColumn in TableColumns)
             {
                 // Set the value of the cell
                 sheet.Cells[ii, i].Value = dataRow[i].ToString();
                 sheet.Cells[ii, i].Format = new CellFormat() { IsReadOnly = false };
-                sheet.Cells[ii, i].Type = "string";
+                sheet.Cells[ii, i].Type = objDatabaseColumn.Value;
                 i++;
             }
 
@@ -500,7 +503,10 @@ else
 
         foreach (var column in TableColumns)
         {
-            CurrentDataTable.Columns.Add(new DataColumn(column, typeof(String)));
+            string columnName = column.Key;
+            Type columnType = GetColumnType(column.Value);
+
+            CurrentDataTable.Columns.Add(new DataColumn(columnName, columnType));
         }
 
         for (int i = 0; i < sheet.NumRows; i++)
@@ -725,7 +731,9 @@ else
         string fileName = $"{folderPath}/{paramTableName}.parquet";
         var ParquetExists = System.IO.File.Exists(fileName);
 
-        fileName = $"Data/Views/{paramTableName}.view";
+        String ViewsFolderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
+        fileName = $"{ViewsFolderPath}/{paramTableName}.view";
         var ViewExists = System.IO.File.Exists(fileName);
 
         if (ParquetExists || ViewExists)
@@ -734,6 +742,40 @@ else
         }
 
         return result;
+    }
+    #endregion
+
+    #region public System.Type GetColumnType(string paramType)
+    public System.Type GetColumnType(string paramType)
+    {
+        Type ReturnType = typeof(string);
+
+        if (paramType.ToLower().Contains("int"))
+        {
+            return typeof(int);
+        }
+
+        if (paramType.ToLower().Contains("double"))
+        {
+            return typeof(double);
+        }
+
+        if (paramType.ToLower().StartsWith("time"))
+        {
+            return typeof(TimeSpan);
+        }
+
+        if (paramType.ToLower().Contains("char"))
+        {
+            return typeof(string);
+        }
+
+        if (paramType.ToLower().Contains("date"))
+        {
+            return typeof(DateTime);
+        }
+
+        return ReturnType;
     }
     #endregion
 }
