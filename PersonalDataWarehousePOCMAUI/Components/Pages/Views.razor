@@ -423,7 +423,20 @@ else
         // Load the class and generate the schema
         // Load the class by using its name and get its type
 
-        var ClassType = XsdGenerator.GetTypeFromCurrentDomain($"Controllers.{CurrentViewName}");
+        String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+        var codeFile = Path.Combine(ClassesFolder, $"{CurrentSelectedTableWizard}.cs");
+
+        if (!System.IO.File.Exists(codeFile))
+        {
+            Message = $"{codeFile} Code file not found.";
+            return;
+        }
+
+        // Load the code from the file
+        var code = System.IO.File.ReadAllText(codeFile);
+
+        // Get the Type for the class we want to generate the RDL for
+        var ClassType = XsdGenerator.GetTypeFromCode(code, $"Controllers.{DataService.FirstCharToUpper(CurrentViewName)}");
 
         // Step 1: Generate the schema string
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
@@ -632,7 +645,8 @@ else
             return;
         }
 
-        var viewsFolder = Path.Combine("Data", "Views");
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
         if (DetectDuplicate(CurrentViewName))

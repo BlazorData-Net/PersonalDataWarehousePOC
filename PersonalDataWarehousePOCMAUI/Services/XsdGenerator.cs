@@ -82,14 +82,6 @@ public static class XsdGenerator
         return "xs:anyType";
     }
 
-    public static Type GetTypeFromCurrentDomain(string fullyQualifiedClassName)
-    {
-        // e.g. "MyNamespace.ReportItem"
-        return AppDomain.CurrentDomain.GetAssemblies()
-            .Select(assembly => assembly.GetType(fullyQualifiedClassName))
-            .FirstOrDefault(t => t != null);
-    }
-
     public static Type GetTypeFromCode(string code, string ClassName)
     {
         // 1. Parse the syntax tree

@@ -251,10 +251,11 @@
         ReportList = new List<string>();
 
         // Load the ReportList data
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
 
-        if (Directory.Exists("Reports"))
+        if (Directory.Exists(ReportsFolder))
         {
-            ReportList = Directory.GetFiles("Reports", "*.rdlc")
+            ReportList = Directory.GetFiles(ReportsFolder, "*.rdlc")
                                  .Select(Path.GetFileNameWithoutExtension)
                                  .ToList();
         }
@@ -374,21 +375,31 @@
             return;
         }
 
-        // Get executing assembly path
-        var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        // Load the code for the class we want to generate the RDL for
+        String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+        var codeFile = Path.Combine(ClassesFolder, $"{CurrentSelectedTableWizard}.cs");
+
+        if (!System.IO.File.Exists(codeFile))
+        {
+            Message = $"{codeFile} Code file not found.";
+            return;
+        }
+
+        // Load the code from the file
+        var code = System.IO.File.ReadAllText(codeFile);
 
         // Get the Type for the class we want to generate the RDL for
-        var ClassType = XsdGenerator.GetTypeFromCurrentDomain($"Controllers.{CurrentSelectedTableWizard}");
+        var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(CurrentSelectedTableWizard));
 
         // Generate an RDL string dynamically:
         string rdlXml = DynamicRdlBuilder.GenerateDynamicRdl(
             ClassType,
             reportTitle: $"{CurrentReportName} Report",
-            schemaPath: @$"{assemblyPath}\Reports\Data\{CurrentSelectedTableWizard}.xsd"
+            schemaPath: @$"{ReportsFolder}\Data\{CurrentSelectedTableWizard}.xsd"
         );
 
         // You can then save the string to a .rdl file:
-        System.IO.File.WriteAllText(@$"Reports/{CurrentReportName}.rdlc", rdlXml);
+        System.IO.File.WriteAllText(fileName, rdlXml);
 
         Message = $"{CurrentReportName} saved!";
 
@@ -400,7 +411,7 @@
 
         if (Directory.Exists("Reports"))
         {
-            ReportList = Directory.GetFiles("Reports", "*.rdlc")
+            ReportList = Directory.GetFiles(ReportsFolder, "*.rdlc")
                                  .Select(Path.GetFileNameWithoutExtension)
                                  .ToList();
         }
@@ -437,8 +448,9 @@
     public static bool DetectDuplicate(string paramReportName)
     {
         bool result = false;
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
 
-        string fileName = $"Reports/{paramReportName}.rdlc";
+        string fileName = $"{ReportsFolder}/{paramReportName}.rdlc";
         var ReportExists = System.IO.File.Exists(fileName);
 
         if (ReportExists)
