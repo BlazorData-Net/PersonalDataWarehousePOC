@@ -72,6 +72,8 @@ else
             {
                 <span>&nbsp; &nbsp;</span>
                 <button @onclick="Delete">Delete</button>
+                <span>&nbsp; &nbsp;</span>
+                <button @onclick="Export">Export</button>
             }
             <br />
         }
@@ -104,6 +106,32 @@ else
                                 <button type="submit">Submit</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (IsExportVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Export</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseExportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="ExportExcel">Excel</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="ExportParquet">Parquet</button>
                     </div>
                 </div>
             </div>
@@ -157,6 +185,7 @@ else
     bool IsShowFileUpload = true;
     bool IsLoadingSheet = false;
     bool IsNewTablePopupVisible = false;
+    bool IsExportVisible = false;
 
     string UploadVisibility => IsShowFileUpload ? "display:block;" : "display:none;";
 
@@ -664,6 +693,34 @@ else
         File.WriteAllText(filePath, schemaString);
     }
     #endregion
+
+    // Export
+
+    private void Export()
+    {
+        IsExportVisible = true;
+    }
+
+    private void CloseExportPopup()
+    {
+        IsExportVisible = false;
+    }
+
+    private async Task ExportExcel()
+    {
+        IsExportVisible = false;
+        // Export the DataTable to Excel
+        //await DataService.ExportDataTableToExcelAsync(CurrentDataTable, CurrentTableName);
+        IsExportVisible = false;
+    }
+
+    private async Task ExportParquet()
+    {
+        IsExportVisible = false;
+        // Export the DataTable to Parquet
+        //await DataService.ExportDataTableToParquetAsync(CurrentDataTable, CurrentTableName);
+        IsExportVisible = false;
+    }
 
     // Utility
 
