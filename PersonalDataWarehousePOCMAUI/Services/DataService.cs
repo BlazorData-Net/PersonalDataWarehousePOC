@@ -9,7 +9,7 @@
     using Parquet.Data;
     using System.Threading.Tasks;
     using DataColumn = Parquet.Data.DataColumn;
-    using OfficeOpenXml;
+    using ClosedXML.Excel;
 
     public class DataService
     {
@@ -244,33 +244,32 @@
             await parquetTable.WriteAsync(ms);
 
             return ms.ToArray();
-        } 
+        }
         #endregion
 
+        #region public async Task<byte[]> ExportDataTableToExcelAsync(DataTable CurrentDataTable, string CurrentTableName)
         public async Task<byte[]> ExportDataTableToExcelAsync(DataTable CurrentDataTable, string CurrentTableName)
         {
-            //if (CurrentDataTable == null) throw new ArgumentNullException(nameof(CurrentDataTable));
-            //var excelPackage = new ExcelPackage();
+            // Use a memory stream to store the Excel workbook
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var workbook = new XLWorkbook())
+                {
+                    // Add the DataTable as a worksheet with the specified table name
+                    var worksheet = workbook.Worksheets.Add(CurrentDataTable, CurrentTableName);
 
-            //var ws = excelPackage.Workbook.Worksheets.Add(CurrentTableName);
+                    // Optional: Adjust column widths for better readability
+                    worksheet.Columns().AdjustToContents();
 
-            //// Add the headers
-            //for (int i = 0; i < CurrentDataTable.Columns.Count; i++)
-            //{
-            //    ws.Cells[1, i + 1].Value = CurrentDataTable.Columns[i].ColumnName;
-            //}
+                    // Save the workbook to the memory stream
+                    workbook.SaveAs(memoryStream);
+                }
 
-            //// Add the data
-            //for (int i = 0; i < CurrentDataTable.Rows.Count; i++)
-            //{
-            //    for (int j = 0; j < CurrentDataTable.Columns.Count; j++)
-            //    {
-            //        ws.Cells[i + 2, j + 1].Value = CurrentDataTable.Rows[i][j];
-            //    }
-            //}
-
-            //return excelPackage.GetAsByteArray();
-        }
+                // Return the byte array from the memory stream
+                return await Task.FromResult(memoryStream.ToArray());
+            }
+        } 
+        #endregion
 
         // Utility
 

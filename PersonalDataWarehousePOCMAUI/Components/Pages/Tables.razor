@@ -23,9 +23,9 @@
     <label style="@(IsShowFileUpload ? "" : "display:none;")">Open Excel File: </label>
     <br />
     <InputFile @key="resetInputFileFlag"
-               OnChange="HandleFileSelectedAsync"
-               accept=".xls,.xlsx,.parquet"
-               style="@UploadVisibility" />
+    OnChange="HandleFileSelectedAsync"
+    accept=".xls,.xlsx,.parquet"
+    style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label>Selected File: @CurrentFileName</label>
@@ -129,10 +129,15 @@ else
                         </div>
                     </div>
                     <div class="window-body has-space" style="text-align: center;">
-                        <span>&nbsp; &nbsp;</span>
-                        <button @onclick="ExportExcel">Excel</button>
-                        <span>&nbsp; &nbsp;</span>
-                        <button @onclick="ExportParquet">Parquet</button>
+
+                        <div role="progressbar" class="marquee" style="width: 100%; display: @(IsLoadingSheet ? "block" : "none");"></div>
+
+                        <div style="display: @(IsLoadingSheet ? "none" : "block");">
+                            <span>&nbsp; &nbsp;</span>
+                            <button @onclick="ExportExcel">Excel</button>
+                            <span>&nbsp; &nbsp;</span>
+                            <button @onclick="ExportParquet">Parquet</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -281,7 +286,7 @@ else
         if (CurrentFileName.EndsWith(".parquet"))
         {
             var Table = await ParquetReader.ReadTableFromStreamAsync(memoryStream);
-            
+
             dataSet = await DataService.ConvertParquetTableToDataSetAsync(Table, CurrentFileName);
         }
 
@@ -709,7 +714,7 @@ else
 
     private async Task ExportExcel()
     {
-        IsExportVisible = false;
+        IsLoadingSheet = true;
 
         // Export the DataTable to Excel
         byte[] ExcelContents = await DataService.ExportDataTableToExcelAsync(CurrentDataTable, CurrentTableName);
@@ -717,9 +722,7 @@ else
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ExcelContents);
 
-        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.xlsx", stream);
-
-        IsExportVisible = false;
+        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.xlsx", stream);       
 
         if (fileSaverResult != null)
         {
@@ -728,11 +731,14 @@ else
                 Message = fileSaverResult.Exception.Message;
             }
         }
+
+        IsLoadingSheet = false;
+        IsExportVisible = false;
     }
 
     private async Task ExportParquet()
     {
-        IsExportVisible = false;
+        IsLoadingSheet = true;
 
         // Export the DataTable to Parquet
         byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(CurrentDataTable, CurrentTableName);
@@ -742,7 +748,8 @@ else
 
         var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.parquet", stream);        
 
-        IsExportVisible = false;
+        IsLoadingSheet = false;
+        StateHasChanged();
 
         if (fileSaverResult != null)
         {
@@ -751,6 +758,9 @@ else
                 Message = fileSaverResult.Exception.Message;
             }
         }
+
+        IsLoadingSheet = false;
+        IsExportVisible = false;
     }
 
     // Utility
