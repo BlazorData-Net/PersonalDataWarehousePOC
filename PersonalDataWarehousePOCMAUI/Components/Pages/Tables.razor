@@ -23,9 +23,9 @@
     <label style="@(IsShowFileUpload ? "" : "display:none;")">Open Excel File: </label>
     <br />
     <InputFile @key="resetInputFileFlag"
-    OnChange="HandleFileSelectedAsync"
-    accept=".xls,.xlsx,.parquet"
-    style="@UploadVisibility" />
+               OnChange="HandleFileSelectedAsync"
+               accept=".xls,.xlsx,.parquet"
+               style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label>Selected File: @CurrentFileName</label>
@@ -56,7 +56,7 @@ else
                     @foreach (var table in TableList)
                     {
                         <option value="@table"
-                        selected="@(table == CurrentTableName ? "selected" : null)">
+                                selected="@(table == CurrentTableName ? "selected" : null)">
                             @table
                         </option>
                     }
@@ -72,7 +72,7 @@ else
             @if (CurrentTableName != "")
             {
                 <span>&nbsp; &nbsp;</span>
-                <button @onclick="Delete">Delete</button>
+                <button @onclick="DeleteConfirmation">Delete</button>
                 <span>&nbsp; &nbsp;</span>
                 <button @onclick="Export">Export</button>
             }
@@ -140,6 +140,7 @@ else
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -171,6 +172,36 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (ShowDeleteConfirmation)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Confirm Delete</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseDeleteConfirmationPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="Delete">Yes</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="CloseDeleteConfirmationPopup">No</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+
 @code {
     private Sheet sheet;
 
@@ -192,6 +223,8 @@ else
     bool IsLoadingSheet = false;
     bool IsNewTablePopupVisible = false;
     bool IsExportVisible = false;
+
+    bool ShowDeleteConfirmation = false;
 
     string UploadVisibility => IsShowFileUpload ? "display:block;" : "display:none;";
 
@@ -473,6 +506,8 @@ else
 
     private async Task Delete()
     {
+        ShowDeleteConfirmation = false;
+
         if (CurrentTableName.Trim().Length == 0)
         {
             Message = "Must save table first.";
@@ -526,6 +561,16 @@ else
     private void CloseMessagePopup()
     {
         Message = "";
+    }
+
+    private void DeleteConfirmation()
+    {
+        ShowDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmationPopup()
+    {
+        ShowDeleteConfirmation = false;
     }
 
     // Datasheet Operations
@@ -649,7 +694,7 @@ else
             // Build the line:
             DictionaryMapping.AppendLine(
                 $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
-                +"? dict[\"{propertyName}\"]?.ToString() : null,");
+                + "? dict[\"{propertyName}\"]?.ToString() : null,");
         }
 
         // ** Open the Class.txt template from Templates\Class.txt and replace the content with the codeBuilder
@@ -722,7 +767,7 @@ else
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ExcelContents);
 
-        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.xlsx", stream);       
+        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.xlsx", stream);
 
         if (fileSaverResult != null)
         {
@@ -746,7 +791,7 @@ else
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ParquetContents);
 
-        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.parquet", stream);        
+        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.parquet", stream);
 
         IsLoadingSheet = false;
         StateHasChanged();
