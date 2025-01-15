@@ -4,6 +4,7 @@
 @using System.Data
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Menu
+@using CommunityToolkit.Maui.Storage
 @using ExcelDataReader
 @using Parquet;
 @using Parquet.Schema
@@ -709,17 +710,47 @@ else
     private async Task ExportExcel()
     {
         IsExportVisible = false;
+
         // Export the DataTable to Excel
-        //await DataService.ExportDataTableToExcelAsync(CurrentDataTable, CurrentTableName);
+        byte[] ExcelContents = await DataService.ExportDataTableToExcelAsync(CurrentDataTable, CurrentTableName);
+
+        // Read DocumentContents into a MemoryStream
+        var stream = new MemoryStream(ExcelContents);
+
+        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.xlsx", stream);
+
         IsExportVisible = false;
+
+        if (fileSaverResult != null)
+        {
+            if (!fileSaverResult.IsSuccessful)
+            {
+                Message = fileSaverResult.Exception.Message;
+            }
+        }
     }
 
     private async Task ExportParquet()
     {
         IsExportVisible = false;
+
         // Export the DataTable to Parquet
-        //await DataService.ExportDataTableToParquetAsync(CurrentDataTable, CurrentTableName);
+        byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(CurrentDataTable, CurrentTableName);
+
+        // Read DocumentContents into a MemoryStream
+        var stream = new MemoryStream(ParquetContents);
+
+        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.parquet", stream);        
+
         IsExportVisible = false;
+
+        if (fileSaverResult != null)
+        {
+            if (!fileSaverResult.IsSuccessful)
+            {
+                Message = fileSaverResult.Exception.Message;
+            }
+        }
     }
 
     // Utility
