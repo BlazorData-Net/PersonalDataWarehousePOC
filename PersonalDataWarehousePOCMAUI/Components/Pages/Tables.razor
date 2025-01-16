@@ -5,12 +5,14 @@
 @using BlazorDatasheet.Core.Formats
 @using BlazorDatasheet.Menu
 @using CommunityToolkit.Maui.Storage
+@using CsvHelper
 @using ExcelDataReader
 @using Parquet;
 @using Parquet.Schema
 @using PersonalDataWarehousePOC.Services
 @using System.Text
 @using System.Reflection
+@using System.Globalization
 @inject DataService DataService
 
 <PageTitle>Tables</PageTitle>
@@ -24,7 +26,7 @@
     <br />
     <InputFile @key="resetInputFileFlag"
                OnChange="HandleFileSelectedAsync"
-               accept=".xls,.xlsx,.parquet"
+               accept=".csv,.xls,.xlsx,.parquet"
                style="@UploadVisibility" />
     @if (IsFileSelected)
     {
@@ -321,6 +323,22 @@ else
             var Table = await ParquetReader.ReadTableFromStreamAsync(memoryStream);
 
             dataSet = await DataService.ConvertParquetTableToDataSetAsync(Table, CurrentFileName);
+        }
+
+        // If the file is a CSV file, load the data into a DataTable
+        if (CurrentFileName.EndsWith(".csv"))
+        {
+            using var reader = new StreamReader(memoryStream);
+            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+            {
+                // Do any configuration to `CsvReader` before creating CsvDataReader.
+                using (var dr = new CsvDataReader(csv))
+                {
+                    dataSet = new DataSet();
+                    dataSet.Tables.Add("Sheet1");
+                    dataSet.Tables[0].Load(dr);
+                }
+            }
         }
 
         // Load dataSet into DataTable
