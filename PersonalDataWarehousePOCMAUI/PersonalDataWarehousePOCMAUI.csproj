@@ -62,26 +62,25 @@
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup>	
         <PackageReference Include="ClosedXML" Version="0.104.2" />
         <PackageReference Include="KustoLoco.Core" Version="1.1.0" />
         <PackageReference Include="KustoLoco.Rendering" Version="1.1.0" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
-    </ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Maui" Version="7.0.1" />
 		<PackageReference Include="BlazorMonaco" Version="3.3.0" />
 		<PackageReference Include="BlazorDatasheet" Version="0.5.2.5" />
 		<PackageReference Include="CS-Script" Version="4.8.21" />
 		<PackageReference Include="ExcelDataReader" Version="3.7.0" />
 		<PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+		<PackageReference Include="Microsoft.SqlServer.Server" Version="1.0.0" />
+		<PackageReference Include="Microsoft.SqlServer.Types" Version="160.1000.6" />
 		<PackageReference Include="Microsoft.AspNetCore.OData" Version="9.1.1" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
 		<PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.12.0" />
-		<PackageReference Include="Microsoft.OData.Core" Version="8.2.3" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Microsoft.Extensions.AI" Version="9.0.1-preview.1.24570.5" />
 		<PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="9.0.1-preview.1.24570.5" />

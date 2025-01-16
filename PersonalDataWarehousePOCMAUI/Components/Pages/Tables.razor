@@ -13,7 +13,9 @@
 @using System.Text
 @using System.Reflection
 @using System.Globalization
+@using PersonalDataWarehousePOCMAUI.Models
 @inject DataService DataService
+@inject ConnectionSettingsService ConnectionSettings
 
 <PageTitle>Tables</PageTitle>
 
@@ -22,8 +24,8 @@
 
 <!-- MAIN UI -->
 <div>
-    <label style="@(IsShowFileUpload ? "" : "display:none;")">Open Excel File: </label>
-    <br />
+    <button style="@(IsShowFileUpload ? "" : "display:none;")" @onclick="OpenShowConnectionDialog">Import Data</button>
+    <br /><br />
     <InputFile @key="resetInputFileFlag"
                OnChange="HandleFileSelectedAsync"
                accept=".csv,.xls,.xlsx,.parquet"
@@ -37,7 +39,6 @@
         </button>
     }
 </div>
-<br />
 @if (IsLoadingSheet)
 {
     <div role="progressbar" class="marquee" style="width: 25%"></div>
@@ -87,6 +88,17 @@ else
 }
 
 <!-- POPUPS -->
+@if (ShowConnectionDialog)
+{
+    <DatabaseConnectionDialog ConnectionType="@ConnectionType"
+                              DatabaseName="@DatabaseName"
+                              DatabasePassword="@DatabasePassword"
+                              DatabaseUsername="@DatabaseUsername"
+                              ServerName="@ServerName"
+                              Close="CloseShowConnectionDialog"
+                              OnSetConnection="SetConnectionString" />
+}
+
 @if (IsNewTablePopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -227,6 +239,23 @@ else
     bool IsExportVisible = false;
 
     bool ShowDeleteConfirmation = false;
+    bool ShowConnectionDialog { get; set; } = false;
+    bool isLoading { get; set; } = false;
+    bool isReadyForImport { get; set; } = false;
+
+    private string DatabaseConnectionString = "";
+    private string FabricConnectionString = "";
+    private string AzureStorageConnectionString = "";
+    private string DatabaseConnectionStringStatusMessage = "Not Set";
+    private string FabricConnectionStringStatusMessage = "Not Set";
+    private string AzureStorageConnectionStringStatusMessage = "Not Set";
+
+    private string ConnectionType = "SQL Server";
+    private string ServerName = "localhost";
+    private string DatabaseName = "AdventureWorks";
+    private string DatabasePassword = "";
+    private string DatabaseUsername = "";
+    private string IntegratedSecurityDisplay = "";
 
     string UploadVisibility => IsShowFileUpload ? "display:block;" : "display:none;";
 
@@ -825,6 +854,59 @@ else
         IsLoadingSheet = false;
         IsExportVisible = false;
     }
+
+    // ********************************************************************************************************************
+    // Database Connection
+    // ********************************************************************************************************************
+
+    #region private void OpenShowConnectionDialog()
+    private void OpenShowConnectionDialog()
+    {
+        ShowConnectionDialog = true;
+    }
+    #endregion
+
+    #region private void CloseShowConnectionDialog()
+    private void CloseShowConnectionDialog()
+    {
+        ShowConnectionDialog = false;
+    }
+    #endregion
+
+    #region private void SetConnectionString(string strConnectionString)
+    private void SetConnectionString(string strConnectionString)
+    {
+        // Set the connection string to the global variable
+
+        if (ConnectionType == "SQL")
+        {
+            DatabaseConnectionString = strConnectionString;
+
+            if (DatabaseConnectionString != "")
+            {
+                DatabaseConnectionStringStatusMessage = "Set";
+            }
+        }
+
+        if (ConnectionType == "Fabric")
+        {
+            FabricConnectionString = strConnectionString;
+
+            if (FabricConnectionString != "")
+            {
+                FabricConnectionStringStatusMessage = "Set";
+            }
+        }
+
+        ShowConnectionDialog = false;
+
+        if ((DatabaseConnectionString != "") || (FabricConnectionString != ""))
+        {
+            isReadyForImport = true;
+            //GetTablesInDatabase();
+        }
+    }
+    #endregion
 
     // Utility
 
