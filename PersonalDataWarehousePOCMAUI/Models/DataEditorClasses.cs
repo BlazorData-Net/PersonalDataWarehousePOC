@@ -13,6 +13,13 @@ namespace PersonalDataWarehousePOCMAUI.Models
         public bool IntegratedSecurity { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+        public string ConnectionString { get; set; }
+    }
+
+    public class DatabaseImport
+    {
+        public ConnectionSetting ConnectionSetting { get; set; }
+        public string DatabaseQuery { get; set; }
     }
 
     public class DTOStatus

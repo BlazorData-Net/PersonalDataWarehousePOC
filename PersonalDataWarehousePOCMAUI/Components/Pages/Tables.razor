@@ -96,7 +96,7 @@ else
                               DatabaseUsername="@DatabaseUsername"
                               ServerName="@ServerName"
                               Close="CloseShowConnectionDialog"
-                              OnSetConnection="SetConnectionString" />
+                              OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsNewTablePopupVisible)
@@ -873,38 +873,13 @@ else
     }
     #endregion
 
-    #region private void SetConnectionString(string strConnectionString)
-    private void SetConnectionString(string strConnectionString)
+    #region private void SetDatabaseConnection(DatabaseImport objDatabaseImport)
+    private void SetDatabaseConnection(DatabaseImport objDatabaseImport)
     {
         // Set the connection string to the global variable
 
-        if (ConnectionType == "SQL")
-        {
-            DatabaseConnectionString = strConnectionString;
-
-            if (DatabaseConnectionString != "")
-            {
-                DatabaseConnectionStringStatusMessage = "Set";
-            }
-        }
-
-        if (ConnectionType == "Fabric")
-        {
-            FabricConnectionString = strConnectionString;
-
-            if (FabricConnectionString != "")
-            {
-                FabricConnectionStringStatusMessage = "Set";
-            }
-        }
-
         ShowConnectionDialog = false;
 
-        if ((DatabaseConnectionString != "") || (FabricConnectionString != ""))
-        {
-            isReadyForImport = true;
-            //GetTablesInDatabase();
-        }
     }
     #endregion
 
