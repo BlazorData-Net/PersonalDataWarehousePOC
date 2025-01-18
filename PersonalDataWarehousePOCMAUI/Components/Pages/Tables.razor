@@ -93,11 +93,11 @@ else
                 <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">remove</i>
                 </button>
-                <button @onclick="Export" title="Export" style="background:none;border:none;">
-                    <i class="material-icons" style="color:black;">file_download</i>
-                </button>
                 @if (CurrentTableName != "")
                 {
+                    <button @onclick="Export" title="Export" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">file_download</i>
+                    </button>
                     <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
                         <i class="material-icons" style="color:black;">delete</i>
                     </button>
@@ -319,7 +319,7 @@ else
         LoadTableListDropdown();
 
         // Initialize the sheet
-        sheet = new Sheet(10, 10);
+        CurrentDataTable = new DataTable();
 
         LoadTableListDropdown();
 
