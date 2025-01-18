@@ -21,6 +21,7 @@ namespace PersonalDataWarehousePOCMAUI.Models
     {
         public ConnectionSetting ConnectionSetting { get; set; }
         public string TableName { get; set; }
+        public string SQLQuery { get; set; }
     }
 
     public class DTOStatus

@@ -13,8 +13,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                <h4 style="color:red">@strStatusMessage</h4>                
-                @if(ConnectionMode == "DatabaseConnection")
+                <h4 style="color:red">@strStatusMessage</h4>
+                @if (ConnectionMode == "DatabaseConnection")
                 {
                     <br />
                     <table class="form-group" cellpadding="4" cellspacing="4">
@@ -103,21 +103,56 @@
                                 </td>
                             </tr>
                         </tbody>
-                    </table>                    
+                    </table>
                 }
                 else
                 {
-                    <div>
-                        <b>Table: </b>
-                        <select @onchange="OnSelectedTableChanged" style="width: 100%">
-                            @foreach (var tableName in tableNames)
-                            {
-                                <option value="@tableName">@tableName</option>
-                            }
-                        </select>
+                    <div style="display: flex; flex-direction: row; align-items: center;">
+                        <div style="display: flex; align-items: center; margin-right: 20px; cursor: pointer;"
+                             @onclick="() => SelectTable()">
+                            <input type="radio"
+                                   id="radioTable"
+                                   name="ImportMode"
+                                   value="Table"
+                                   checked="@(ImportMode == "Table")"
+                                   style="margin-right: 5px;" />
+                            <label for="radioTable" style="cursor: pointer;">Table</label>
+                        </div>
+                        <div style="display: flex; align-items: center; cursor: pointer;"
+                             @onclick="() => SelectQuery()">
+                            <input type="radio"
+                                   id="radioQuery"
+                                   name="ImportMode"
+                                   value="Query"
+                                   checked="@(ImportMode == "Query")"
+                                   style="margin-right: 5px;" />
+                            <label for="radioQuery" style="cursor: pointer;">Query</label>
+                        </div>
                     </div>
                     <br />
-                    <br />
+                    @if (ImportMode == "Table")
+                    {
+                        <div style="width: 100%; height: 100px; overflow: auto">
+                            <br />
+                            <select @onchange="OnSelectedTableChanged" style="width: 100%">
+                                @foreach (var tableName in tableNames)
+                                {
+                                    <option value="@tableName">@tableName</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="width: 100%; height: 100px; overflow: auto">
+                            <div class="window-body has-space">
+                                <textarea id="TSQLQuery"
+                                          rows="3"
+                                          @bind="TSQLQuery"
+                                          style="width: 100%; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
+                            </div>
+                        </div>
+                    }
                     <table class="form-group" cellpadding="4" cellspacing="4">
                         <tbody>
                             <tr>
@@ -125,7 +160,7 @@
                                     @if (!boolProcessing)
                                     {
                                         <button type="button" @onclick="() => ImportTable()">
-                                            Import Table
+                                            Import Data
                                         </button>
                                     }
                                     else
@@ -146,7 +181,7 @@
 </div>
 
 @code {
-    #nullable disable
+#nullable disable
     [Parameter] public string ServerName { get; set; }
     [Parameter] public string DatabaseName { get; set; }
     [Parameter] public string ConnectionType { get; set; }
@@ -166,6 +201,8 @@
     private string DatabaseConnectionString { get; set; } = "";
 
     private string ConnectionMode { get; set; } = "DatabaseConnection";
+    private string ImportMode = "Table";
+    private string TSQLQuery = "";
 
     private List<string> OptionsTrueFalse = new List<string> { "True", "False" };
     private List<string> OptionsConnectionType = new List<string> { "SQL Server", "Fabric Warehouse" };
@@ -240,7 +277,47 @@
         objDatabaseImport.ConnectionSetting = ConnectionSetting;
         objDatabaseImport.TableName = selectedTable;
 
+        if (ImportMode == "Query")
+        {
+            boolProcessing = true;
+
+            objDatabaseImport.SQLQuery = TSQLQuery;
+
+            // Try to execute the query
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionSetting.ConnectionString))
+                {
+                    connection.Open();
+                    // Execute the query
+                    using (SqlCommand command = new SqlCommand(TSQLQuery, connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                boolProcessing = false;
+                strStatusMessage = ex.GetBaseException().Message;
+                return;
+            }
+        }
+
+        boolProcessing = false;
+
         await OnSetConnection.InvokeAsync(objDatabaseImport);
+    }
+
+    private void SelectTable()
+    {
+        ImportMode = "Table";
+    }
+
+    private void SelectQuery()
+    {
+        ImportMode = "Query";
     }
 
     #region public DTOStatus SetConnectionSetting(ConnectionSetting objConnectionSetting)
