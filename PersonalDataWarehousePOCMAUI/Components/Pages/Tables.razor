@@ -23,7 +23,31 @@
 
 <h4>Tables</h4>
 <br />
+<div>
+    @if (TableList.Count > 0)
+    {
+        @if (CurrentTableName != "")
+        {
+            <br />
 
+            <label>Select Table: </label>
+            <select @onchange="@(async (args) =>
+                    {
+                        CurrentTableName = args.Value?.ToString();
+                        await LoadTableData(CurrentTableName);
+                    })">
+                @foreach (var table in TableList)
+                {
+                    <option value="@table"
+                            selected="@(table == CurrentTableName ? "selected" : null)">
+                        @table
+                    </option>
+                }
+            </select>
+        }
+    }
+</div>
+<br />
 <div style="display: flex; align-items: center; flex-wrap: nowrap;">
     <button style="@(IsShowFileUpload ? "" : "display:none;")" @onclick="OpenShowConnectionDialog">
         Import Data
@@ -50,43 +74,37 @@
 else
 {
     <div>
-        @if (TableList.Count > 0)
-        {
-            @if (CurrentTableName != "")
-            {
-                <br /><label>Select Table: </label>
-                <select @onchange="@(async (args) =>
-                    {
-                        CurrentTableName = args.Value?.ToString();
-                        await LoadTableData(CurrentTableName);
-                    })">
-                    @foreach (var table in TableList)
-                    {
-                        <option value="@table"
-                        selected="@(table == CurrentTableName ? "selected" : null)">
-                            @table
-                        </option>
-                    }
-                </select>
-            }
-        }
-    </div>
-    <br />
-    <div>
         @if (CurrentDataTable.Rows.Count > 0)
         {
-            <button @onclick="Save">Save</button>
-            @if (CurrentTableName != "")
-            {
-                <span>&nbsp; &nbsp;</span>
-                <button @onclick="DeleteConfirmation">Delete</button>
-                <span>&nbsp; &nbsp;</span>
-                <button @onclick="Export">Export</button>
-            }
             <br />
+                <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
+                    <button @onclick="Save" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">save</i>
+                    </button>
+                    <button @onclick="() => sheet.Commands.Undo()" title="Undo" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">undo</i>
+                    </button>
+                    <button @onclick="() => sheet.Commands.Redo()" title="Redo" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">redo</i>
+                    </button>
+                    <button @onclick="InsertRowAfterSelection" title="Insert Row" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">add</i>
+                    </button>
+                    <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">remove</i>
+                    </button>
+                    <button @onclick="Export" title="Export" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">file_download</i>
+                    </button>
+                @if (CurrentTableName != "")
+                {
+                    <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">delete</i>
+                    </button>
+                }
+                </div>            
         }
     </div>
-    <br />
 
     <Datasheet Sheet="@sheet" MenuOptions=_sheetMenuOpt />
 }
@@ -483,6 +501,28 @@ else
         sheet.EndBatchUpdates();
         sheet.Commands.ResumeHistory();
     }
+
+    #region Datasheet Events
+    private void InsertRowAfterSelection()
+    {
+        if (sheet.Selection.ActiveRegion == null)
+        {
+            return;
+        }
+
+        sheet.Rows.InsertAt(sheet.Selection.ActiveRegion.TopLeft.row);
+    }
+
+    private void RemoveRow()
+    {
+        if (sheet.Selection.ActiveRegion == null)
+        {
+            return;
+        }
+
+        sheet.Rows.RemoveAt(sheet.Selection.ActiveRegion.Top);
+    }
+    #endregion
 
     // Save
 
