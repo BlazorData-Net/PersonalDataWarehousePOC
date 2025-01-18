@@ -1,9 +1,9 @@
 ﻿@page "/tables"
-@using BlazorDatasheet
-@using BlazorDatasheet.Core.Data
 @using System.Data
-@using BlazorDatasheet.Core.Formats
+@using BlazorDatasheet
 @using BlazorDatasheet.Menu
+@using BlazorDatasheet.Core.Data
+@using BlazorDatasheet.Core.Formats
 @using CommunityToolkit.Maui.Storage
 @using CsvHelper
 @using ExcelDataReader
@@ -285,15 +285,15 @@ else
 
     SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
         {
-            InsertColsEnabled = true,
+            InsertColsEnabled = false,
             HideColsEnabled = false,
             HideRowsEnabled = false,
-            DeleteColsEnabled = true,
+            DeleteColsEnabled = false,
             MergeEnabled = false,
             SortRangeEnabled = false,
-            FilterColumnEnabled = false,
+            FilterColumnEnabled = true,
             HeaderMenuEnabled = false,
-            AlignmentEnabled = true,
+            AlignmentEnabled = false,
             ClearEnabled = false
         };
 
