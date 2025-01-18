@@ -152,7 +152,7 @@
     [Parameter] public string ConnectionType { get; set; }
     [Parameter] public string IntegratedSecurityDisplay { get; set; }
     [Parameter] public string DatabaseUsername { get; set; } = "";
-    [Parameter] public string DatabasePassword { get; set; }
+    [Parameter] public string DatabasePassword { get; set; } = "";
 
     [Parameter] public EventCallback<DatabaseImport> OnSetConnection { get; set; }
     [Parameter] public EventCallback Close { get; set; }
@@ -169,12 +169,6 @@
 
     private List<string> OptionsTrueFalse = new List<string> { "True", "False" };
     private List<string> OptionsConnectionType = new List<string> { "SQL Server", "Fabric Warehouse" };
-
-    protected override async Task OnInitializedAsync()
-    {
-        DatabasePassword = await SecureStorage.Default.GetAsync("DatabasePassword");
-        await base.OnInitializedAsync();
-    }
 
     protected override void OnInitialized()
     {
@@ -198,8 +192,8 @@
 
     // Utility
 
-    #region private async Task SetConnection()
-    private async Task SetConnection()
+    #region private void SetConnection()
+    private void SetConnection()
     {
         boolProcessing = true;
         strStatusMessage = "";
@@ -215,9 +209,6 @@
 
         if (result.Success)
         {
-            // Save the password
-            await SecureStorage.Default.SetAsync("DatabasePassword", DatabasePassword);
-
             // Set the connection string
             ConnectionSetting.ConnectionString = result.ConnectionString;
 
