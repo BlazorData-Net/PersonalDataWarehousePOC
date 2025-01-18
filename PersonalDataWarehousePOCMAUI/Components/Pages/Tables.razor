@@ -949,66 +949,86 @@ else
         IsLoadingSheet = true;
         StateHasChanged();
 
-        using (SqlConnection connection = new SqlConnection(objDatabaseImport.ConnectionSetting.ConnectionString))
+        if (objDatabaseImport.SQLQuery != "")
         {
-            connection.Open();
+            // Load SQL Query
 
-            // Get the computed columns for the table
-            List<string> ComputedColumns = GetComputedColumns(connection, objDatabaseImport.TableName);
-
-            // Get a list of the column names
-            var TableColumns = new List<DTODatabaseColumn>();
-
-            DataTable Columns = connection.GetSchema("Columns");
-
-            foreach (DataRow row in Columns.Rows)
+            using (SqlConnection connection = new SqlConnection(objDatabaseImport.ConnectionSetting.ConnectionString))
             {
-                if ($"[{row["TABLE_SCHEMA"].ToString()}].[{row["TABLE_NAME"].ToString()}]" == objDatabaseImport.TableName)
-                {
-                    DTODatabaseColumn objTableColumns = new DTODatabaseColumn();
+                connection.Open();               
 
-                    objTableColumns.ColumnName = row["COLUMN_NAME"].ToString();
-                    objTableColumns.ColumnType = row["DATA_TYPE"].ToString();
+                SqlDataAdapter adapter = new SqlDataAdapter(objDatabaseImport.SQLQuery, connection);
+                CurrentDataTable = new DataTable();
+                adapter.Fill(CurrentDataTable);
 
-                    if (row["CHARACTER_MAXIMUM_LENGTH"] != DBNull.Value)
-                    {
-                        objTableColumns.ColumnLength = Convert.ToInt32(row["CHARACTER_MAXIMUM_LENGTH"]);
-                    }
-                    else
-                    {
-                        objTableColumns.ColumnLength = 0;
-                    }
-
-                    TableColumns.Add(objTableColumns);
-                }
+                connection.Close();
             }
+        }
+        else
+        {
+            // Load Table
 
-            // Remove from TableColumns any colums types of unique identifiers
-            TableColumns = TableColumns.Where(x => x.ColumnType != "uniqueidentifier").ToList();
+            using (SqlConnection connection = new SqlConnection(objDatabaseImport.ConnectionSetting.ConnectionString))
+            {
+                connection.Open();
 
-            // Remove from TableColumns any colums types of hierarchyid
-            TableColumns = TableColumns.Where(x => x.ColumnType != "hierarchyid").ToList();
+                // Get the computed columns for the table
+                List<string> ComputedColumns = GetComputedColumns(connection, objDatabaseImport.TableName);
 
-            // Remove from TableColumns any colums types of varbinary
-            TableColumns = TableColumns.Where(x => x.ColumnType != "varbinary").ToList();
+                // Get a list of the column names
+                var TableColumns = new List<DTODatabaseColumn>();
 
-            // Remove from TableColumns any colums types of geography
-            TableColumns = TableColumns.Where(x => x.ColumnType != "geography").ToList();
+                DataTable Columns = connection.GetSchema("Columns");
 
-            // Remove from TableColumns any colums types of computed
-            // remove colums conatined in the ComputedColumns list
-            TableColumns = TableColumns.Where(x => !ComputedColumns.Contains(x.ColumnName)).ToList();
+                foreach (DataRow row in Columns.Rows)
+                {
+                    if ($"[{row["TABLE_SCHEMA"].ToString()}].[{row["TABLE_NAME"].ToString()}]" == objDatabaseImport.TableName)
+                    {
+                        DTODatabaseColumn objTableColumns = new DTODatabaseColumn();
 
-            // Get Table names from TableColumns as comma seperated values
-            string strTableNames = string.Join(",", TableColumns.Select(x => $"[{x.ColumnName}]").ToArray());
+                        objTableColumns.ColumnName = row["COLUMN_NAME"].ToString();
+                        objTableColumns.ColumnType = row["DATA_TYPE"].ToString();
 
-            string sql = $"SELECT {strTableNames} FROM {objDatabaseImport.TableName}";
+                        if (row["CHARACTER_MAXIMUM_LENGTH"] != DBNull.Value)
+                        {
+                            objTableColumns.ColumnLength = Convert.ToInt32(row["CHARACTER_MAXIMUM_LENGTH"]);
+                        }
+                        else
+                        {
+                            objTableColumns.ColumnLength = 0;
+                        }
 
-            SqlDataAdapter adapter = new SqlDataAdapter(sql, connection);
-            CurrentDataTable = new DataTable();
-            adapter.Fill(CurrentDataTable);
+                        TableColumns.Add(objTableColumns);
+                    }
+                }
 
-            connection.Close();
+                // Remove from TableColumns any colums types of unique identifiers
+                TableColumns = TableColumns.Where(x => x.ColumnType != "uniqueidentifier").ToList();
+
+                // Remove from TableColumns any colums types of hierarchyid
+                TableColumns = TableColumns.Where(x => x.ColumnType != "hierarchyid").ToList();
+
+                // Remove from TableColumns any colums types of varbinary
+                TableColumns = TableColumns.Where(x => x.ColumnType != "varbinary").ToList();
+
+                // Remove from TableColumns any colums types of geography
+                TableColumns = TableColumns.Where(x => x.ColumnType != "geography").ToList();
+
+                // Remove from TableColumns any colums types of computed
+                // remove colums conatined in the ComputedColumns list
+                TableColumns = TableColumns.Where(x => !ComputedColumns.Contains(x.ColumnName)).ToList();
+
+                // Get Table names from TableColumns as comma seperated values
+                string strTableNames = string.Join(",", TableColumns.Select(x => $"[{x.ColumnName}]").ToArray());
+
+                string sql = $"SELECT {strTableNames} FROM {objDatabaseImport.TableName}";
+
+                SqlDataAdapter adapter = new SqlDataAdapter(sql, connection);
+                CurrentDataTable = new DataTable();
+                adapter.Fill(CurrentDataTable);
+
+                connection.Close();
+            }
         }
 
         CurrentTableName = String.Empty;
