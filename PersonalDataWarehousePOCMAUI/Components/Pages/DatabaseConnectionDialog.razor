@@ -107,9 +107,9 @@
                 }
                 else
                 {
-                    <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
+                    <div>
                         <b>Table: </b>
-                        <select @onchange="OnSelectedTableChanged" style="width: 300px; border-block:hidden">
+                        <select @onchange="OnSelectedTableChanged" style="width: 100%">
                             @foreach (var tableName in tableNames)
                             {
                                 <option value="@tableName">@tableName</option>
@@ -198,6 +198,7 @@
         boolProcessing = true;
         strStatusMessage = "";
 
+        ConnectionSetting.ConnectionType = ConnectionType;
         ConnectionSetting.DatabaseName = DatabaseName;
         ConnectionSetting.IntegratedSecurity = Convert.ToBoolean(IntegratedSecurityDisplay);
         ConnectionSetting.Password = DatabasePassword;
@@ -235,11 +236,9 @@
 
     private async Task ImportTable()
     {
-        string strQuery = "Select * from " + selectedTable;
-
         DatabaseImport objDatabaseImport = new DatabaseImport();
         objDatabaseImport.ConnectionSetting = ConnectionSetting;
-        objDatabaseImport.DatabaseQuery = strQuery;
+        objDatabaseImport.TableName = selectedTable;
 
         await OnSetConnection.InvokeAsync(objDatabaseImport);
     }

@@ -7,6 +7,7 @@
 @using CommunityToolkit.Maui.Storage
 @using CsvHelper
 @using ExcelDataReader
+@using Microsoft.Data.SqlClient
 @using Parquet;
 @using Parquet.Schema
 @using PersonalDataWarehousePOC.Services
@@ -14,6 +15,7 @@
 @using System.Reflection
 @using System.Globalization
 @using PersonalDataWarehousePOCMAUI.Models
+@using System.Text.RegularExpressions
 @inject DataService DataService
 @inject ConnectionSettingsService ConnectionSettings
 
@@ -22,19 +24,19 @@
 <h4>Tables</h4>
 <br />
 
-<!-- MAIN UI -->
-<div>
-    <button style="@(IsShowFileUpload ? "" : "display:none;")" @onclick="OpenShowConnectionDialog">Import Data</button>
-    <br /><br />
+<div style="display: flex; align-items: center; flex-wrap: nowrap;">
+    <button style="@(IsShowFileUpload ? "" : "display:none;")" @onclick="OpenShowConnectionDialog">
+        Import Data
+    </button>
+    <span style="margin: 0 5px;"></span> <!-- Use margin instead of &nbsp; for spacing -->
     <InputFile @key="resetInputFileFlag"
                OnChange="HandleFileSelectedAsync"
                accept=".csv,.xls,.xlsx,.parquet"
                style="@UploadVisibility" />
     @if (IsFileSelected)
     {
-        <label>Selected File: @CurrentFileName</label>
-        <span>&nbsp; &nbsp;</span>
-        <button @onclick="ClearFileSeleted">
+        <label style="margin: 0 0px;">Selected File: @CurrentFileName</label>
+        <button @onclick="ClearFileSeleted" style="margin-left: 10px;">
             Clear File
         </button>
     }
@@ -59,7 +61,7 @@ else
                     @foreach (var table in TableList)
                     {
                         <option value="@table"
-                                selected="@(table == CurrentTableName ? "selected" : null)">
+                        selected="@(table == CurrentTableName ? "selected" : null)">
                             @table
                         </option>
                     }
@@ -91,12 +93,13 @@ else
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-                              DatabaseName="@DatabaseName"
-                              DatabasePassword="@DatabasePassword"
-                              DatabaseUsername="@DatabaseUsername"
-                              ServerName="@ServerName"
-                              Close="CloseShowConnectionDialog"
-                              OnSetConnection="SetDatabaseConnection" />
+    DatabaseName="@DatabaseName"
+    DatabasePassword="@DatabasePassword"
+    DatabaseUsername="@DatabaseUsername"
+    ServerName="@ServerName"
+    Close="CloseShowConnectionDialog"
+    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+    OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsNewTablePopupVisible)
@@ -255,7 +258,7 @@ else
     private string DatabaseName = "AdventureWorks";
     private string DatabasePassword = "";
     private string DatabaseUsername = "";
-    private string IntegratedSecurityDisplay = "";
+    private string IntegratedSecurityDisplay = "False";
 
     string UploadVisibility => IsShowFileUpload ? "display:block;" : "display:none;";
 
@@ -873,13 +876,89 @@ else
     }
     #endregion
 
-    #region private void SetDatabaseConnection(DatabaseImport objDatabaseImport)
-    private void SetDatabaseConnection(DatabaseImport objDatabaseImport)
+    #region private async Task SetDatabaseConnection(DatabaseImport objDatabaseImport)
+    private async Task SetDatabaseConnection(DatabaseImport objDatabaseImport)
     {
-        // Set the connection string to the global variable
+        // Update the connection settings
+        ConnectionType = objDatabaseImport.ConnectionSetting.ConnectionType;
+        ServerName = objDatabaseImport.ConnectionSetting.ServerName;
+        DatabaseName = objDatabaseImport.ConnectionSetting.DatabaseName;
+        DatabasePassword = objDatabaseImport.ConnectionSetting.Password;
+        DatabaseUsername = objDatabaseImport.ConnectionSetting.Username;
+        IntegratedSecurityDisplay = (objDatabaseImport.ConnectionSetting.IntegratedSecurity) ? "True": "False";
 
         ShowConnectionDialog = false;
+        IsShowFileUpload = false;
+        IsLoadingSheet = true;
+        StateHasChanged();
 
+        using (SqlConnection connection = new SqlConnection(objDatabaseImport.ConnectionSetting.ConnectionString))
+        {
+            connection.Open();
+
+            // Get the computed columns for the table
+            List<string> ComputedColumns = GetComputedColumns(connection, objDatabaseImport.TableName);
+
+            // Get a list of the column names
+            var TableColumns = new List<DTODatabaseColumn>();
+
+            DataTable Columns = connection.GetSchema("Columns");
+
+            foreach (DataRow row in Columns.Rows)
+            {
+                if ($"[{row["TABLE_SCHEMA"].ToString()}].[{row["TABLE_NAME"].ToString()}]" == objDatabaseImport.TableName)
+                {
+                    DTODatabaseColumn objTableColumns = new DTODatabaseColumn();
+
+                    objTableColumns.ColumnName = row["COLUMN_NAME"].ToString();
+                    objTableColumns.ColumnType = row["DATA_TYPE"].ToString();
+
+                    if (row["CHARACTER_MAXIMUM_LENGTH"] != DBNull.Value)
+                    {
+                        objTableColumns.ColumnLength = Convert.ToInt32(row["CHARACTER_MAXIMUM_LENGTH"]);
+                    }
+                    else
+                    {
+                        objTableColumns.ColumnLength = 0;
+                    }
+
+                    TableColumns.Add(objTableColumns);
+                }
+            }
+
+            // Remove from TableColumns any colums types of unique identifiers
+            TableColumns = TableColumns.Where(x => x.ColumnType != "uniqueidentifier").ToList();
+
+            // Remove from TableColumns any colums types of hierarchyid
+            TableColumns = TableColumns.Where(x => x.ColumnType != "hierarchyid").ToList();
+
+            // Remove from TableColumns any colums types of varbinary
+            TableColumns = TableColumns.Where(x => x.ColumnType != "varbinary").ToList();
+
+            // Remove from TableColumns any colums types of geography
+            TableColumns = TableColumns.Where(x => x.ColumnType != "geography").ToList();
+
+            // Remove from TableColumns any colums types of computed
+            // remove colums conatined in the ComputedColumns list
+            TableColumns = TableColumns.Where(x => !ComputedColumns.Contains(x.ColumnName)).ToList();
+
+            // Get Table names from TableColumns as comma seperated values
+            string strTableNames = string.Join(",", TableColumns.Select(x => $"[{x.ColumnName}]").ToArray());
+
+            string sql = $"SELECT {strTableNames} FROM {objDatabaseImport.TableName}";
+
+            SqlDataAdapter adapter = new SqlDataAdapter(sql, connection);
+            CurrentDataTable = new DataTable();
+            adapter.Fill(CurrentDataTable);
+
+            connection.Close();
+        }
+
+        await LoadTableData();
+
+        IsLoadingSheet = false;
+        IsShowFileUpload = true;
+        StateHasChanged();
     }
     #endregion
 
@@ -962,38 +1041,295 @@ else
         return result;
     }
     #endregion
+   
+    #region private static string CleanValue(string value)
+    private static string CleanValue(string value)
+    {
+        return string.IsNullOrEmpty(value)
+            ? ""
+            : Regex.Replace(value, @"[\r\n\t]", " ").Trim();
+    }
+    #endregion
+
+    // ********************************************************************************************************************
+    // Utility
+    // ********************************************************************************************************************
+
+    #region public List<string> GetPrimaryKey(SqlConnection connection, string tableName)
+    public List<string> GetPrimaryKey(SqlConnection connection, string tableName)
+    {
+        List<string> PrimaryKeys = new List<string>();
+
+        try
+        {
+            string query = $@"
+                SELECT c.Name
+                FROM sys.index_columns ic
+                INNER JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                INNER JOIN sys.indexes i ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                WHERE i.is_primary_key = 1 AND ic.object_id = OBJECT_ID('{tableName}')";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        if (reader["Name"] != DBNull.Value)
+                        {
+                            PrimaryKeys.Add(reader["Name"].ToString());
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return PrimaryKeys;
+    }
+    #endregion
+
+    #region public List<string> GetComputedColumns(SqlConnection connection, string tableName)
+    public List<string> GetComputedColumns(SqlConnection connection, string tableName)
+    {
+        List<string> ComputedColumns = new List<string>();
+
+        try
+        {
+            string query = $@"
+                                SELECT name AS ColumnName
+                                FROM sys.columns
+                                WHERE object_id = OBJECT_ID('{tableName}') AND is_computed = 1";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        if (reader["ColumnName"] != DBNull.Value)
+                        {
+                            ComputedColumns.Add(reader["ColumnName"].ToString());
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return ComputedColumns;
+    }
+    #endregion
+
+    #region public List<string> GetIdentityColumns(SqlConnection connection, string tableName)
+    public List<string> GetIdentityColumns(SqlConnection connection, string tableName)
+    {
+        List<string> identityColumns = new List<string>();
+
+        string strTableNameCleaned = StripTableSchemaAndBrackets(tableName);
+
+        try
+        {
+            string query = $@"
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME like '%{strTableNameCleaned}%'
+              AND COLUMNPROPERTY(OBJECT_ID(TABLE_SCHEMA + '.' + TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 1";
+
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        if (reader["COLUMN_NAME"] != DBNull.Value)
+                        {
+                            identityColumns.Add(reader["COLUMN_NAME"].ToString());
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle exception (optional logging or rethrowing)
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+        finally
+        {
+            if (connection.State == ConnectionState.Open)
+            {
+                connection.Close();
+            }
+        }
+
+        return identityColumns;
+    }
+    #endregion
 
     #region public System.Type GetColumnType(string paramType)
     public System.Type GetColumnType(string paramType)
     {
         Type ReturnType = typeof(string);
 
-        if (paramType.ToLower().Contains("int"))
+        if (paramType.Contains("int"))
         {
             return typeof(int);
         }
 
-        if (paramType.ToLower().Contains("double"))
-        {
-            return typeof(double);
-        }
-
-        if (paramType.ToLower().StartsWith("time"))
+        if (paramType.StartsWith("time"))
         {
             return typeof(TimeSpan);
         }
 
-        if (paramType.ToLower().Contains("char"))
+        if (paramType.Contains("char"))
         {
             return typeof(string);
         }
 
-        if (paramType.ToLower().Contains("date"))
+        if (paramType.Contains("date"))
         {
             return typeof(DateTime);
         }
 
         return ReturnType;
+    }
+    #endregion
+
+    #region static string StripTableSchemaAndBrackets(string input)
+    static string StripTableSchemaAndBrackets(string input)
+    {
+        // Remove the square brackets
+        input = input.Replace("[", "").Replace("]", "");
+
+        // Find the position of the dot
+        int dotIndex = input.IndexOf('.');
+
+        // Extract the substring after the dot
+        if (dotIndex >= 0 && dotIndex < input.Length - 1)
+        {
+            input = input.Substring(dotIndex + 1);
+        }
+
+        return input;
+    }
+    #endregion
+
+    #region private object GetCellValue(object columnValue, string columnType)
+    private object GetCellValue(object columnValue, string columnType)
+    {
+        try
+        {
+            if (columnType.Contains("int"))
+            {
+                if (columnValue == DBNull.Value)
+                {
+                    return DBNull.Value;
+                }
+                else
+                {
+                    return Convert.ToInt32(columnValue);
+                }
+            }
+
+            if (columnType.Contains("char"))
+            {
+                if (columnValue == DBNull.Value)
+                {
+                    return DBNull.Value;
+                }
+                else
+                {
+                    return columnValue.ToString();
+                }
+            }
+
+            if (columnType.StartsWith("time"))
+            {
+                if (columnValue == DBNull.Value)
+                {
+                    return DBNull.Value;
+                }
+                else
+                {
+                    return TimeSpan.Parse(columnValue.ToString());
+                }
+            }
+
+            if (columnType.Contains("date"))
+            {
+                if (columnValue == DBNull.Value)
+                {
+                    return DBNull.Value;
+                }
+                else
+                {
+                    return Convert.ToDateTime(columnValue);
+                }
+            }
+        }
+        catch
+        {
+            return columnValue;
+        }
+
+        return columnValue;
+    }
+    #endregion
+
+    #region private SqlDbType GetSQLParameterType(string columnType)
+    private SqlDbType GetSQLParameterType(string columnType)
+    {
+        SqlDbType sqlDbType = SqlDbType.NVarChar;
+
+        if (columnType.Contains("int"))
+        {
+            sqlDbType = SqlDbType.Int;
+        }
+
+        if (columnType.Contains("char"))
+        {
+            sqlDbType = SqlDbType.NVarChar;
+        }
+
+        if (columnType.Contains("time"))
+        {
+            sqlDbType = SqlDbType.Time;
+        }
+
+        if (columnType.Contains("date"))
+        {
+            sqlDbType = SqlDbType.DateTime;
+        }
+
+        return sqlDbType;
+    }
+    #endregion
+
+    #region private int GetHighestId()
+    private int GetHighestId()
+    {
+        int maxId = 0;
+
+        try
+        {
+            // Get all values of the _Id column in CurrentDataTable
+            var Ids = CurrentDataTable.AsEnumerable()
+                .Select(row => row.Field<object>("_Id"))
+                .ToList();
+
+            // Convert Ids from a list of strings to a list of integers
+            var IdsInt = Ids.Select(x => Convert.ToInt32(x)).ToList();
+
+            // Find the maximum value of IdsInt
+            maxId = IdsInt.Max();
+        }
+        catch
+        {
+            maxId = 0;
+        }
+
+        return maxId;
     }
     #endregion
 }
