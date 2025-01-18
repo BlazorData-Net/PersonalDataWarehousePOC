@@ -43,6 +43,8 @@
 </div>
 @if (IsLoadingSheet)
 {
+    <br />
+
     <div role="progressbar" class="marquee" style="width: 25%"></div>
 }
 else
@@ -52,7 +54,7 @@ else
         {
             @if (CurrentTableName != "")
             {
-                <label>Select Table: </label>
+                <br /><label>Select Table: </label>
                 <select @onchange="@(async (args) =>
                     {
                         CurrentTableName = args.Value?.ToString();
