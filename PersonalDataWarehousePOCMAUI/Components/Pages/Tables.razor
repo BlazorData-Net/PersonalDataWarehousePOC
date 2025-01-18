@@ -39,7 +39,7 @@
                 @foreach (var table in TableList)
                 {
                     <option value="@table"
-                            selected="@(table == CurrentTableName ? "selected" : null)">
+                    selected="@(table == CurrentTableName ? "selected" : null)">
                         @table
                     </option>
                 }
@@ -49,14 +49,23 @@
 </div>
 <br />
 <div style="display: flex; align-items: center; flex-wrap: nowrap;">
-    <button style="@(IsShowFileUpload ? "" : "display:none;")" @onclick="OpenShowConnectionDialog">
-        Import Data
-    </button>
-    <span style="margin: 0 5px;"></span> <!-- Use margin instead of &nbsp; for spacing -->
+    @if (!LoadedDataIsUnsaved)
+    {
+        <button style="@(IsShowFileUpload ? "" : "display:none;")" @onclick="OpenShowConnectionDialog">
+            Import Data
+        </button>
+    }
+    else
+    {
+        <button @onclick="()=> ResetPage()">
+            Cancel
+        </button>
+    }
+    <span style="margin: 0 5px;"></span> 
     <InputFile @key="resetInputFileFlag"
-               OnChange="HandleFileSelectedAsync"
-               accept=".csv,.xls,.xlsx,.parquet"
-               style="@UploadVisibility" />
+    OnChange="HandleFileSelectedAsync"
+    accept=".csv,.xls,.xlsx,.parquet"
+    style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label style="margin: 0 0px;">Selected File: @CurrentFileName</label>
@@ -114,13 +123,13 @@ else
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-                              DatabaseName="@DatabaseName"
-                              DatabasePassword="@DatabasePassword"
-                              DatabaseUsername="@DatabaseUsername"
-                              ServerName="@ServerName"
-                              Close="CloseShowConnectionDialog"
-                              IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-                              OnSetConnection="SetDatabaseConnection" />
+    DatabaseName="@DatabaseName"
+    DatabasePassword="@DatabasePassword"
+    DatabaseUsername="@DatabaseUsername"
+    ServerName="@ServerName"
+    Close="CloseShowConnectionDialog"
+    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+    OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsNewTablePopupVisible)
@@ -266,6 +275,7 @@ else
     bool ShowConnectionDialog { get; set; } = false;
     bool isLoading { get; set; } = false;
     bool isReadyForImport { get; set; } = false;
+    bool LoadedDataIsUnsaved { get; set; } = false;
 
     private string DatabaseConnectionString = "";
     private string FabricConnectionString = "";
@@ -315,7 +325,9 @@ else
         IsShowFileUpload = true;
         IsLoadingSheet = false;
         IsNewTablePopupVisible = false;
+        LoadedDataIsUnsaved = false;
         Message = "";
+
         LoadTableListDropdown();
 
         // Initialize the sheet
@@ -454,7 +466,7 @@ else
 
     private async Task LoadTableData()
     {
-        Message = "";
+        Message = "";        
 
         // Get a list of the columns from the DataTable
         TableColumns = CurrentDataTable.Columns
@@ -542,6 +554,7 @@ else
             // Reset the variables
             IsFileSelected = false;
             IsShowFileUpload = true;
+            LoadedDataIsUnsaved = false;
 
             // Save the Parquet file
             await SaveParquetAsync();
@@ -996,6 +1009,9 @@ else
 
             connection.Close();
         }
+
+        CurrentTableName = String.Empty;
+        LoadedDataIsUnsaved = true;
 
         await LoadTableData();
 
