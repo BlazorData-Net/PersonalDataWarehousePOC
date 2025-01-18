@@ -102,7 +102,7 @@ else
                 <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">remove</i>
                 </button>
-                @if (CurrentTableName != "")
+                @if (!LoadedDataIsUnsaved)
                 {
                     <button @onclick="Export" title="Export" style="background:none;border:none;">
                         <i class="material-icons" style="color:black;">file_download</i>
@@ -554,7 +554,6 @@ else
             // Reset the variables
             IsFileSelected = false;
             IsShowFileUpload = true;
-            LoadedDataIsUnsaved = false;
 
             // Save the Parquet file
             await SaveParquetAsync();
@@ -574,6 +573,7 @@ else
 
             if (DetectDuplicate(CurrentTableName))
             {
+                CurrentTableName = string.Empty;
                 Message = "Table Name already exists.";
                 return;
             }
@@ -603,6 +603,7 @@ else
 
         IsLoadingSheet = false;
         IsNewTablePopupVisible = false;
+        LoadedDataIsUnsaved = false;
         StateHasChanged();
 
         Message = $"{CurrentTableName} saved successfully.";
