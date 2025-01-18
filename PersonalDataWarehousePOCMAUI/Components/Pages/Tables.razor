@@ -77,49 +77,50 @@ else
         @if (CurrentDataTable.Rows.Count > 0)
         {
             <br />
-                <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
-                    <button @onclick="Save" style="background:none;border:none;">
-                        <i class="material-icons" style="color:black;">save</i>
-                    </button>
-                    <button @onclick="() => sheet.Commands.Undo()" title="Undo" style="background:none;border:none;">
-                        <i class="material-icons" style="color:black;">undo</i>
-                    </button>
-                    <button @onclick="() => sheet.Commands.Redo()" title="Redo" style="background:none;border:none;">
-                        <i class="material-icons" style="color:black;">redo</i>
-                    </button>
-                    <button @onclick="InsertRowAfterSelection" title="Insert Row" style="background:none;border:none;">
+            <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
+                <button @onclick="Save" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">save</i>
+                </button>
+                <button @onclick="() => sheet.Commands.Undo()" title="Undo" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">undo</i>
+                </button>
+                <button @onclick="() => sheet.Commands.Redo()" title="Redo" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">redo</i>
+                </button>
+                <button @onclick="InsertRowAfterSelection" title="Insert Row" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">add</i>
-                    </button>
-                    <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
-                        <i class="material-icons" style="color:black;">remove</i>
-                    </button>
-                    <button @onclick="Export" title="Export" style="background:none;border:none;">
+                </button>
+                <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">remove</i>
+                </button>
+                <button @onclick="Export" title="Export" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">file_download</i>
-                    </button>
+                </button>
                 @if (CurrentTableName != "")
                 {
                     <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
                         <i class="material-icons" style="color:black;">delete</i>
                     </button>
                 }
-                </div>            
+            </div>
         }
     </div>
-
-    <Datasheet Sheet="@sheet" MenuOptions=_sheetMenuOpt />
+    <div style="@((CurrentDataTable.Rows.Count > 0) ? "" : "display:none;")">
+        <Datasheet Sheet="@sheet" MenuOptions=_sheetMenuOpt />
+    </div>
 }
 
 <!-- POPUPS -->
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-    DatabaseName="@DatabaseName"
-    DatabasePassword="@DatabasePassword"
-    DatabaseUsername="@DatabaseUsername"
-    ServerName="@ServerName"
-    Close="CloseShowConnectionDialog"
-    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-    OnSetConnection="SetDatabaseConnection" />
+                              DatabaseName="@DatabaseName"
+                              DatabasePassword="@DatabasePassword"
+                              DatabaseUsername="@DatabaseUsername"
+                              ServerName="@ServerName"
+                              Close="CloseShowConnectionDialog"
+                              IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+                              OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsNewTablePopupVisible)
@@ -284,15 +285,15 @@ else
 
     SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
         {
-            InsertColsEnabled = false,
+            InsertColsEnabled = true,
             HideColsEnabled = false,
             HideRowsEnabled = false,
-            DeleteColsEnabled = false,
+            DeleteColsEnabled = true,
             MergeEnabled = false,
             SortRangeEnabled = false,
             FilterColumnEnabled = false,
             HeaderMenuEnabled = false,
-            AlignmentEnabled = false,
+            AlignmentEnabled = true,
             ClearEnabled = false
         };
 
@@ -927,7 +928,7 @@ else
         DatabaseName = objDatabaseImport.ConnectionSetting.DatabaseName;
         DatabasePassword = objDatabaseImport.ConnectionSetting.Password;
         DatabaseUsername = objDatabaseImport.ConnectionSetting.Username;
-        IntegratedSecurityDisplay = (objDatabaseImport.ConnectionSetting.IntegratedSecurity) ? "True": "False";
+        IntegratedSecurityDisplay = (objDatabaseImport.ConnectionSetting.IntegratedSecurity) ? "True" : "False";
 
         ShowConnectionDialog = false;
         IsShowFileUpload = false;
@@ -1083,7 +1084,7 @@ else
         return result;
     }
     #endregion
-   
+
     #region private static string CleanValue(string value)
     private static string CleanValue(string value)
     {
