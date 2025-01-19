@@ -11,121 +11,133 @@
 <!-- Include 7.css in your project if not already included -->
 <link rel="stylesheet" href="https://unpkg.com/7.css">
 
-<div class="grid gap-md p-sm-12">
-    <div class="col-8 col-sm-4">
-        <div class="stack gap-md">
+<RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
+    <Tabs>
+        <RadzenTabsItem Text="Database Management">
+            <p>Database Management</p>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="AI">
+            <div class="grid gap-md p-sm-12">
+                <div class="col-8 col-sm-4">
+                    <div class="stack gap-md">
 
-            <!-- OpenAI Service Type -->
-            <div class="form-group">
-                <label for="aiType"><b>OpenAI Service Type:</b></label>
-                <select id="aiType"
-                        class="form-control"
-                        style="width:300px"
-                        @bind="AIType">
-                    @foreach (var type in colAITypes)
-                    {
-                        <option value="@type">@type</option>
-                    }
-                </select>
-            </div>
-            <br />
-            <!-- ApiKey -->
-            <div class="form-group">
-                <label for="apiKey"><b>ApiKey:</b></label>
-                <input id="apiKey"
-                       type="text"
-                       class="form-control"
-                       style="width:450px"
-                       @bind="ApiKey"
-                       @onkeydown="APIKeyDetection" />
-            </div>
-            <br />
-            <!-- Conditional Fields Based on AIType -->
-            @if (AIType == "OpenAI")
-            {
-                <!-- Default AI Model -->
-                <div class="form-group">
-                    <label for="aiModel"><b>Default AI Model:</b></label>
-                    <select id="aiModel"
-                            class="form-control"
-                            style="width:300px"
-                            @bind="AIModel">
-                        @foreach (var model in colModels)
+                        <!-- OpenAI Service Type -->
+                        <div class="form-group">
+                            <label for="aiType"><b>OpenAI Service Type:</b></label>
+                            <select id="aiType"
+                                    class="form-control"
+                                    style="width:300px"
+                                    @bind="AIType">
+                                @foreach (var type in colAITypes)
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+                        <br />
+                        <!-- ApiKey -->
+                        <div class="form-group">
+                            <label for="apiKey"><b>ApiKey:</b></label>
+                            <input id="apiKey"
+                                   type="text"
+                                   class="form-control"
+                                   style="width:450px"
+                                   @bind="ApiKey"
+                                   @onkeydown="APIKeyDetection" />
+                        </div>
+                        <br />
+                        <!-- Conditional Fields Based on AIType -->
+                        @if (AIType == "OpenAI")
                         {
-                            <option value="@model">@model</option>
+                            <!-- Default AI Model -->
+                            <div class="form-group">
+                                <label for="aiModel"><b>Default AI Model:</b></label>
+                                <select id="aiModel"
+                                        class="form-control"
+                                        style="width:300px"
+                                        @bind="AIModel">
+                                    @foreach (var model in colModels)
+                                    {
+                                        <option value="@model">@model</option>
+                                    }
+                                </select>
+                            </div>
+                            <br />
                         }
-                    </select>
-                </div>
-                <br />
-            }
-            else if (AIType == "Azure OpenAI")
-            {
-                <!-- Azure OpenAI Model Deployment Name -->
-                <div class="form-group">
-                    <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label>
-                    <input id="azureModel"
-                           type="text"
-                           class="form-control"
-                           style="width:450px"
-                           @bind="AIModel" />
-                </div>
-                <br />
+                        else if (AIType == "Azure OpenAI")
+                        {
+                            <!-- Azure OpenAI Model Deployment Name -->
+                            <div class="form-group">
+                                <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label>
+                                <input id="azureModel"
+                                       type="text"
+                                       class="form-control"
+                                       style="width:450px"
+                                       @bind="AIModel" />
+                            </div>
+                            <br />
 
-                <!-- Azure OpenAI Endpoint -->
-                <div class="form-group">
-                    <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label>
-                    <input id="endpoint"
-                           type="text"
-                           class="form-control"
-                           style="width:450px"
-                           @bind="Endpoint" />
-                </div>
-                <br />
+                            <!-- Azure OpenAI Endpoint -->
+                            <div class="form-group">
+                                <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label>
+                                <input id="endpoint"
+                                       type="text"
+                                       class="form-control"
+                                       style="width:450px"
+                                       @bind="Endpoint" />
+                            </div>
+                            <br />
 
-                <!-- Azure OpenAI API Version -->
-                <div class="form-group">
-                    <label for="apiVersion"><b>Azure OpenAI API Version:</b></label>
-                    <input id="apiVersion"
-                           type="text"
-                           class="form-control"
-                           style="width:450px"
-                           @bind="ApiVersion" />
-                </div>
-                <br />
-            }
-            <br />
-            <!-- Conditional Buttons Based on Settings -->
-            @if (!IsSettingsEntered)
-            {
-                @if (AIType == "OpenAI")
-                {
-                    <button type="button"
-                            @onclick="GetAPIKey"
-                            style="margin-bottom: 10px; width: 500px">
-                        An OpenAI API Key is required (Click here to get one)
-                    </button>
-                }
-                else if (AIType == "Azure OpenAI")
-                {
-                    <button type="button"
-                            @onclick="GetAzureAPIKey"
-                            style="margin-bottom: 10px; width: 500px">
-                        An Azure OpenAI API Key is required (Click here to get one)
-                    </button>
-                }
-            }
-            else
-            {
-                <button type="button"
-                        @onclick="SettingsSave"
-                        style="margin-bottom: 10px; width: 500px">
-                    Save
-                </button>
-            }
+                            <!-- Azure OpenAI API Version -->
+                            <div class="form-group">
+                                <label for="apiVersion"><b>Azure OpenAI API Version:</b></label>
+                                <input id="apiVersion"
+                                       type="text"
+                                       class="form-control"
+                                       style="width:450px"
+                                       @bind="ApiVersion" />
+                            </div>
+                            <br />
+                        }
+                        <br />
+                        <!-- Conditional Buttons Based on Settings -->
+                        @if (!IsSettingsEntered)
+                        {
+                            @if (AIType == "OpenAI")
+                            {
+                                <button type="button"
+                                        @onclick="GetAPIKey"
+                                        style="margin-bottom: 10px; width: 500px">
+                                    An OpenAI API Key is required (Click here to get one)
+                                </button>
+                            }
+                            else if (AIType == "Azure OpenAI")
+                            {
+                                <button type="button"
+                                        @onclick="GetAzureAPIKey"
+                                        style="margin-bottom: 10px; width: 500px">
+                                    An Azure OpenAI API Key is required (Click here to get one)
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    @onclick="SettingsSave"
+                                    style="margin-bottom: 10px; width: 500px">
+                                Save
+                            </button>
+                        }
 
-        </div>
-    </div>
-</div>
+                    </div>
+                </div>
+            </div>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Logs">
+            <p>Logs</p>
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
 
 @code {
     [Parameter] public EventCallback SettingsChanged { get; set; }
