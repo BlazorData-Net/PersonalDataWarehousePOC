@@ -32,19 +32,19 @@ namespace PersonalDataWarehouse.AI
 
         // Utility Methods
 
-        #region public IChatClient CreateAIChatClient()
-        public IChatClient CreateAIChatClient()
+        #region public async Task<IChatClient> CreateAIChatClientAsync(string AIModel)
+        public async Task<IChatClient> CreateAIChatClientAsync(string AIModel)
         {
-            string Organization = SettingsService.Organization;
-            string ApiKey = SettingsService.ApiKey;
-            string Endpoint = SettingsService.Endpoint;
-            string ApiVersion = SettingsService.ApiVersion;
-            string AIEmbeddingModel = SettingsService.AIEmbeddingModel;
-            string AIModel = SettingsService.AIModel;
+            // Get APIKey from secure settings
+            string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? ""; 
+
+            string Endpoint = SettingsService.Settings.ApplicationSettings.Endpoint;
+            string ApiVersion = SettingsService.Settings.ApplicationSettings.ApiVersion;
+            string AIEmbeddingModel = SettingsService.Settings.ApplicationSettings.AIEmbeddingModel;
 
             ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
 
-            if (SettingsService.AIType == "OpenAI")
+            if (SettingsService.Settings.ApplicationSettings.AIType == "OpenAI")
             {
                 OpenAIClientOptions options = new OpenAIClientOptions();
                 options.NetworkTimeout = TimeSpan.FromSeconds(520);

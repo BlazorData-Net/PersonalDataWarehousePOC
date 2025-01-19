@@ -105,28 +105,6 @@ namespace PersonalDataWarehousePOCMAUI
                 }
             }
 
-            // PersonalDataWarehouse.config
-            string PersonalDataWarehouseFilePath = Path.Combine(folderPath, "PersonalDataWarehouse.config");
-            if (!File.Exists(PersonalDataWarehouseFilePath))
-            {
-                using (var streamWriter = new StreamWriter(PersonalDataWarehouseFilePath))
-                {
-                    streamWriter.WriteLine(
-                    """
-                        {
-                          "OpenAIServiceOptions": {
-                            "Organization": "",
-                            "ApiKey": ""
-                          },
-                          "ApplicationSettings": {
-                            "AIModel": "gpt-4o"
-                          }
-                        }
-                        """
-                    );
-                }
-            }
-
             return builder.Build();
         }
     }

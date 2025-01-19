@@ -1,100 +1,232 @@
 ﻿using Newtonsoft.Json;
-using OpenAI.Files;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace PersonalDataWarehousePOCMAUI.Services
 {
     public class SettingsService
     {
-        // Properties
-        public string Organization { get; set; }
-        public string ApiKey { get; set; }
-        public string AIModel { get; set; }
-        public string AIType { get; set; }
-        public string Endpoint { get; set; }
-        public string AIEmbeddingModel { get; set; }
-        public string ApiVersion { get; set; }
+        // Nested Configuration Classes
+        public class ApplicationSettings
+        {
+            public string AIModel { get; set; }
+            public string AIType { get; set; }
+            public string Endpoint { get; set; }
+            public string ApiVersion { get; set; }
+            public string AIEmbeddingModel { get; set; }
+        }
+
+        public class SQLServerSettings
+        {
+            public string DatabaseName { get; set; }
+            public string DatabaseUsername { get; set; }
+            public string IntegratedSecurityDisplay { get; set; }
+            public string ServerName { get; set; }
+        }
+
+        public class FabricSettings
+        {
+            public string DatabaseName { get; set; }
+            public string DatabaseUsername { get; set; }
+            public string IntegratedSecurityDisplay { get; set; }
+            public string ServerName { get; set; }
+        }
+
+        public class AzureStorageSettings
+        {
+            public string StorageAccountName { get; set; }
+            public string ContainerName { get; set; }
+        }
+
+        public class Configuration
+        {
+            public ApplicationSettings ApplicationSettings { get; set; }
+            public SQLServerSettings SQLServerSettings { get; set; }
+            public FabricSettings FabricSettings { get; set; }
+            public AzureStorageSettings AzureStorageSettings { get; set; }
+        }
+
+        // Configuration Property
+        public Configuration Settings { get; private set; }
+
+        // Path to the settings file
+        private readonly string _settingsPath;
 
         // Constructor
         public SettingsService()
         {
+            // Construct the path to the settings file using Path.Combine for cross-platform compatibility
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse");
+            _settingsPath = Path.Combine(folderPath, "PersonalDataWarehouse.config");
+
             LoadSettings();
         }
 
-        public void LoadSettings()
+        /// <summary>
+        /// Loads the settings from the configuration file.
+        /// </summary>
+        public async void LoadSettings()
         {
-            // Get OpenAI API key from appsettings.json
-            // PersonalDataWarehouse Directory
-            String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse";
-            var PersonalDataWarehouseSettingsPath = $"{folderPath}/PersonalDataWarehouse.config";
-
-            string PersonalDataWarehouseSettings = "";
-
-            // Open the file to get existing content
-            using (var streamReader = new StreamReader(PersonalDataWarehouseSettingsPath))
+            try
             {
-                PersonalDataWarehouseSettings = streamReader.ReadToEnd();
+                if (!File.Exists(_settingsPath))
+                {
+                    await InitializeDefaultSettingsAsync();
+                }
+
+                // Read the content of the settings file
+                string settingsContent;
+                using (var streamReader = new StreamReader(_settingsPath))
+                {
+                    settingsContent = streamReader.ReadToEnd();
+                }
+
+                // Deserialize the JSON content into the Configuration object
+                Settings = JsonConvert.DeserializeObject<Configuration>(settingsContent);
+
+                if (Settings == null)
+                {
+                    throw new InvalidDataException("Failed to deserialize the settings file.");
+                }
+
+                // Set default values for specific settings if necessary
+                if (string.IsNullOrWhiteSpace(Settings.ApplicationSettings.AIType))
+                {
+                    Settings.ApplicationSettings.AIType = "OpenAI";
+                }
+
+                // You can add more default value assignments here if needed
             }
-
-            // Convert the JSON to a dynamic object
-            dynamic PersonalDataWarehouseSettingsObject = JsonConvert.DeserializeObject(PersonalDataWarehouseSettings);
-
-            if (PersonalDataWarehouseSettingsObject.ApplicationSettings.AIType == null || PersonalDataWarehouseSettingsObject.ApplicationSettings.AIType == "")
+            catch (Exception ex)
             {
-                PersonalDataWarehouseSettingsObject.ApplicationSettings.AIType = "OpenAI";
+                // Handle exceptions as needed (e.g., logging)
+                Console.WriteLine($"Error loading settings: {ex.Message}");
+                throw; // Re-throw the exception if you want to handle it further up the call stack
             }
-
-            Organization = PersonalDataWarehouseSettingsObject.OpenAIServiceOptions.Organization;
-            ApiKey = PersonalDataWarehouseSettingsObject.OpenAIServiceOptions.ApiKey;
-            AIModel = PersonalDataWarehouseSettingsObject.ApplicationSettings.AIModel;
-            AIType = PersonalDataWarehouseSettingsObject.ApplicationSettings.AIType;
-            Endpoint = PersonalDataWarehouseSettingsObject.ApplicationSettings.Endpoint;
-            ApiVersion = PersonalDataWarehouseSettingsObject.ApplicationSettings.ApiVersion;
-            AIEmbeddingModel = PersonalDataWarehouseSettingsObject.ApplicationSettings.AIEmbeddingModel;
         }
 
-        public async Task SaveSettings(string paramOrganization, string paramApiKey, string paramAIModel, string paramAIType, string paramEndpoint, string paramApiVersion, string paramAIEmbeddingModel)
+        /// <summary>
+        /// Saves the entire configuration to the settings file.
+        /// </summary>
+        /// <returns>A task representing the asynchronous save operation.</returns>
+        public async Task SaveSettingsAsync()
         {
-            // Get OpenAI API key from appsettings.json
-            // PersonalDataWarehouse Directory
-            var PersonalDataWarehouseSettingsPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/PersonalDataWarehouse.config";
-
-            string PersonalDataWarehouseSettings = "";
-
-            // Open the file to get existing content
-            using (var streamReader = new StreamReader(PersonalDataWarehouseSettingsPath))
+            try
             {
-                PersonalDataWarehouseSettings = streamReader.ReadToEnd();
+                // Ensure the directory exists
+                string folderPath = Path.GetDirectoryName(_settingsPath);
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                // Serialize the Configuration object back to JSON
+                string updatedSettings = JsonConvert.SerializeObject(Settings, Formatting.Indented);
+
+                // Write the updated JSON back to the file asynchronously
+                using (var streamWriter = new StreamWriter(_settingsPath, false))
+                {
+                    await streamWriter.WriteAsync(updatedSettings);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions as needed (e.g., logging)
+                Console.WriteLine($"Error saving settings: {ex.Message}");
+                throw; // Re-throw the exception if you want to handle it further up the call stack
+            }
+        }
+
+        /// <summary>
+        /// Updates specific sections of the configuration and saves the changes.
+        /// </summary>
+        /// <param name="applicationSettings">New application settings.</param>
+        /// <param name="sqlServerSettings">New SQL Server settings.</param>
+        /// <param name="fabricSettings">New Fabric settings.</param>
+        /// <param name="azureStorageSettings">New Azure Storage settings.</param>
+        /// <returns>A task representing the asynchronous save operation.</returns>
+        public async Task UpdateSettingsAsync(
+            ApplicationSettings applicationSettings = null,
+            SQLServerSettings sqlServerSettings = null,
+            FabricSettings fabricSettings = null,
+            AzureStorageSettings azureStorageSettings = null)
+        {
+            // Update the settings if new values are provided
+            if (applicationSettings != null)
+            {
+                Settings.ApplicationSettings = applicationSettings;
             }
 
-            // Convert the JSON to a dynamic object
-            dynamic PersonalDataWarehouseSettingsObject = JsonConvert.DeserializeObject(PersonalDataWarehouseSettings);
-
-            // Update the dynamic object
-            PersonalDataWarehouseSettingsObject.OpenAIServiceOptions.Organization = paramOrganization;
-            PersonalDataWarehouseSettingsObject.OpenAIServiceOptions.ApiKey = paramApiKey;
-            PersonalDataWarehouseSettingsObject.ApplicationSettings.AIModel = paramAIModel;
-            PersonalDataWarehouseSettingsObject.ApplicationSettings.AIType = paramAIType;
-            PersonalDataWarehouseSettingsObject.ApplicationSettings.Endpoint = paramEndpoint;
-            PersonalDataWarehouseSettingsObject.ApplicationSettings.ApiVersion = paramApiVersion;
-            PersonalDataWarehouseSettingsObject.ApplicationSettings.AIEmbeddingModel = paramAIEmbeddingModel;
-
-            // Convert the dynamic object back to JSON
-            PersonalDataWarehouseSettings = JsonConvert.SerializeObject(PersonalDataWarehouseSettingsObject, Formatting.Indented);
-
-            // Write the JSON back to the file
-            using (var streamWriter = new StreamWriter(PersonalDataWarehouseSettingsPath))
+            if (sqlServerSettings != null)
             {
-                await streamWriter.WriteAsync(PersonalDataWarehouseSettings);
+                Settings.SQLServerSettings = sqlServerSettings;
             }
 
-            // Update the properties
-            Organization = paramOrganization;
-            ApiKey = paramApiKey;
-            AIModel = paramAIModel;
-            AIType = paramAIType;
-            Endpoint = paramEndpoint;
-            ApiVersion = paramApiVersion;
-            AIEmbeddingModel = paramAIEmbeddingModel;
+            if (fabricSettings != null)
+            {
+                Settings.FabricSettings = fabricSettings;
+            }
+
+            if (azureStorageSettings != null)
+            {
+                Settings.AzureStorageSettings = azureStorageSettings;
+            }
+
+            // Save the updated settings to the file
+            await SaveSettingsAsync();
+        }
+
+        /// <summary>
+        /// Initializes default settings and saves them to the configuration file.
+        /// This can be used when the configuration file does not exist.
+        /// </summary>
+        /// <returns>A task representing the asynchronous save operation.</returns>
+        public async Task InitializeDefaultSettingsAsync()
+        {
+            try
+            {
+                // Initialize default settings
+                Settings = new Configuration
+                {
+                    ApplicationSettings = new ApplicationSettings
+                    {
+                        AIModel = "DefaultAIModel",
+                        AIType = "OpenAI",
+                        Endpoint = "https://api.openai.com",
+                        ApiVersion = "v1",
+                        AIEmbeddingModel = "DefaultEmbeddingModel"
+                    },
+                    SQLServerSettings = new SQLServerSettings
+                    {
+                        DatabaseName = "DefaultDB",
+                        DatabaseUsername = "sa",
+                        IntegratedSecurityDisplay = "False",
+                        ServerName = "localhost"
+                    },
+                    FabricSettings = new FabricSettings
+                    {
+                        DatabaseName = "FabricDB",
+                        DatabaseUsername = "fabricUser",
+                        IntegratedSecurityDisplay = "False",
+                        ServerName = "fabricServer"
+                    },
+                    AzureStorageSettings = new AzureStorageSettings
+                    {
+                        StorageAccountName = "DefaultStorageAccount",
+                        ContainerName = "default-container"
+                    }
+                };
+
+                // Save the default settings to the file
+                await SaveSettingsAsync();
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions as needed (e.g., logging)
+                Console.WriteLine($"Error initializing default settings: {ex.Message}");
+                throw;
+            }
         }
     }
 }

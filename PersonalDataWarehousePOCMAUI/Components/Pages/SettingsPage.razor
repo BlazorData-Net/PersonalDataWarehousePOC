@@ -25,9 +25,9 @@
                         <div class="form-group">
                             <label for="aiType"><b>OpenAI Service Type:</b></label>
                             <select id="aiType"
-                                    class="form-control"
-                                    style="width:300px"
-                                    @bind="AIType">
+                            class="form-control"
+                            style="width:300px"
+                            @bind="AIType">
                                 @foreach (var type in colAITypes)
                                 {
                                     <option value="@type">@type</option>
@@ -39,11 +39,11 @@
                         <div class="form-group">
                             <label for="apiKey"><b>ApiKey:</b></label>
                             <input id="apiKey"
-                                   type="text"
-                                   class="form-control"
-                                   style="width:450px"
-                                   @bind="ApiKey"
-                                   @onkeydown="APIKeyDetection" />
+                            type="text"
+                            class="form-control"
+                            style="width:450px"
+                            @bind="ApiKey"
+                            @onkeydown="APIKeyDetection" />
                         </div>
                         <br />
                         <!-- Conditional Fields Based on AIType -->
@@ -53,9 +53,9 @@
                             <div class="form-group">
                                 <label for="aiModel"><b>Default AI Model:</b></label>
                                 <select id="aiModel"
-                                        class="form-control"
-                                        style="width:300px"
-                                        @bind="AIModel">
+                                class="form-control"
+                                style="width:300px"
+                                @bind="AIModel">
                                     @foreach (var model in colModels)
                                     {
                                         <option value="@model">@model</option>
@@ -70,10 +70,10 @@
                             <div class="form-group">
                                 <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label>
                                 <input id="azureModel"
-                                       type="text"
-                                       class="form-control"
-                                       style="width:450px"
-                                       @bind="AIModel" />
+                                type="text"
+                                class="form-control"
+                                style="width:450px"
+                                @bind="AIModel" />
                             </div>
                             <br />
 
@@ -81,10 +81,10 @@
                             <div class="form-group">
                                 <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label>
                                 <input id="endpoint"
-                                       type="text"
-                                       class="form-control"
-                                       style="width:450px"
-                                       @bind="Endpoint" />
+                                type="text"
+                                class="form-control"
+                                style="width:450px"
+                                @bind="Endpoint" />
                             </div>
                             <br />
 
@@ -92,10 +92,10 @@
                             <div class="form-group">
                                 <label for="apiVersion"><b>Azure OpenAI API Version:</b></label>
                                 <input id="apiVersion"
-                                       type="text"
-                                       class="form-control"
-                                       style="width:450px"
-                                       @bind="ApiVersion" />
+                                type="text"
+                                class="form-control"
+                                style="width:450px"
+                                @bind="ApiVersion" />
                             </div>
                             <br />
                         }
@@ -106,16 +106,16 @@
                             @if (AIType == "OpenAI")
                             {
                                 <button type="button"
-                                        @onclick="GetAPIKey"
-                                        style="margin-bottom: 10px; width: 500px">
+                                @onclick="GetAPIKey"
+                                style="margin-bottom: 10px; width: 500px">
                                     An OpenAI API Key is required (Click here to get one)
                                 </button>
                             }
                             else if (AIType == "Azure OpenAI")
                             {
                                 <button type="button"
-                                        @onclick="GetAzureAPIKey"
-                                        style="margin-bottom: 10px; width: 500px">
+                                @onclick="GetAzureAPIKey"
+                                style="margin-bottom: 10px; width: 500px">
                                     An Azure OpenAI API Key is required (Click here to get one)
                                 </button>
                             }
@@ -123,8 +123,8 @@
                         else
                         {
                             <button type="button"
-                                    @onclick="SettingsSave"
-                                    style="margin-bottom: 10px; width: 500px">
+                            @onclick="SettingsSave"
+                            style="margin-bottom: 10px; width: 500px">
                                 Save
                             </button>
                         }
@@ -166,19 +166,20 @@
 
     bool IsSettingsEntered = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         SettingsService.LoadSettings();
 
         OrchestratorMethods = (OrchestratorMethods)ScopedServices.GetService(typeof(OrchestratorMethods));
 
-        Organization = SettingsService.Organization;
-        ApiKey = SettingsService.ApiKey;
-        AIModel = SettingsService.AIModel;
-        AIType = SettingsService.AIType;
-        Endpoint = SettingsService.Endpoint;
-        ApiVersion = SettingsService.ApiVersion;
-        AIEmbeddingModel = SettingsService.AIEmbeddingModel;
+        // Get APIKey from secure settings
+        ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? ""; 
+
+        Endpoint = SettingsService.Settings.ApplicationSettings.Endpoint;
+        ApiVersion = SettingsService.Settings.ApplicationSettings.ApiVersion;
+        AIEmbeddingModel = SettingsService.Settings.ApplicationSettings.AIEmbeddingModel;
+        AIModel = SettingsService.Settings.ApplicationSettings.AIModel;
+        AIType = SettingsService.Settings.ApplicationSettings.AIType;
 
         if (ApiKey.Length > 1)
         {
@@ -224,8 +225,34 @@
                 return;
             }
 
+            if (ApiKey.Length < 5)
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error",
+                        Detail = "API Key is required",
+                        Duration = 4000
+                    });
+
+                return;
+            }            
+
+            // Save API Key
+            await SecureStorage.Default.SetAsync("AIApiKey", ApiKey);
+
             // Update Settings
-            await SettingsService.SaveSettings(Organization, ApiKey, AIModel, AIType, Endpoint, ApiVersion, AIEmbeddingModel);
+            SettingsService settingsService = new SettingsService();
+
+            SettingsService.ApplicationSettings applicationSettings = new SettingsService.ApplicationSettings();
+
+            applicationSettings.ApiVersion = ApiVersion;
+            applicationSettings.Endpoint = Endpoint;
+            applicationSettings.AIModel = AIModel;
+            applicationSettings.AIType = AIType;
+            applicationSettings.AIEmbeddingModel = AIEmbeddingModel;
+
+            await settingsService.UpdateSettingsAsync(applicationSettings);
 
             // Test API Key
             var result = await OrchestratorMethods.TestAccess(AIModel);
