@@ -45,6 +45,7 @@ namespace PersonalDataWarehousePOCMAUI
             builder.Services.AddSingleton<LogService>();
             builder.Services.AddSingleton<OrchestratorMethods>();
             builder.Services.AddSingleton<ConnectionSettingsService>();
+            builder.Services.AddSingleton<DatabaseService>();
 
             // This is required by Excel service to parse strings in binary BIFF2-5 Excel documents
             // encoded with DOS-era code pages.
