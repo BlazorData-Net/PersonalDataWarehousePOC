@@ -14,14 +14,11 @@ namespace PersonalDataWarehouse.AI
 {
     public partial class OrchestratorMethods
     {
-        public event EventHandler<ReadTextEventArgs> ReadTextEvent;
         public SettingsService SettingsService { get; set; }
         public LogService LogService { get; set; }
         public string Summary { get; set; }
 
         public List<(string, float)> similarities = new List<(string, float)>();
-
-        public Dictionary<string, string> AIStoryBuildersMemory = new Dictionary<string, string>();
 
         // Constructor
         public OrchestratorMethods(SettingsService _SettingsService, LogService _LogService)

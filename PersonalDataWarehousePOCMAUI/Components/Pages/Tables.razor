@@ -18,7 +18,6 @@
 @using System.Text.RegularExpressions
 @using PersonalDataWarehousePOCMAUI.Services
 @inject DataService DataService
-@inject ConnectionSettingsService ConnectionSettings
 @inject SettingsService SettingsService
 
 <PageTitle>Tables</PageTitle>
@@ -279,13 +278,6 @@ else
     bool isLoading { get; set; } = false;
     bool isReadyForImport { get; set; } = false;
     bool LoadedDataIsUnsaved { get; set; } = false;
-
-    private string DatabaseConnectionString = "";
-    private string FabricConnectionString = "";
-    private string AzureStorageConnectionString = "";
-    private string DatabaseConnectionStringStatusMessage = "Not Set";
-    private string FabricConnectionStringStatusMessage = "Not Set";
-    private string AzureStorageConnectionStringStatusMessage = "Not Set";
 
     private string ConnectionType = "";
     private string ServerName = "";
