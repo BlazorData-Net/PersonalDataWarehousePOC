@@ -101,7 +101,7 @@ namespace PersonalDataWarehousePOCMAUI
             {
                 using (var streamWriter = new StreamWriter(PersonalDataWarehouseLogFilePath))
                 {
-                    streamWriter.WriteLine("Date,Time,Event");
+                    streamWriter.WriteLine($"{DateTime.Now.ToShortDateString()}-{DateTime.Now.ToShortTimeString()} : Log Created");
                 }
             }
 

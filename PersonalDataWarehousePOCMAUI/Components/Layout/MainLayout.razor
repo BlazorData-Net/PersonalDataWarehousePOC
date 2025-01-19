@@ -1,6 +1,8 @@
-﻿@using PersonalDataWarehousePOCMAUI.Models
+﻿@using PersonalDataWarehousePOCMAUI.Model
+@using PersonalDataWarehousePOCMAUI.Models
 @inherits LayoutComponentBase
 @inject AppMetadata _AppMetadata
+@inject LogService _LogService
 <HeadContent>
     <RadzenTheme Theme="default" />
 </HeadContent>
@@ -70,10 +72,12 @@
             {
                 UpdateAvailable = true;
             }
+
+            _LogService.WriteToLog($"Application Started ({versionLocal})");
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _LogService.WriteToLog(ex.Message);
         }
     }
 

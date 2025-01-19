@@ -62,7 +62,7 @@ namespace PersonalDataWarehousePOCMAUI.Model
                 // Remove line breaks from the log text
                 LogText = LogText.Replace("\n", " ");
 
-                streamWriter.WriteLine(LogText);
+                streamWriter.WriteLine($"{DateTime.Now.ToShortDateString()}-{DateTime.Now.ToLongTimeString()} : {LogText}");
                 streamWriter.WriteLine(string.Join("\n", PersonalDataWarehouseLog));
             }
         }
