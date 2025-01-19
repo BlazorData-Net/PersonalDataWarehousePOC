@@ -45,7 +45,14 @@
                                     <select @bind="IntegratedSecurityDisplay" @bind:event="onchange" class="form-control" style="width: 300px;">
                                         @foreach (var option in OptionsTrueFalse)
                                         {
-                                            <option value="@option">@option</option>
+                                            @if (option == IntegratedSecurityDisplay)
+                                            {
+                                                <option value="@option" selected>@option</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@option">@option</option>
+                                            }
                                         }
                                     </select>
                                 </td>
@@ -58,7 +65,14 @@
                                     <select @bind="ConnectionType" @bind:event="onchange" class="form-control" style="width: 300px;">
                                         @foreach (var option in OptionsConnectionType)
                                         {
-                                            <option value="@option">@option</option>
+                                            @if (option == ConnectionType)
+                                            {
+                                                <option value="@option" selected>@option</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@option">@option</option>
+                                            }
                                         }
                                     </select>
                                 </td>
@@ -257,6 +271,9 @@
             // Update Settings
             SettingsService settingsService = new SettingsService();
 
+            SettingsService.ApplicationSettings applicationSettings = settingsService.Settings.ApplicationSettings;
+            applicationSettings.ConnectionType = ConnectionType;
+
             if (ConnectionType == "SQL Server")
             {
                 SettingsService.SQLServerSettings sqlServerSettings = new SettingsService.SQLServerSettings();
@@ -266,7 +283,7 @@
                 sqlServerSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
                 sqlServerSettings.DatabaseUsername = DatabaseUsername;
 
-                await settingsService.UpdateSettingsAsync(null, sqlServerSettings);
+                await settingsService.UpdateSettingsAsync(applicationSettings, sqlServerSettings);
                 await SecureStorage.Default.SetAsync("SQLServerDatabasePassword", DatabasePassword);
             }
             else if (ConnectionType == "Fabric Warehouse")
@@ -278,7 +295,7 @@
                 fabricWarehouseSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
                 fabricWarehouseSettings.DatabaseUsername = DatabaseUsername;
 
-                await settingsService.UpdateSettingsAsync(null, null, fabricWarehouseSettings);
+                await settingsService.UpdateSettingsAsync(applicationSettings, null, fabricWarehouseSettings);
                 await SecureStorage.Default.SetAsync("FabricSettingsDatabasePassword", DatabasePassword);
             }
 

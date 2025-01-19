@@ -124,14 +124,15 @@ else
 <!-- POPUPS -->
 @if (ShowConnectionDialog)
 {
-    <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-    DatabaseName="@DatabaseName"
-    DatabasePassword="@DatabasePassword"
-    DatabaseUsername="@DatabaseUsername"
-    ServerName="@ServerName"
-    Close="CloseShowConnectionDialog"
-    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-    OnSetConnection="SetDatabaseConnection" />
+    <DatabaseConnectionDialog 
+        ConnectionType="@ConnectionType"
+        DatabaseName="@DatabaseName"
+        DatabasePassword="@DatabasePassword"
+        DatabaseUsername="@DatabaseUsername"
+        ServerName="@ServerName"
+        Close="CloseShowConnectionDialog"
+        IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+        OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsNewTablePopupVisible)
