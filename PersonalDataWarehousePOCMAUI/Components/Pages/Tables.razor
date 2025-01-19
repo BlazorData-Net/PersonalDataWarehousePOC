@@ -16,8 +16,10 @@
 @using System.Globalization
 @using PersonalDataWarehousePOCMAUI.Models
 @using System.Text.RegularExpressions
+@using PersonalDataWarehousePOCMAUI.Services
 @inject DataService DataService
 @inject ConnectionSettingsService ConnectionSettings
+@inject SettingsService SettingsService
 
 <PageTitle>Tables</PageTitle>
 
@@ -284,9 +286,9 @@ else
     private string FabricConnectionStringStatusMessage = "Not Set";
     private string AzureStorageConnectionStringStatusMessage = "Not Set";
 
-    private string ConnectionType = "SQL Server";
-    private string ServerName = "localhost";
-    private string DatabaseName = "AdventureWorks";
+    private string ConnectionType = "";
+    private string ServerName = "";
+    private string DatabaseName = "";
     private string DatabasePassword = "";
     private string DatabaseUsername = "";
     private string IntegratedSecurityDisplay = "False";
@@ -310,6 +312,27 @@ else
     protected override async Task OnInitializedAsync()
     {
         await ResetPage();
+
+        SettingsService.LoadSettings();
+
+        ConnectionType = SettingsService.Settings.ApplicationSettings.ConnectionType;
+
+        if(ConnectionType == "SQL Server")
+        {
+            ServerName = SettingsService.Settings.SQLServerSettings.ServerName;
+            DatabaseName = SettingsService.Settings.SQLServerSettings.DatabaseName;
+            DatabasePassword = await SecureStorage.Default.GetAsync("SQLServerDatabasePassword") ?? "";
+            DatabaseUsername = SettingsService.Settings.SQLServerSettings.DatabaseUsername;
+            IntegratedSecurityDisplay = SettingsService.Settings.SQLServerSettings.IntegratedSecurityDisplay;
+        }
+        else
+        {
+            ServerName = SettingsService.Settings.FabricSettings.ServerName;
+            DatabaseName = SettingsService.Settings.FabricSettings.DatabaseName;
+            DatabasePassword = await SecureStorage.Default.GetAsync("FabricSettingsDatabasePassword") ?? "";
+            DatabaseUsername = SettingsService.Settings.FabricSettings.DatabaseUsername;
+            IntegratedSecurityDisplay = SettingsService.Settings.FabricSettings.IntegratedSecurityDisplay;
+        }
     }
 
     // Events
@@ -949,7 +972,7 @@ else
         IsLoadingSheet = true;
         StateHasChanged();
 
-        if (objDatabaseImport.SQLQuery != "")
+        if ((objDatabaseImport.SQLQuery != null) && (objDatabaseImport.SQLQuery != ""))
         {
             // Load SQL Query
 

@@ -15,6 +15,7 @@ namespace PersonalDataWarehousePOCMAUI.Services
             public string Endpoint { get; set; }
             public string ApiVersion { get; set; }
             public string AIEmbeddingModel { get; set; }
+            public string ConnectionType { get; set; }
         }
 
         public class SQLServerSettings
@@ -77,6 +78,7 @@ namespace PersonalDataWarehousePOCMAUI.Services
 
                 // Read the content of the settings file
                 string settingsContent;
+
                 using (var streamReader = new StreamReader(_settingsPath))
                 {
                     settingsContent = streamReader.ReadToEnd();
@@ -116,6 +118,7 @@ namespace PersonalDataWarehousePOCMAUI.Services
             {
                 // Ensure the directory exists
                 string folderPath = Path.GetDirectoryName(_settingsPath);
+
                 if (!Directory.Exists(folderPath))
                 {
                     Directory.CreateDirectory(folderPath);
@@ -195,7 +198,8 @@ namespace PersonalDataWarehousePOCMAUI.Services
                         AIType = "OpenAI",
                         Endpoint = "https://api.openai.com",
                         ApiVersion = "v1",
-                        AIEmbeddingModel = "DefaultEmbeddingModel"
+                        AIEmbeddingModel = "DefaultEmbeddingModel",
+                        ConnectionType = "SQL Server"
                     },
                     SQLServerSettings = new SQLServerSettings
                     {

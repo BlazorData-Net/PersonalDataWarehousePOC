@@ -2,6 +2,8 @@
 @using Microsoft.Data.SqlClient
 @using PersonalDataWarehousePOCMAUI.Models
 @using System.Data
+@using PersonalDataWarehousePOCMAUI.Services
+@inject SettingsService SettingsService
 
 <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-labelledby="inlineDialogLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -229,8 +231,8 @@
 
     // Utility
 
-    #region private void SetConnection()
-    private void SetConnection()
+    #region private async Task SetConnection()
+    private async Task SetConnection()
     {
         boolProcessing = true;
         strStatusMessage = "";
@@ -249,8 +251,36 @@
             // Set the connection string
             ConnectionSetting.ConnectionString = result.ConnectionString;
 
-            // Chnage the mode to show the table dropdown
+            // Change the mode to show the table dropdown
             ConnectionMode = "ImportTable";
+
+            // Update Settings
+            SettingsService settingsService = new SettingsService();
+
+            if (ConnectionType == "SQL Server")
+            {
+                SettingsService.SQLServerSettings sqlServerSettings = new SettingsService.SQLServerSettings();
+
+                sqlServerSettings.ServerName = ServerName;
+                sqlServerSettings.DatabaseName = DatabaseName;
+                sqlServerSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
+                sqlServerSettings.DatabaseUsername = DatabaseUsername;
+
+                await settingsService.UpdateSettingsAsync(null, sqlServerSettings);
+                await SecureStorage.Default.SetAsync("SQLServerDatabasePassword", DatabasePassword);
+            }
+            else if (ConnectionType == "Fabric Warehouse")
+            {
+                SettingsService.FabricSettings fabricWarehouseSettings = new SettingsService.FabricSettings();
+
+                fabricWarehouseSettings.ServerName = ServerName;
+                fabricWarehouseSettings.DatabaseName = DatabaseName;
+                fabricWarehouseSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
+                fabricWarehouseSettings.DatabaseUsername = DatabaseUsername;
+
+                await settingsService.UpdateSettingsAsync(null, null, fabricWarehouseSettings);
+                await SecureStorage.Default.SetAsync("FabricSettingsDatabasePassword", DatabasePassword);
+            }
 
             GetTablesInDatabase();
         }
