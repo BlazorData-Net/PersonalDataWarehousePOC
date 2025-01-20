@@ -117,7 +117,7 @@
 
                 <div class="window glass active">
                     <div class="title-bar">
-                        <div class="title-bar-text">Confirm Delete</div>
+                        <div class="title-bar-text">@($"Confirm Delete of {CurrentDatabaseName}?")</div>
                         <div class="title-bar-controls">
                             <button aria-label="Close" @onclick="CloseDeleteConfirmationPopup"></button>
                         </div>
@@ -244,14 +244,24 @@
     {
         try
         {
+            DatabaseService objDatabaseService = new DatabaseService();
+            objDatabaseService.DeleteDatabase(CurrentDatabaseName);
+
+            ShowDeleteConfirmation = false;
+
+            string ConfimationMessage = $"{CurrentDatabaseName} Deleted!";
 
             NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Success,
                     Summary = "Success",
-                    Detail = "Log Cleared",
+                    Detail = ConfimationMessage,
                     Duration = 4000
                 });
+
+            // Reload the Database List
+            DatabaseList = objDatabaseService.GetDatabaseList();
+            CurrentDatabaseName = "Default";
         }
         catch (Exception ex)
         {
