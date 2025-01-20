@@ -8,6 +8,7 @@
 @using Microsoft.Extensions.AI;
 @using System.Diagnostics.CodeAnalysis
 @using PersonalDataWarehousePOC.Services
+@inject DatabaseService DatabaseService
 
 <PageTitle>Views</PageTitle>
 
@@ -318,8 +319,8 @@ else
             return;
         }
 
-        // Remove any spaces from CurrentViewName
-        CurrentViewName = CurrentViewName.Replace(" ", "");
+        // Remove spaces and special characters 
+        CurrentViewName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
 
         // Save to file in Data/Views
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
@@ -648,8 +649,8 @@ else
 
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
 
-        // Remove any spaces from CurrentViewName
-        CurrentViewName = CurrentViewName.Replace(" ", "");
+        // Remove spaces and special characters
+        CurrentViewName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
 
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 

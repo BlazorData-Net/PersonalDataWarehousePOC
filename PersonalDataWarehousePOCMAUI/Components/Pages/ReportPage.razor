@@ -8,7 +8,7 @@
 @using System.Dynamic
 @using System.Data
 @inject IJSRuntime jsRuntime
-
+@inject DatabaseService DatabaseService
 
 <PageTitle>Reports</PageTitle>
 
@@ -365,6 +365,9 @@
             Message = "Please enter a Report name.";
             return;
         }
+
+        // Remove spaces and special characters
+        CurrentReportName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentReportName);
 
         String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
         var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");

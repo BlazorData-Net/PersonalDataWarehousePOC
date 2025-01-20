@@ -19,6 +19,7 @@
 @using PersonalDataWarehousePOCMAUI.Services
 @inject DataService DataService
 @inject SettingsService SettingsService
+@inject DatabaseService DatabaseService
 
 <PageTitle>Tables</PageTitle>
 
@@ -587,6 +588,9 @@ else
                 return;
             }
 
+            // Remove spaces and special characters
+            CurrentTableName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentTableName);
+
             if (DetectDuplicate(CurrentTableName))
             {
                 CurrentTableName = string.Empty;
@@ -594,8 +598,6 @@ else
                 return;
             }
         }
-
-        CurrentTableName = CleanAndCapitalize(CurrentTableName);
 
         IsLoadingSheet = true;
         StateHasChanged();
@@ -1060,59 +1062,6 @@ else
 
     // Utility
 
-    #region public static string CleanAndCapitalize(string input)
-    public static string CleanAndCapitalize(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-            return string.Empty;
-
-        // Keep only letters, digits, and spaces (temporarily),
-        // removing all other characters
-        // We keep spaces initially to determine word boundaries
-        // for capitalization.
-        char[] filteredChars = input
-            .Where(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c))
-            .ToArray();
-
-        // Convert to a string to process spaces and capitalization
-        string intermediate = new string(filteredChars);
-
-        // Remove spaces and capitalize the following character
-        // if it is a letter
-        // We'll build the result using a StringBuilder for efficiency.
-        var result = new System.Text.StringBuilder();
-        bool capitalizeNext = false;
-
-        for (int i = 0; i < intermediate.Length; i++)
-        {
-            char c = intermediate[i];
-
-            if (char.IsWhiteSpace(c))
-            {
-                // Encountered a space: the next valid letter
-                // should be capitalized if it's not a digit.
-                capitalizeNext = true;
-            }
-            else
-            {
-                // This character is alphanumeric. If we are
-                // instructed to capitalize it and it's a letter:
-                if (capitalizeNext && char.IsLetter(c))
-                {
-                    c = char.ToUpper(c);
-                }
-
-                result.Append(c);
-
-                // Reset flag after processing a non-space character
-                capitalizeNext = false;
-            }
-        }
-
-        return result.ToString();
-    }
-    #endregion
-
     #region public static bool DetectDuplicate(string paramTableName)
     public static bool DetectDuplicate(string paramTableName)
     {
@@ -1135,15 +1084,6 @@ else
         }
 
         return result;
-    }
-    #endregion
-
-    #region private static string CleanValue(string value)
-    private static string CleanValue(string value)
-    {
-        return string.IsNullOrEmpty(value)
-            ? ""
-            : Regex.Replace(value, @"[\r\n\t]", " ").Trim();
     }
     #endregion
 

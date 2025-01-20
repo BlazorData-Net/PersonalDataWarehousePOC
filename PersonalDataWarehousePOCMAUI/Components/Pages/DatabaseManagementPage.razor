@@ -16,7 +16,7 @@
                 @foreach (var database in DatabaseList)
                 {
                     <option value="@database"
-                    selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                            selected="@(database == CurrentDatabaseName ? "selected" : null)">
                         @database
                     </option>
                 }
@@ -37,11 +37,11 @@
                 Delete Database
             </button>
             <span>&nbsp; &nbsp;</span>
+            <button @onclick="()=> RenameDatabase()">
+                Rename Database
+            </button>
+            <span>&nbsp; &nbsp;</span>
         }
-        <button @onclick="()=> RenameDatabase()">
-            Rename Database
-        </button>
-        <span>&nbsp; &nbsp;</span>
         <button @onclick="()=> ExportDatabase()">
             Export Database
         </button>
@@ -54,7 +54,6 @@
 </div>
 <br />
 <!-- POPUPS -->
-
 @if (DatabasePopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -140,7 +139,7 @@
 }
 @code {
     private List<string> DatabaseList = new List<string>();
-    private string CurrentDatabaseName = string.Empty;
+    private string CurrentDatabaseName = "Default";
     private string TempDatabaseName = string.Empty;
     private string PreviousDatabaseName = string.Empty;
 
@@ -183,7 +182,7 @@
             }
 
             // Remove spaces and special characters from TempDatabaseName
-            TempDatabaseName = RemoveSpacesSpecialCharacters(TempDatabaseName);
+            TempDatabaseName = DatabaseService.RemoveSpacesSpecialCharacters(TempDatabaseName);
 
             // Validate TempDatabaseName
             if (!IsDatabaseNameValid(TempDatabaseName))
@@ -206,15 +205,15 @@
             // Update and generrate Confirmation Message
             string ConfimationMessage = string.Empty;
 
-            if(DatabasePopupLabel == "New Database")
+            if (DatabasePopupLabel == "New Database")
             {
                 ConfimationMessage = $"{TempDatabaseName} Created!";
-                //objDatabaseService.CreateDatabase(TempDatabaseName);
+                objDatabaseService.CreateDatabase(TempDatabaseName);
             }
             else
             {
                 ConfimationMessage = $"{PreviousDatabaseName} Renamed to {TempDatabaseName}!";
-                //objDatabaseService.UpdateDatabase(PreviousDatabaseName, TempDatabaseName);
+                objDatabaseService.UpdateDatabase(PreviousDatabaseName, TempDatabaseName);
             }
 
             // Update the Database List
@@ -331,60 +330,6 @@
         }
 
         return true;
-    }
-
-    string RemoveSpacesSpecialCharacters(string input)
-    {
-        StringBuilder sb = new StringBuilder();
-        bool lastWasSpace = false;
-        bool IsFirstLetter = true;
-
-        // Remove spaces
-        input = input.Trim();
-
-        foreach (char c in input)
-        {
-            if (char.IsLetterOrDigit(c)) // Only allow letters and digits
-            {
-                if (IsFirstLetter)
-                {
-                    // Capitalize first letter
-                    if (char.IsLetter(c))
-                    {
-                        sb.Append(char.ToUpper(c));
-                    }
-
-                    IsFirstLetter = false;
-                }
-                else
-                {
-                    if (lastWasSpace)
-                    {
-                        // If the previous character was a space, capitalize the current letter
-                        if (char.IsLetter(c))
-                        {
-                            sb.Append(char.ToUpper(c));
-                        }
-                        else
-                        {
-                            sb.Append(c);
-                        }
-                        lastWasSpace = false;
-                    }
-                    else
-                    {
-                        sb.Append(c);
-                    }
-                }
-            }
-            else if (char.IsWhiteSpace(c))
-            {
-                lastWasSpace = true; // Mark space to handle capitalization
-            }
-            // Special characters are ignored
-        }
-
-        return sb.ToString();
     }
 
 }
