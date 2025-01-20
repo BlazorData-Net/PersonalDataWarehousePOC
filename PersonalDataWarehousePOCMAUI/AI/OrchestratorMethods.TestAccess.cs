@@ -11,10 +11,10 @@ namespace PersonalDataWarehouse.AI
 {
     public partial class OrchestratorMethods
     {
-        #region public async Task<bool> TestAccess(string AIModel)
-        public async Task<bool> TestAccess(string AIModel)
+        #region public async Task<bool> TestAccess(string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
+        public async Task<bool> TestAccess(string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
         {
-            var chatClient = await CreateAIChatClientAsync(AIModel);
+            var chatClient = CreateAIChatClient(AIModel, ApiKey, Endpoint, AIEmbeddingModel);
             string SystemMessage = "Please return the following as json: \"This is successful\" in this format {\r\n  'message': message\r\n}";
             var response = await chatClient.CompleteAsync(SystemMessage);
 

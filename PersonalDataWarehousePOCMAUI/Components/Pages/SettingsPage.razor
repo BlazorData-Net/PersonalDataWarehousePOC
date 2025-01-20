@@ -87,17 +87,6 @@
                                 @bind="Endpoint" />
                             </div>
                             <br />
-
-                            <!-- Azure OpenAI API Version -->
-                            <div class="form-group">
-                                <label for="apiVersion"><b>Azure OpenAI API Version:</b></label>
-                                <input id="apiVersion"
-                                type="text"
-                                class="form-control"
-                                style="width:450px"
-                                @bind="ApiVersion" />
-                            </div>
-                            <br />
                         }
                         <br />
                         <!-- Conditional Buttons Based on Settings -->
@@ -244,7 +233,6 @@
 
             SettingsService.ApplicationSettings applicationSettings = settingsService.Settings.ApplicationSettings;
 
-            applicationSettings.ApiVersion = ApiVersion;
             applicationSettings.Endpoint = Endpoint;
             applicationSettings.AIModel = AIModel;
             applicationSettings.AIType = AIType;
@@ -253,7 +241,7 @@
             await settingsService.UpdateSettingsAsync(applicationSettings);
 
             // Test API Key
-            var result = await OrchestratorMethods.TestAccess(AIModel);
+            var result = await OrchestratorMethods.TestAccess(AIModel, ApiKey, Endpoint, AIEmbeddingModel);
 
             NotificationService.Notify(new NotificationMessage
                 {
@@ -284,6 +272,7 @@
         if (paramAIType == "OpenAI")
         {
             AIModel = DefaultAIModel;
+            Endpoint = "https://api.openai.com";
         }
     }
 }

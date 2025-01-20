@@ -36,9 +36,35 @@ namespace PersonalDataWarehouse.AI
             string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? ""; 
 
             string Endpoint = SettingsService.Settings.ApplicationSettings.Endpoint;
-            string ApiVersion = SettingsService.Settings.ApplicationSettings.ApiVersion;
             string AIEmbeddingModel = SettingsService.Settings.ApplicationSettings.AIEmbeddingModel;
 
+            ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
+
+            if (SettingsService.Settings.ApplicationSettings.AIType == "OpenAI")
+            {
+                OpenAIClientOptions options = new OpenAIClientOptions();
+                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+
+                return new OpenAIClient(
+                    apiKeyCredential, options)
+                    .AsChatClient(AIModel);
+            }
+            else // Azure OpenAI
+            {
+                AzureOpenAIClientOptions options = new AzureOpenAIClientOptions();
+                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+
+                return new AzureOpenAIClient(
+                    new Uri(Endpoint),
+                    apiKeyCredential, options)
+                    .AsChatClient(AIModel);
+            }
+        }
+        #endregion
+
+        #region public IChatClient CreateAIChatClient(string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
+        public IChatClient CreateAIChatClient(string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
+        {
             ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
 
             if (SettingsService.Settings.ApplicationSettings.AIType == "OpenAI")
