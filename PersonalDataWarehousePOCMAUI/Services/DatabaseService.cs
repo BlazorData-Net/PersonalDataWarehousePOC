@@ -22,12 +22,12 @@
         public DatabaseService(LogService logService)
         {
             _logService = logService;
-            RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse");
+            RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse", "Databases");
         }
 
         public DatabaseService()
         {
-            RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse");
+            RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse", "Databases");
         }
 
         #region public List<string> GetDatabaseList()
@@ -157,6 +157,64 @@
 
                 return null;
             }
+        }
+        #endregion
+
+        #region public string ImportDatabase(string DatabaseName, byte[] DatabaseFile)
+        public string ImportDatabase(string DatabaseName, byte[] DatabaseFile)
+        {
+            string strResponse = string.Empty;
+
+            try
+            {
+                string DatabasePath = Path.Combine(RootFolder, DatabaseName);
+
+                #region Create Temp Directories
+                // Create _Temp
+                string TempPath =
+                    $"{RootFolder}/_Temp";
+
+                if (!Directory.Exists(TempPath))
+                {
+                    Directory.CreateDirectory(TempPath);
+                }
+                else
+                {
+                    // Delete the temp directory
+                    Directory.Delete(TempPath, true);
+
+                    // Create the directory if it doesn't exist
+                    if (!Directory.Exists(TempPath))
+                    {
+                        Directory.CreateDirectory(TempPath);
+                    }
+                }
+                #endregion
+
+                // Save the file to the TempPath directory
+                string ImportFilePath = $"{TempPath}/{DatabaseName}.pdw";
+                File.WriteAllBytes(ImportFilePath, DatabaseFile);
+
+                // Extract the files to the destination directory
+                ZipFile.ExtractToDirectory(ImportFilePath, DatabasePath, true);
+
+                // Delete the temp directories
+                Directory.Delete(TempPath, true);
+
+                // Log
+                _logService.WriteToLog($"Database {DatabaseName} imported.");
+
+                strResponse = $"Database {DatabaseName} imported.";
+            }
+            catch (Exception ex)
+            {
+                // Log error
+                _logService.WriteToLog("ImportDatabase: " + ex.Message + " " + ex.StackTrace ?? "" + " " + ex.InnerException.StackTrace ?? "");
+
+                return ex.Message;
+            }
+
+            return strResponse;
         }
         #endregion
 
