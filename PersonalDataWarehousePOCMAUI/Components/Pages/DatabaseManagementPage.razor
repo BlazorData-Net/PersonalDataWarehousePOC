@@ -55,7 +55,7 @@
 <br />
 <!-- POPUPS -->
 
-@if (NewDatabasePopupVisible)
+@if (DatabasePopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
         <div class="modal-dialog">
@@ -63,17 +63,17 @@
 
                 <div class="window glass active">
                     <div class="title-bar">
-                        <div class="title-bar-text">New Database</div>
+                        <div class="title-bar-text">@DatabasePopupLabel</div>
                         <div class="title-bar-controls">
                             <button aria-label="Close" @onclick="CloseNewDatabasePopup"></button>
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        <form @onsubmit="SaveDatabaseAsync">
+                        <form @onsubmit="SaveDatabase">
                             <div>
                                 <label for="tableName">Database Name:</label>
-                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentDatabaseName" />
-                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <input type="text" id="tableName" maxlength="20" style="width: 200px;" @bind="TempDatabaseName" />
+                                <br /><br />
                                 <button type="submit">Submit</button>
                             </div>
                         </form>
@@ -141,9 +141,13 @@
 @code {
     private List<string> DatabaseList = new List<string>();
     private string CurrentDatabaseName = string.Empty;
-    private string Message = string.Empty;
+    private string TempDatabaseName = string.Empty;
+    private string PreviousDatabaseName = string.Empty;
 
-    bool NewDatabasePopupVisible = false;
+    private string Message = string.Empty;
+    private string DatabasePopupLabel = string.Empty;
+
+    bool DatabasePopupVisible = false;
     bool ShowDeleteConfirmation = false;
 
     protected override void OnInitialized()
@@ -156,19 +160,84 @@
     {
         try
         {
-            DatabaseService objDatabaseService = new DatabaseService();
-            //objDatabaseService.CreateDatabase();
-
+            DatabasePopupLabel = "New Database";
+            DatabasePopupVisible = true;
         }
         catch (Exception ex)
         {
+            Message = ex.Message;
+        }
+    }
+
+    private void SaveDatabase()
+    {
+        try
+        {
+            PreviousDatabaseName = CurrentDatabaseName;
+
+            // Validate that the name is not empty
+            if (string.IsNullOrEmpty(TempDatabaseName.Trim()))
+            {
+                Message = "Database Name is required";
+                return;
+            }
+
+            // Remove spaces and special characters from TempDatabaseName
+            TempDatabaseName = RemoveSpacesSpecialCharacters(TempDatabaseName);
+
+            // Validate TempDatabaseName
+            if (!IsDatabaseNameValid(TempDatabaseName))
+            {
+                Message = "Valid Database Name is required";
+                return;
+            }
+
+            // Check that the name is not already in use
+            if (DatabaseList.Any(db => db.Equals(TempDatabaseName, StringComparison.OrdinalIgnoreCase)))
+            {
+                Message = $"The {TempDatabaseName} Database Name is already in use";
+                return;
+            }
+
+            // Create or update the Database
+
+            DatabaseService objDatabaseService = new DatabaseService();
+
+            // Update and generrate Confirmation Message
+            string ConfimationMessage = string.Empty;
+
+            if(DatabasePopupLabel == "New Database")
+            {
+                ConfimationMessage = $"{TempDatabaseName} Created!";
+                //objDatabaseService.CreateDatabase(TempDatabaseName);
+            }
+            else
+            {
+                ConfimationMessage = $"{PreviousDatabaseName} Renamed to {TempDatabaseName}!";
+                //objDatabaseService.UpdateDatabase(PreviousDatabaseName, TempDatabaseName);
+            }
+
+            // Update the Database List
+            DatabaseList = objDatabaseService.GetDatabaseList();
+
+            // Select the new database in the dropdown
+            CurrentDatabaseName = TempDatabaseName;
+
+            // Clear TempDatabaseName
+
+            DatabasePopupVisible = false;
+
             NotificationService.Notify(new NotificationMessage
                 {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Success",
+                    Detail = ConfimationMessage,
                     Duration = 4000
                 });
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
         }
     }
 
@@ -187,13 +256,7 @@
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
+            Message = ex.Message;
         }
     }
 
@@ -206,13 +269,7 @@
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
+            Message = ex.Message;
         }
     }
 
@@ -220,17 +277,12 @@
     {
         try
         {
-
+            DatabasePopupLabel = $"Rename {CurrentDatabaseName}";
+            DatabasePopupVisible = true;
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
+            Message = ex.Message;
         }
     }
 
@@ -242,106 +294,97 @@
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
-        }
-    }
-
-    private async Task SaveDatabaseAsync()
-    {
-        try
-        {
-
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
+            Message = ex.Message;
         }
     }
 
     // POPUP METHODS
 
-    private async Task DeleteDatabasePopup()
+    private void DeleteDatabasePopup()
     {
-        try
-        {
-
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
-        }
+        ShowDeleteConfirmation = true;
     }
 
-    private async Task CloseNewDatabasePopup()
+    private void CloseNewDatabasePopup()
     {
-        try
-        {
-
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
-        }
+        DatabasePopupVisible = false;
     }
 
-    private async Task CloseMessagePopup()
+    private void CloseMessagePopup()
     {
-        try
-        {
-
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
-        }
+        Message = String.Empty;
     }
 
-    private async Task CloseDeleteConfirmationPopup()
+    private void CloseDeleteConfirmationPopup()
     {
-        try
-        {
+        ShowDeleteConfirmation = false;
+    }
 
-        }
-        catch (Exception ex)
+    // Utility
+
+    bool IsDatabaseNameValid(string databaseName)
+    {
+        // Validate that length is less than 20 characters
+        if (databaseName.Length > 20)
         {
-            NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Error",
-                    Detail = ex.Message,
-                    Duration = 4000
-                });
+            return false;
         }
+
+        return true;
+    }
+
+    string RemoveSpacesSpecialCharacters(string input)
+    {
+        StringBuilder sb = new StringBuilder();
+        bool lastWasSpace = false;
+        bool IsFirstLetter = true;
+
+        // Remove spaces
+        input = input.Trim();
+
+        foreach (char c in input)
+        {
+            if (char.IsLetterOrDigit(c)) // Only allow letters and digits
+            {
+                if (IsFirstLetter)
+                {
+                    // Capitalize first letter
+                    if (char.IsLetter(c))
+                    {
+                        sb.Append(char.ToUpper(c));
+                    }
+
+                    IsFirstLetter = false;
+                }
+                else
+                {
+                    if (lastWasSpace)
+                    {
+                        // If the previous character was a space, capitalize the current letter
+                        if (char.IsLetter(c))
+                        {
+                            sb.Append(char.ToUpper(c));
+                        }
+                        else
+                        {
+                            sb.Append(c);
+                        }
+                        lastWasSpace = false;
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                }
+            }
+            else if (char.IsWhiteSpace(c))
+            {
+                lastWasSpace = true; // Mark space to handle capitalization
+            }
+            // Special characters are ignored
+        }
+
+        return sb.ToString();
     }
 
 }
