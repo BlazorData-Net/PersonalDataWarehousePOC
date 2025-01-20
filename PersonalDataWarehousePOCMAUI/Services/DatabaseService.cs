@@ -19,6 +19,20 @@
             RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse");
         }
 
+        public List<string> GetDatabaseList()
+        {
+            List<string> DatabaseList = new List<string>();
+            
+            string[] DatabaseFolders = Directory.GetDirectories(RootFolder);
+
+            foreach (string DatabaseFolder in DatabaseFolders)
+            {
+                DatabaseList.Add(Path.GetFileName(DatabaseFolder));
+            }
+
+            return DatabaseList;
+        }
+
         public void CreateDatabase(string DatabaseName)
         {
             // Create the Parquet folder

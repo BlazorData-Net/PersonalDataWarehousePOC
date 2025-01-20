@@ -1,38 +1,81 @@
 ﻿@using System.Text
 @using CommunityToolkit.Maui.Storage
+@using PersonalDataWarehousePOC.Services
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-
+@inject DatabaseService DatabaseService
 <div class="row">
     <div class="col">
-        <button @onclick="()=> ExportDatabase()">
-            Export Database
-        </button>&nbsp;&nbsp;
-        <button @onclick="()=> DeleteDatabase()">
-            Delete Database
-        </button>&nbsp;&nbsp;
+        @if (DatabaseList.Count > 0)
+        {
+            <label>Database: </label>
+            <select @onchange="@(async (args) =>
+                    {
+                        CurrentDatabaseName = args.Value?.ToString();
+                    })">
+                @foreach (var database in DatabaseList)
+                {
+                    <option value="@database"
+                            selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                        @database
+                    </option>
+                }
+            </select>
+        }
     </div>
 </div>
 <br />
-
-
+<div class="row">
+    <div class="col">
+        <button @onclick="()=> NewDatabase()">
+            New Database
+        </button>
+        <span>&nbsp; &nbsp;</span>
+        @if (CurrentDatabaseName != "Default")
+        {
+            <button @onclick="()=> DeleteDatabase()">
+                Delete Database
+            </button>
+            <span>&nbsp; &nbsp;</span>
+        }
+        <button @onclick="()=> RenameDatabase()">
+            Rename Database
+        </button>
+        <span>&nbsp; &nbsp;</span>
+        <button @onclick="()=> ExportDatabase()">
+            Export Database
+        </button>
+        <span>&nbsp; &nbsp;</span>
+    </div>
+</div>
+<br />
 @code {
-    string PersonalDataWarehouseLogPath = "";
-    string[] PersonalDataWarehouseLog;
+    private List<string> DatabaseList = new List<string>();
+    private string CurrentDatabaseName = string.Empty;
 
     protected override void OnInitialized()
     {
-        PersonalDataWarehouseLogPath =
-        $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/PersonalDataWarehouseLog.csv";
+        DatabaseService objDatabaseService = new DatabaseService();
+        DatabaseList = objDatabaseService.GetDatabaseList();
+    }
 
-        // Read the lines from the .csv file
-        using (var file = new System.IO.StreamReader(PersonalDataWarehouseLogPath))
+    private void NewDatabase()
+    {
+        try
         {
-            PersonalDataWarehouseLog = file.ReadToEnd().Split('\n');
-            if (PersonalDataWarehouseLog[PersonalDataWarehouseLog.Length - 1].Trim() == "")
-            {
-                PersonalDataWarehouseLog = PersonalDataWarehouseLog.Take(PersonalDataWarehouseLog.Length - 1).ToArray();
-            }
+            DatabaseService objDatabaseService = new DatabaseService();
+            //objDatabaseService.CreateDatabase();
+
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
         }
     }
 
@@ -40,20 +83,6 @@
     {
         try
         {
-            using (var streamWriter = new StreamWriter(PersonalDataWarehouseLogPath))
-            {
-                streamWriter.WriteLine(string.Join("\n", "Database deleted on " + DateTime.Now));
-            }
-
-            // Read the lines from the .csv file
-            using (var file = new System.IO.StreamReader(PersonalDataWarehouseLogPath))
-            {
-                PersonalDataWarehouseLog = file.ReadToEnd().Split('\n');
-                if (PersonalDataWarehouseLog[PersonalDataWarehouseLog.Length - 1].Trim() == "")
-                {
-                    PersonalDataWarehouseLog = PersonalDataWarehouseLog.Take(PersonalDataWarehouseLog.Length - 1).ToArray();
-                }
-            }
 
             NotificationService.Notify(new NotificationMessage
                 {
@@ -79,52 +108,36 @@
     {
         try
         {
-            // Read the lines from the .csv file
-            using (var file = new System.IO.StreamReader(PersonalDataWarehouseLogPath))
+
+            if (1 == 1)
             {
-                PersonalDataWarehouseLog = file.ReadToEnd().Split('\n');
-                if (PersonalDataWarehouseLog[PersonalDataWarehouseLog.Length - 1].Trim() == "")
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Saved",
+                        Detail = $"The file was saved successfully to location: {" "}",
+                        Duration = 4000
+                    });
+            }          
+
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
                 {
-                    PersonalDataWarehouseLog = PersonalDataWarehouseLog.Take(PersonalDataWarehouseLog.Length - 1).ToArray();
-                }
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error",
+                    Detail = ex.Message,
+                    Duration = 4000
+                });
+        }
+    }
 
-                string FinalLog = "<style> table { border-collapse: separate; border-spacing: 5px; } th, td { padding: 5px; } </style> <table><tr><th>Log Data</th></tr>";
+    private void RenameDatabase()
+    {
+        try
+        {
 
-                foreach(string line in PersonalDataWarehouseLog)
-                {
-                    FinalLog += "<tr><td>" + line + "</td></tr>";
-                }
-
-                FinalLog += "</table>";
-
-                string FileName = $"PersonalDataWarehouseLog_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.html";
-
-                // Convert PersonalDataWarehouseLog to a MemoryStream but keep the line breaks
-                using var stream = new MemoryStream(Encoding.Default.GetBytes(FinalLog));
-
-                var fileSaverResult = await FileSaver.Default.SaveAsync(FileName, stream);
-
-                if (fileSaverResult.IsSuccessful)
-                {
-                    NotificationService.Notify(new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Success,
-                            Summary = "Saved",
-                            Detail = $"The file was saved successfully to location: {fileSaverResult.FilePath}",
-                            Duration = 4000
-                        });
-                }
-                else
-                {
-                    NotificationService.Notify(new NotificationMessage
-                        {
-                            Severity = NotificationSeverity.Error,
-                            Summary = "Error",
-                            Detail = $"The file was not saved successfully with error: {fileSaverResult.Exception.Message}",
-                            Duration = 4000
-                        });
-                }
-            }
         }
         catch (Exception ex)
         {
