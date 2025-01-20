@@ -11,10 +11,20 @@
     using DataColumn = Parquet.Data.DataColumn;
     using ClosedXML.Excel;
     using System.Text;
+    using Newtonsoft.Json;
+    using PersonalDataWarehousePOCMAUI.Model;
 
     public class DatabaseService
     {
         public string RootFolder { get; set; }
+        private LogService _logService;
+
+        public DatabaseService(LogService logService)
+        {
+            _logService = logService;
+            RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse");
+        }
+
         public DatabaseService()
         {
             RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse");
@@ -92,9 +102,60 @@
         public void DeleteDatabase(string DatabaseName)
         {
             string DatabasePath = Path.Combine(RootFolder, DatabaseName);
+
             if (Directory.Exists(DatabasePath))
             {
                 Directory.Delete(DatabasePath, true);
+            }
+        }
+        #endregion
+
+        #region public byte[] ExportDatabase(string DatabaseName)
+        public byte[] ExportDatabase(string DatabaseName)
+        {
+            try
+            {
+                string DatabasePath = Path.Combine(RootFolder, DatabaseName);
+
+                // Create _TempZip
+                string TempZipPath =
+                    $"{RootFolder}/_TempZip";
+
+                if (!Directory.Exists(TempZipPath))
+                {
+                    Directory.CreateDirectory(TempZipPath);
+                }
+                else
+                {
+                    // Delete the temp directory
+                    Directory.Delete(TempZipPath, true);
+
+                    // Create the directory if it doesn't exist
+                    if (!Directory.Exists(TempZipPath))
+                    {
+                        Directory.CreateDirectory(TempZipPath);
+                    }
+                }
+
+                string ExportFilePath = Path.Combine(TempZipPath, $"{DatabaseName}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.zip");
+
+                // Zip the files
+                ZipFile.CreateFromDirectory(DatabasePath, ExportFilePath);
+
+                // Read the Zip file into a byte array
+                byte[] ExportFileBytes = File.ReadAllBytes(ExportFilePath);
+
+                // Delete the temp directory
+                Directory.Delete(TempZipPath, true);
+
+                return ExportFileBytes;
+            }
+            catch (Exception ex)
+            {
+                // Log error
+                _logService.WriteToLog("ExportFile: " + ex.Message + " " + ex.StackTrace ?? "" + " " + ex.InnerException.StackTrace ?? "");
+
+                return null;
             }
         }
         #endregion

@@ -3,7 +3,7 @@
 @using PersonalDataWarehousePOC.Services
 @inject NotificationService NotificationService
 @inject DialogService DialogService
-@inject DatabaseService DatabaseService
+@inject DatabaseService databaseService
 <div class="row">
     <div class="col">
         @if (DatabaseList.Count > 0)
@@ -151,8 +151,7 @@
 
     protected override void OnInitialized()
     {
-        DatabaseService objDatabaseService = new DatabaseService();
-        DatabaseList = objDatabaseService.GetDatabaseList();
+        DatabaseList = databaseService.GetDatabaseList();
     }
 
     private void NewDatabase()
@@ -182,7 +181,7 @@
             }
 
             // Remove spaces and special characters from TempDatabaseName
-            TempDatabaseName = DatabaseService.RemoveSpacesSpecialCharacters(TempDatabaseName);
+            TempDatabaseName = databaseService.RemoveSpacesSpecialCharacters(TempDatabaseName);
 
             // Validate TempDatabaseName
             if (!IsDatabaseNameValid(TempDatabaseName))
@@ -200,24 +199,22 @@
 
             // Create or update the Database
 
-            DatabaseService objDatabaseService = new DatabaseService();
-
             // Update and generrate Confirmation Message
             string ConfimationMessage = string.Empty;
 
             if (DatabasePopupLabel == "New Database")
             {
                 ConfimationMessage = $"{TempDatabaseName} Created!";
-                objDatabaseService.CreateDatabase(TempDatabaseName);
+                databaseService.CreateDatabase(TempDatabaseName);
             }
             else
             {
                 ConfimationMessage = $"{PreviousDatabaseName} Renamed to {TempDatabaseName}!";
-                objDatabaseService.UpdateDatabase(PreviousDatabaseName, TempDatabaseName);
+                databaseService.UpdateDatabase(PreviousDatabaseName, TempDatabaseName);
             }
 
             // Update the Database List
-            DatabaseList = objDatabaseService.GetDatabaseList();
+            DatabaseList = databaseService.GetDatabaseList();
 
             // Select the new database in the dropdown
             CurrentDatabaseName = TempDatabaseName;
@@ -244,8 +241,7 @@
     {
         try
         {
-            DatabaseService objDatabaseService = new DatabaseService();
-            objDatabaseService.DeleteDatabase(CurrentDatabaseName);
+            databaseService.DeleteDatabase(CurrentDatabaseName);
 
             ShowDeleteConfirmation = false;
 
@@ -260,7 +256,7 @@
                 });
 
             // Reload the Database List
-            DatabaseList = objDatabaseService.GetDatabaseList();
+            DatabaseList = databaseService.GetDatabaseList();
             CurrentDatabaseName = "Default";
         }
         catch (Exception ex)
@@ -272,8 +268,31 @@
     private async Task ExportDatabase()
     {
         try
-        {
+        {          
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Info,
+                    Summary = "Exporting",
+                    Detail = $"Database...",
+                    Duration = 2000
+                });
 
+            var ZipContents = databaseService.ExportDatabase(CurrentDatabaseName);
+
+            // Read DocumentContents into a MemoryStream
+            var stream = new MemoryStream(ZipContents);
+
+            string ExportFileName = $"{CurrentDatabaseName}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.zip";
+
+            var fileSaverResult = await FileSaver.Default.SaveAsync(ExportFileName, stream);
+
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Saved",
+                    Detail = $"The file was saved successfully.",
+                    Duration = 4000
+                });
 
         }
         catch (Exception ex)
