@@ -70,7 +70,6 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.30" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.1" />
 		<PackageReference Include="CommunityToolkit.Maui" Version="11.0.0" />
-		<PackageReference Include="BlazorMonaco" Version="3.3.0" />
 		<PackageReference Include="BlazorDatasheet" Version="0.5.2.7" />
 		<PackageReference Include="CS-Script" Version="4.8.27" />
 		<PackageReference Include="ExcelDataReader" Version="3.7.0" />

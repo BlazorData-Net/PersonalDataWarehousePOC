@@ -8,6 +8,7 @@ using PersonalDataWarehousePOCMAUI.Models;
 using Radzen;
 using PersonalDataWarehousePOCMAUI.Model;
 using PersonalDataWarehouse.AI;
+using CommunityToolkit.Maui.Core.Primitives;
 
 namespace PersonalDataWarehousePOCMAUI
 {
@@ -53,7 +54,13 @@ namespace PersonalDataWarehousePOCMAUI
             builder.Services.AddRadzenComponents();
 
             // Data Directories
-            String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse";                       
+            String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\PersonalDataWarehouse";
+
+            // Create folderPath folder if it does not exist
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
 
             // PersonalDataWarehouseLog.csv
             string PersonalDataWarehouseLogFilePath = Path.Combine(folderPath, "PersonalDataWarehouseLog.csv");
