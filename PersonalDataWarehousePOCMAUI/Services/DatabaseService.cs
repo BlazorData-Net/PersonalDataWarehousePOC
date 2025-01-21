@@ -137,7 +137,7 @@
                     }
                 }
 
-                string ExportFilePath = Path.Combine(TempZipPath, $"{DatabaseName}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.zip");
+                string ExportFilePath = Path.Combine(TempZipPath, $"{DatabaseName}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.pdw");
 
                 // Zip the files
                 ZipFile.CreateFromDirectory(DatabasePath, ExportFilePath);
