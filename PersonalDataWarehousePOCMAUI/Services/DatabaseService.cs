@@ -218,6 +218,39 @@
         }
         #endregion
 
+        public async Task<List<string>> GetAllTablesAsync()
+        {
+            var result = new List<string>();
+
+            // Find all subdirectories named "Parquet" under c:\Databases (recursively)
+            var parquetDirs = Directory.EnumerateDirectories(RootFolder, "Parquet", SearchOption.AllDirectories);
+
+            foreach (var parquetDir in parquetDirs)
+            {
+                // Get the parent folder name of the "Parquet" directory
+                // e.g., c:\Databases\SomeFolder\Parquet => parent is "SomeFolder"
+                string parentFolder = Path.GetFileName(Path.GetDirectoryName(parquetDir));
+
+                // Find all .parquet files in this "Parquet" directory (no further recursion)
+                var parquetFiles = Directory.EnumerateFiles(parquetDir, "*.parquet", SearchOption.TopDirectoryOnly);
+
+                foreach (var file in parquetFiles)
+                {
+                    // Extract just the filename
+                    string fileName = Path.GetFileName(file);
+
+                    // Remove .parquet from name
+                    fileName = fileName.Replace(".parquet", "");
+
+                    // Format: "ParentFolder/ParquetFileName"
+                    result.Add($"{parentFolder}/{fileName}");
+                }
+            }
+
+            // Since we're using an async signature, return via Task
+            return await Task.FromResult(result);
+        }
+
         // Utililty
 
         #region public string RemoveSpacesSpecialCharacters(string input)

@@ -19,7 +19,7 @@
 @using PersonalDataWarehousePOCMAUI.Services
 @inject DataService DataService
 @inject SettingsService SettingsService
-@inject DatabaseService DatabaseService
+@inject DatabaseService databaseService
 
 <PageTitle>Tables</PageTitle>
 
@@ -41,7 +41,7 @@
                 @foreach (var table in TableList)
                 {
                     <option value="@table"
-                    selected="@(table == CurrentTableName ? "selected" : null)">
+                            selected="@(table == CurrentTableName ? "selected" : null)">
                         @table
                     </option>
                 }
@@ -63,11 +63,11 @@
             Cancel
         </button>
     }
-    <span style="margin: 0 5px;"></span> 
+    <span style="margin: 0 5px;"></span>
     <InputFile @key="resetInputFileFlag"
-    OnChange="HandleFileSelectedAsync"
-    accept=".csv,.xls,.xlsx,.parquet"
-    style="@UploadVisibility" />
+               OnChange="HandleFileSelectedAsync"
+               accept=".csv,.xls,.xlsx,.parquet"
+               style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label style="margin: 0 0px;">Selected File: @CurrentFileName</label>
@@ -124,15 +124,14 @@ else
 <!-- POPUPS -->
 @if (ShowConnectionDialog)
 {
-    <DatabaseConnectionDialog 
-        ConnectionType="@ConnectionType"
-        DatabaseName="@DatabaseName"
-        DatabasePassword="@DatabasePassword"
-        DatabaseUsername="@DatabaseUsername"
-        ServerName="@ServerName"
-        Close="CloseShowConnectionDialog"
-        IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-        OnSetConnection="SetDatabaseConnection" />
+    <DatabaseConnectionDialog ConnectionType="@ConnectionType"
+                              DatabaseName="@DatabaseName"
+                              DatabasePassword="@DatabasePassword"
+                              DatabaseUsername="@DatabaseUsername"
+                              ServerName="@ServerName"
+                              Close="CloseShowConnectionDialog"
+                              IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+                              OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsNewTablePopupVisible)
@@ -311,7 +310,7 @@ else
 
         ConnectionType = SettingsService.Settings.ApplicationSettings.ConnectionType;
 
-        if(ConnectionType == "SQL Server")
+        if (ConnectionType == "SQL Server")
         {
             ServerName = SettingsService.Settings.SQLServerSettings.ServerName;
             DatabaseName = SettingsService.Settings.SQLServerSettings.DatabaseName;
@@ -345,12 +344,10 @@ else
         LoadedDataIsUnsaved = false;
         Message = "";
 
-        LoadTableListDropdown();
-
         // Initialize the sheet
         CurrentDataTable = new DataTable();
 
-        LoadTableListDropdown();
+        await LoadTableListDropdownAsync();
 
         // If TableList has items, load the first table
         if (TableList.Count > 0)
@@ -443,19 +440,10 @@ else
 
     // Table Dropdown
 
-    private void LoadTableListDropdown()
+    private async Task LoadTableListDropdownAsync()
     {
         TableList = new List<string>();
-
-        // Load the TableList data
-        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
-
-        if (Directory.Exists(parquetFolder))
-        {
-            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
+        TableList = await databaseService.GetAllTablesAsync();
     }
 
     private async Task LoadTableData(string paramTable)
@@ -463,9 +451,15 @@ else
         IsLoadingSheet = true;
         StateHasChanged();
 
+        // Seperate the table name from the database
+        string[] parts = paramTable.Split('/');
+        string Database = parts[0];
+        string Table = parts[1];
+
         // Load the DataTable
-        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
-        var fileName = Path.Combine(parquetFolder, $"{paramTable}.parquet");
+        String ParentFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases";
+        
+        var fileName = Path.Combine(ParentFolder, Database, $"Parquet/{Table}.parquet");
 
         if (System.IO.File.Exists(fileName))
         {
@@ -483,7 +477,7 @@ else
 
     private async Task LoadTableData()
     {
-        Message = "";        
+        Message = "";
 
         // Get a list of the columns from the DataTable
         TableColumns = CurrentDataTable.Columns
@@ -589,7 +583,7 @@ else
             }
 
             // Remove spaces and special characters
-            CurrentTableName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentTableName);
+            CurrentTableName = databaseService.RemoveSpacesSpecialCharacters(CurrentTableName);
 
             if (DetectDuplicate(CurrentTableName))
             {
@@ -613,7 +607,7 @@ else
         GenerateClassFromDataTable(CurrentDataTable, CurrentTableName);
 
         // Re-Load the TableList dropdown
-        LoadTableListDropdown();
+        await LoadTableListDropdownAsync();
 
         // Toggle the flag to force a re-render of InputFile
         // Clearing it if needed
@@ -973,7 +967,7 @@ else
 
             using (SqlConnection connection = new SqlConnection(objDatabaseImport.ConnectionSetting.ConnectionString))
             {
-                connection.Open();               
+                connection.Open();
 
                 SqlDataAdapter adapter = new SqlDataAdapter(objDatabaseImport.SQLQuery, connection);
                 CurrentDataTable = new DataTable();
