@@ -218,6 +218,7 @@
         }
         #endregion
 
+        #region public async Task<List<string>> GetAllTablesAsync()
         public async Task<List<string>> GetAllTablesAsync()
         {
             var result = new List<string>();
@@ -228,7 +229,6 @@
             foreach (var parquetDir in parquetDirs)
             {
                 // Get the parent folder name of the "Parquet" directory
-                // e.g., c:\Databases\SomeFolder\Parquet => parent is "SomeFolder"
                 string parentFolder = Path.GetFileName(Path.GetDirectoryName(parquetDir));
 
                 // Find all .parquet files in this "Parquet" directory (no further recursion)
@@ -237,19 +237,25 @@
                 foreach (var file in parquetFiles)
                 {
                     // Extract just the filename
-                    string fileName = Path.GetFileName(file);
-
-                    // Remove .parquet from name
-                    fileName = fileName.Replace(".parquet", "");
+                    string fileName = Path.GetFileNameWithoutExtension(file);
 
                     // Format: "ParentFolder/ParquetFileName"
                     result.Add($"{parentFolder}/{fileName}");
                 }
             }
 
-            // Since we're using an async signature, return via Task
+            // Sort so that folders beginning with "Default" come first, then everything else in alphabetical order
+            result = result
+                // Items whose parent folder starts with "Default" come first
+                .OrderBy(item => item.Split('/')[0].StartsWith("Default", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                // Then, sort alphabetically by the full string
+                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             return await Task.FromResult(result);
-        }
+        } 
+        #endregion
+
 
         // Utililty
 

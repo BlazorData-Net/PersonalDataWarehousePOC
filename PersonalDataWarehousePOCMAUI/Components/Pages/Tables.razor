@@ -41,7 +41,7 @@
                 @foreach (var table in TableList)
                 {
                     <option value="@table"
-                            selected="@(table == CurrentTableName ? "selected" : null)">
+                    selected="@(table == CurrentTableName ? "selected" : null)">
                         @table
                     </option>
                 }
@@ -65,9 +65,9 @@
     }
     <span style="margin: 0 5px;"></span>
     <InputFile @key="resetInputFileFlag"
-               OnChange="HandleFileSelectedAsync"
-               accept=".csv,.xls,.xlsx,.parquet"
-               style="@UploadVisibility" />
+    OnChange="HandleFileSelectedAsync"
+    accept=".csv,.xls,.xlsx,.parquet"
+    style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label style="margin: 0 0px;">Selected File: @CurrentFileName</label>
@@ -104,15 +104,12 @@ else
                 <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">remove</i>
                 </button>
-                @if (!LoadedDataIsUnsaved)
-                {
-                    <button @onclick="Export" title="Export" style="background:none;border:none;">
-                        <i class="material-icons" style="color:black;">file_download</i>
-                    </button>
-                    <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
-                        <i class="material-icons" style="color:black;">delete</i>
-                    </button>
-                }
+                <button @onclick="Export" title="Export" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">file_download</i>
+                </button>
+                <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">delete</i>
+                </button>
             </div>
         }
     </div>
@@ -125,13 +122,13 @@ else
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-                              DatabaseName="@DatabaseName"
-                              DatabasePassword="@DatabasePassword"
-                              DatabaseUsername="@DatabaseUsername"
-                              ServerName="@ServerName"
-                              Close="CloseShowConnectionDialog"
-                              IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-                              OnSetConnection="SetDatabaseConnection" />
+    DatabaseName="@DatabaseName"
+    DatabasePassword="@DatabasePassword"
+    DatabaseUsername="@DatabaseUsername"
+    ServerName="@ServerName"
+    Close="CloseShowConnectionDialog"
+    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+    OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsNewTablePopupVisible)
@@ -249,7 +246,6 @@ else
     </div>
     <div class="modal-backdrop fade show"></div>
 }
-
 
 @code {
     private Sheet sheet;
@@ -429,6 +425,7 @@ else
 
         CurrentFile = null;
         IsLoadingSheet = false;
+        LoadedDataIsUnsaved = true;
         IsFileSelected = true;
         StateHasChanged();
     }
@@ -458,7 +455,7 @@ else
 
         // Load the DataTable
         String ParentFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases";
-        
+
         var fileName = Path.Combine(ParentFolder, Database, $"Parquet/{Table}.parquet");
 
         if (System.IO.File.Exists(fileName))
@@ -615,7 +612,6 @@ else
 
         IsLoadingSheet = false;
         IsNewTablePopupVisible = false;
-        LoadedDataIsUnsaved = false;
         StateHasChanged();
 
         Message = $"{CurrentTableName} saved successfully.";
@@ -868,7 +864,15 @@ else
 
     private void Export()
     {
-        IsExportVisible = true;
+        if (CurrentTableName.Trim().Length == 0)
+        {
+            // Open the New Table popup
+            IsNewTablePopupVisible = true;
+        }
+        else
+        {
+            IsExportVisible = true;
+        }
     }
 
     private void CloseExportPopup()
@@ -1043,10 +1047,10 @@ else
             }
         }
 
+        await LoadTableData();
+
         CurrentTableName = String.Empty;
         LoadedDataIsUnsaved = true;
-
-        await LoadTableData();
 
         IsLoadingSheet = false;
         IsShowFileUpload = true;
