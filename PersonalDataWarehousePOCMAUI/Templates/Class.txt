@@ -14,7 +14,7 @@ namespace Controllers
             Dataloader objDataloader = new Dataloader();
 
             // Call LoadParquet to load data into col**CLASS NAME**
-            var col**CLASS NAME** = objDataloader.LoadParquet("**CLASS NAME**").Result;
+            var col**CLASS NAME** = objDataloader.LoadParquet("**FILE NAME**").Result;
 
             // Convert each row into a Dictionary<string, object>, then map that
             // into a new **CLASS NAME** object, using the index as the Id.
