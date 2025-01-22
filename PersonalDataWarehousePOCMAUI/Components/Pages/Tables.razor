@@ -31,7 +31,6 @@
         @if (CurrentTableName != "")
         {
             <br />
-
             <label>Select Table: </label>
             <select @onchange="@(async (args) =>
                     {
@@ -147,6 +146,22 @@ else
                     <div class="window-body has-space">
                         <form @onsubmit="SaveParquetAsync">
                             <div>
+                                <label>Select Database: </label>
+                                <select @onchange="@(async (args) =>
+                                {
+                                    CurrentDatabaseName = args.Value?.ToString();
+                                })">
+                                    @foreach (var database in colAllDatabases)
+                                    {
+                                        <option value="@database"
+                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                            @database
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <br />
+                            <div>
                                 <label for="tableName">Table Name:</label>
                                 <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentTableName" />
                                 &nbsp;&nbsp;&nbsp;&nbsp;
@@ -251,12 +266,14 @@ else
     private Sheet sheet;
 
     private DataSet dataSet;
-    private IBrowserFile CurrentFile;
+    private IBrowserFile CurrentFile;    
 
     List<string> TableList = new List<string>();
     Dictionary<string, string> TableColumns = new Dictionary<string, string>();
     List<string> colGeneralErrors = new List<string>();
+    List<string> colAllDatabases = new List<string>();
     DataTable CurrentDataTable = new DataTable();
+    string CurrentDatabaseName = "Default";
     string CurrentTableName = string.Empty;
     string CurrentFileName = string.Empty;
 
@@ -342,6 +359,8 @@ else
 
         // Initialize the sheet
         CurrentDataTable = new DataTable();
+
+        colAllDatabases = await databaseService.GetAllDatabasesAsync();
 
         await LoadTableListDropdownAsync();
 
@@ -449,9 +468,7 @@ else
         StateHasChanged();
 
         // Seperate the table name from the database
-        string[] parts = paramTable.Split('/');
-        string Database = parts[0];
-        string Table = parts[1];
+        var (Database, Table) = DataService.ExtractDatabaseAndTable(paramTable);
 
         // Load the DataTable
         String ParentFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases";
@@ -582,6 +599,9 @@ else
             // Remove spaces and special characters
             CurrentTableName = databaseService.RemoveSpacesSpecialCharacters(CurrentTableName);
 
+            // Add the database name to the table name
+            CurrentTableName = $"{CurrentDatabaseName}/{CurrentTableName}";
+
             if (DetectDuplicate(CurrentTableName))
             {
                 CurrentTableName = string.Empty;
@@ -633,25 +653,28 @@ else
             IsLoadingSheet = true;
             StateHasChanged();
 
+            // Seperate the table name from the database
+            var (Database, Table) = DataService.ExtractDatabaseAndTable(CurrentTableName);
+
             // Delete the Parquet file
-            String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
-            var fileName = Path.Combine(parquetFolder, $"{CurrentTableName}.parquet");
+            String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Parquet";
+            var fileName = Path.Combine(parquetFolder, $"{Table}.parquet");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the C# class file
-            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
-            fileName = Path.Combine(ClassesFolder, $"{CurrentTableName}.cs");
+            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Classes";
+            fileName = Path.Combine(ClassesFolder, $"{Table}.cs");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the XSD file
-            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
-            fileName = Path.Combine(ReportsFolder, $"{CurrentTableName}Schemas.xsd");
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports/Data";
+            fileName = Path.Combine(ReportsFolder, $"{Table}Schemas.xsd");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
@@ -776,11 +799,15 @@ else
     #region public static void GenerateClassFromDataTable(DataTable dt, string className)
     public static void GenerateClassFromDataTable(DataTable dt, string className)
     {
+        // Seperate the table name from the database
+        DataService dataService = new DataService();
+        var (Database, Table) = dataService.ExtractDatabaseAndTable(className);
+
         // ** Build the class definition and dictionary mapping
 
         // Build the class definition
         StringBuilder ClassDefinition = new StringBuilder();
-        ClassDefinition.AppendLine($"public class {DataService.FirstCharToUpper(className)}");
+        ClassDefinition.AppendLine($"public class {DataService.FirstCharToUpper(Table)}");
         ClassDefinition.AppendLine("    {");
 
         // Add an Id property to the class
@@ -821,20 +848,20 @@ else
         // Replace the placeholders
         string codeBuilder = "";
 
-        codeBuilder = templateContent.Replace("**CLASS NAME**", DataService.FirstCharToUpper(className));
+        codeBuilder = templateContent.Replace("**CLASS NAME**", DataService.FirstCharToUpper(Table));
         codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
         codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
-        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (DataService.FirstCharToUpper(className) + "s"));
-        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (className.ToLower() + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (DataService.FirstCharToUpper(Table) + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (Table.ToLower() + "s"));
         codeBuilder = codeBuilder.Replace("**FIRST FIELD**", dt.Columns[0].ColumnName);
 
         // ** Write the class to a file
 
         // Define directory for output
-        String ClassesPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+        String ClassesPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Classes";
 
         // Set the file path
-        string filePath = Path.Combine(ClassesPath, className + ".cs");
+        string filePath = Path.Combine(ClassesPath, Table + ".cs");
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
@@ -847,15 +874,15 @@ else
         // Load the class by using its name and get its type
 
         // Load the class using the contents in codeBuilder.ToString() and get its type
-        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), DataService.FirstCharToUpper(className));
+        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), DataService.FirstCharToUpper(Table));
 
         // Step 1: Generate the schema string
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
 
         // Step 2: Save the file
-        String ReportsDataPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
+        String ReportsDataPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports/Data";
 
-        filePath = Path.Combine(ReportsDataPath, $"{className}Schemas.xsd");
+        filePath = Path.Combine(ReportsDataPath, $"{Table}Schemas.xsd");
         File.WriteAllText(filePath, schemaString);
     }
     #endregion
@@ -1065,13 +1092,17 @@ else
     {
         bool result = false;
 
+        // Seperate the table name from the database
+        DataService dataService = new DataService();
+        var (Database, Table) = dataService.ExtractDatabaseAndTable(paramTableName);
+
         // Check if the table name already exists
-        String folderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+        String folderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Parquet";
 
         string fileName = $"{folderPath}/{paramTableName}.parquet";
         var ParquetExists = System.IO.File.Exists(fileName);
 
-        String ViewsFolderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+        String ViewsFolderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
 
         fileName = $"{ViewsFolderPath}/{paramTableName}.view";
         var ViewExists = System.IO.File.Exists(fileName);

@@ -188,10 +188,13 @@
 
             ms.Position = 0;
 
+            // Get the Database Name and File Name
+            var (Database, Table) = ExtractDatabaseAndTable(CurrentTableName);
+
             // Data Directory
-            String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
+            String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases";
             
-            string fileName = $"{folderPath}/{CurrentTableName}.parquet";
+            string fileName = $"{folderPath}/{Database}/Parquet/{Table}.parquet";
 
             using (var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
             {
@@ -277,7 +280,32 @@
         public static string FirstCharToUpper(string input)
         {
             return input.First().ToString().ToUpper() + input.Substring(1);
-        } 
+        }
+        #endregion
+
+        #region public (string Database, string Table) ExtractDatabaseAndTable(string paramTable)
+        /// <summary>
+        /// Splits the input string by '/' into two parts: Database and Table.
+        /// Expected input format: "Database/Table"
+        /// </summary>
+        /// <param name="paramTable">The string containing the database and table, separated by '/'</param>
+        /// <returns>A tuple (Database, Table)</returns>
+        /// <exception cref="ArgumentException">Thrown if the input string is null/empty or not in the correct format</exception>
+        public (string Database, string Table) ExtractDatabaseAndTable(string paramTable)
+        {
+            if (string.IsNullOrWhiteSpace(paramTable))
+            {
+                throw new ArgumentException("Input cannot be null or empty.", nameof(paramTable));
+            }
+
+            string[] parts = paramTable.Split('/');
+            if (parts.Length < 2)
+            {
+                throw new ArgumentException($"Input must be in the format 'Database/Table'. Received: {paramTable}", nameof(paramTable));
+            }
+
+            return (parts[0], parts[1]);
+        }
         #endregion
     }
 }

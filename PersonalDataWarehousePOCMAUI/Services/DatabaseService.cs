@@ -253,7 +253,37 @@
                 .ToList();
 
             return await Task.FromResult(result);
-        } 
+        }
+        #endregion
+
+        #region public async Task<List<string>> GetAllDatabasesAsync()
+        public async Task<List<string>> GetAllDatabasesAsync()
+        {
+            // Use a HashSet to avoid duplicates and perform case-insensitive comparisons.
+            var databases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Find all subdirectories named "Parquet" under the root folder (recursively).
+            var parquetDirs = Directory.EnumerateDirectories(RootFolder, "Parquet", SearchOption.AllDirectories);
+
+            foreach (var parquetDir in parquetDirs)
+            {
+                // The parent folder of "Parquet" is considered the database name.
+                string parentFolder = Path.GetFileName(Path.GetDirectoryName(parquetDir));
+
+                // Add it to our set of databases.
+                databases.Add(parentFolder);
+            }
+
+            // Sort so that folders beginning with "Default" come first, 
+            // then everything else in alphabetical order.
+            var result = databases
+                .OrderBy(db => db.StartsWith("Default", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(db => db, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // Return via Task to match the async signature.
+            return await Task.FromResult(result);
+        }
         #endregion
 
 
@@ -314,6 +344,31 @@
 
             return sb.ToString();
         }
+        #endregion
+
+        #region public (string Database, string Table) ExtractDatabaseAndTable(string paramTable)
+        /// <summary>
+        /// Splits the input string by '/' into two parts: Database and Table.
+        /// Expected input format: "Database/Table"
+        /// </summary>
+        /// <param name="paramTable">The string containing the database and table, separated by '/'</param>
+        /// <returns>A tuple (Database, Table)</returns>
+        /// <exception cref="ArgumentException">Thrown if the input string is null/empty or not in the correct format</exception>
+        public (string Database, string Table) ExtractDatabaseAndTable(string paramTable)
+        {
+            if (string.IsNullOrWhiteSpace(paramTable))
+            {
+                throw new ArgumentException("Input cannot be null or empty.", nameof(paramTable));
+            }
+
+            string[] parts = paramTable.Split('/');
+            if (parts.Length < 2)
+            {
+                throw new ArgumentException($"Input must be in the format 'Database/Table'. Received: {paramTable}", nameof(paramTable));
+            }
+
+            return (parts[0], parts[1]);
+        } 
         #endregion
     }
 }
