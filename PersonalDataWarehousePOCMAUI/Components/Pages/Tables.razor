@@ -40,7 +40,7 @@
                 @foreach (var table in TableList)
                 {
                     <option value="@table"
-                            selected="@(table == CurrentTableName ? "selected" : null)">
+                    selected="@(table == CurrentTableName ? "selected" : null)">
                         @table
                     </option>
                 }
@@ -64,9 +64,9 @@
     }
     <span style="margin: 0 5px;"></span>
     <InputFile @key="resetInputFileFlag"
-               OnChange="HandleFileSelectedAsync"
-               accept=".csv,.xls,.xlsx,.parquet"
-               style="@UploadVisibility" />
+    OnChange="HandleFileSelectedAsync"
+    accept=".csv,.xls,.xlsx,.parquet"
+    style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label style="margin: 0 0px;">Selected File: @CurrentFileName</label>
@@ -121,13 +121,13 @@ else
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-                              DatabaseName="@DatabaseName"
-                              DatabasePassword="@DatabasePassword"
-                              DatabaseUsername="@DatabaseUsername"
-                              ServerName="@ServerName"
-                              Close="CloseShowConnectionDialog"
-                              IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-                              OnSetConnection="SetDatabaseConnection" />
+    DatabaseName="@DatabaseName"
+    DatabasePassword="@DatabasePassword"
+    DatabaseUsername="@DatabaseUsername"
+    ServerName="@ServerName"
+    Close="CloseShowConnectionDialog"
+    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+    OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsSaveTablePopupVisible)
@@ -154,7 +154,7 @@ else
                                     @foreach (var database in colAllDatabases)
                                     {
                                         <option value="@database"
-                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -570,9 +570,16 @@ else
 
     private void Save()
     {
-        // Strip out Database from CurrentTableName and set to CurrentTableNameWithoutDatabase
-        var (Database, Table) = DataService.ExtractDatabaseAndTable(CurrentTableName);
-        CurrentTableNameWithoutDatabase = Table;
+        if (CurrentTableName.Trim().Length == 0)
+        {
+            CurrentTableNameWithoutDatabase = "";
+        }
+        else
+        {
+            // Strip out Database from CurrentTableName and set to CurrentTableNameWithoutDatabase
+            var (Database, Table) = DataService.ExtractDatabaseAndTable(CurrentTableName);
+            CurrentTableNameWithoutDatabase = Table;
+        }    
 
         // Open the New Table popup
         IsSaveTablePopupVisible = true;
@@ -587,16 +594,17 @@ else
         }
 
         // Remove spaces and special characters
-        CurrentTableNameWithoutDatabase = databaseService.RemoveSpacesSpecialCharacters(CurrentTableNameWithoutDatabase);
+        string CleanedName = databaseService.RemoveSpacesSpecialCharacters(CurrentTableNameWithoutDatabase);
+
+        if (CleanedName != CurrentTableNameWithoutDatabase)
+        {
+            CurrentTableNameWithoutDatabase = CleanedName;
+            Message = $"Table Name will be {CurrentTableNameWithoutDatabase}";
+            return;
+        }
 
         // Add the database name to the table name
         CurrentTableNameWithoutDatabase = $"{CurrentDatabaseName}/{CurrentTableNameWithoutDatabase}";
-
-        if (DetectDuplicate(CurrentTableNameWithoutDatabase))
-        {
-            Message = "Table Name already exists.";
-            return;
-        }
 
         IsLoadingSheet = true;
         StateHasChanged();
@@ -1077,37 +1085,6 @@ else
         IsLoadingSheet = false;
         IsShowFileUpload = true;
         StateHasChanged();
-    }
-    #endregion
-
-    // Utility
-
-    #region public static bool DetectDuplicate(string paramTableName)
-    public static bool DetectDuplicate(string paramTableName)
-    {
-        bool result = false;
-
-        // Seperate the table name from the database
-        DataService dataService = new DataService();
-        var (Database, Table) = dataService.ExtractDatabaseAndTable(paramTableName);
-
-        // Check if the table name already exists
-        String folderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Parquet";
-
-        string fileName = $"{folderPath}/{paramTableName}.parquet";
-        var ParquetExists = System.IO.File.Exists(fileName);
-
-        String ViewsFolderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
-
-        fileName = $"{ViewsFolderPath}/{paramTableName}.view";
-        var ViewExists = System.IO.File.Exists(fileName);
-
-        if (ParquetExists || ViewExists)
-        {
-            result = true;
-        }
-
-        return result;
     }
     #endregion
 
