@@ -40,7 +40,7 @@
                 @foreach (var table in TableList)
                 {
                     <option value="@table"
-                    selected="@(table == CurrentTableName ? "selected" : null)">
+                            selected="@(table == CurrentTableName ? "selected" : null)">
                         @table
                     </option>
                 }
@@ -64,9 +64,9 @@
     }
     <span style="margin: 0 5px;"></span>
     <InputFile @key="resetInputFileFlag"
-    OnChange="HandleFileSelectedAsync"
-    accept=".csv,.xls,.xlsx,.parquet"
-    style="@UploadVisibility" />
+               OnChange="HandleFileSelectedAsync"
+               accept=".csv,.xls,.xlsx,.parquet"
+               style="@UploadVisibility" />
     @if (IsFileSelected)
     {
         <label style="margin: 0 0px;">Selected File: @CurrentFileName</label>
@@ -121,16 +121,16 @@ else
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-    DatabaseName="@DatabaseName"
-    DatabasePassword="@DatabasePassword"
-    DatabaseUsername="@DatabaseUsername"
-    ServerName="@ServerName"
-    Close="CloseShowConnectionDialog"
-    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-    OnSetConnection="SetDatabaseConnection" />
+                              DatabaseName="@DatabaseName"
+                              DatabasePassword="@DatabasePassword"
+                              DatabaseUsername="@DatabaseUsername"
+                              ServerName="@ServerName"
+                              Close="CloseShowConnectionDialog"
+                              IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+                              OnSetConnection="SetDatabaseConnection" />
 }
 
-@if (IsNewTablePopupVisible)
+@if (IsSaveTablePopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
         <div class="modal-dialog">
@@ -140,7 +140,7 @@ else
                     <div class="title-bar">
                         <div class="title-bar-text">New Table</div>
                         <div class="title-bar-controls">
-                            <button aria-label="Close" @onclick="CloseNewTablePopup"></button>
+                            <button aria-label="Close" @onclick="CloseSaveTablePopup"></button>
                         </div>
                     </div>
                     <div class="window-body has-space">
@@ -154,7 +154,7 @@ else
                                     @foreach (var database in colAllDatabases)
                                     {
                                         <option value="@database"
-                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -163,7 +163,7 @@ else
                             <br />
                             <div>
                                 <label for="tableName">Table Name:</label>
-                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentTableName" />
+                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentTableNameWithoutDatabase" />
                                 &nbsp;&nbsp;&nbsp;&nbsp;
                                 <button type="submit">Submit</button>
                             </div>
@@ -266,7 +266,7 @@ else
     private Sheet sheet;
 
     private DataSet dataSet;
-    private IBrowserFile CurrentFile;    
+    private IBrowserFile CurrentFile;
 
     List<string> TableList = new List<string>();
     Dictionary<string, string> TableColumns = new Dictionary<string, string>();
@@ -276,6 +276,7 @@ else
     string CurrentDatabaseName = "Default";
     string CurrentTableName = string.Empty;
     string CurrentFileName = string.Empty;
+    string CurrentTableNameWithoutDatabase = string.Empty;
 
     string Message = "";
 
@@ -283,7 +284,7 @@ else
     bool IsFileSelected = false;
     bool IsShowFileUpload = true;
     bool IsLoadingSheet = false;
-    bool IsNewTablePopupVisible = false;
+    bool IsSaveTablePopupVisible = false;
     bool IsExportVisible = false;
 
     bool ShowDeleteConfirmation = false;
@@ -353,7 +354,7 @@ else
         IsFileSelected = false;
         IsShowFileUpload = true;
         IsLoadingSheet = false;
-        IsNewTablePopupVisible = false;
+        IsSaveTablePopupVisible = false;
         LoadedDataIsUnsaved = false;
         Message = "";
 
@@ -470,6 +471,9 @@ else
         // Seperate the table name from the database
         var (Database, Table) = DataService.ExtractDatabaseAndTable(paramTable);
 
+        // Set CurrentDatabaseName
+        CurrentDatabaseName = Database;
+
         // Load the DataTable
         String ParentFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases";
 
@@ -564,50 +568,34 @@ else
 
     // Save
 
-    private async Task Save()
+    private void Save()
     {
-        if (CurrentTableName.Trim().Length == 0)
-        {
-            // Open the New Table popup
-            IsNewTablePopupVisible = true;
-        }
-        else
-        {
-            // Toggle the flag to force a re-render of InputFile
-            resetInputFileFlag = !resetInputFileFlag;
+        // Strip out Database from CurrentTableName and set to CurrentTableNameWithoutDatabase
+        var (Database, Table) = DataService.ExtractDatabaseAndTable(CurrentTableName);
+        CurrentTableNameWithoutDatabase = Table;
 
-            // Reset the variables
-            IsFileSelected = false;
-            IsShowFileUpload = true;
-
-            // Save the Parquet file
-            await SaveParquetAsync();
-        }
+        // Open the New Table popup
+        IsSaveTablePopupVisible = true;
     }
 
     private async Task SaveParquetAsync()
     {
-        // Only run these checks on a new Table
-        if (IsNewTablePopupVisible == true)
+        if (CurrentTableNameWithoutDatabase.Trim().Length == 0)
         {
-            if (CurrentTableName.Trim().Length == 0)
-            {
-                Message = "Table Name is required.";
-                return;
-            }
+            Message = "Table Name is required.";
+            return;
+        }
 
-            // Remove spaces and special characters
-            CurrentTableName = databaseService.RemoveSpacesSpecialCharacters(CurrentTableName);
+        // Remove spaces and special characters
+        CurrentTableNameWithoutDatabase = databaseService.RemoveSpacesSpecialCharacters(CurrentTableNameWithoutDatabase);
 
-            // Add the database name to the table name
-            CurrentTableName = $"{CurrentDatabaseName}/{CurrentTableName}";
+        // Add the database name to the table name
+        CurrentTableNameWithoutDatabase = $"{CurrentDatabaseName}/{CurrentTableNameWithoutDatabase}";
 
-            if (DetectDuplicate(CurrentTableName))
-            {
-                CurrentTableName = string.Empty;
-                Message = "Table Name already exists.";
-                return;
-            }
+        if (DetectDuplicate(CurrentTableNameWithoutDatabase))
+        {
+            Message = "Table Name already exists.";
+            return;
         }
 
         IsLoadingSheet = true;
@@ -615,6 +603,9 @@ else
 
         // Convert sheet to datatable
         ConvertSheetToDataTable();
+
+        // Set the CurrentTableName
+        CurrentTableName = CurrentTableNameWithoutDatabase;
 
         // Convert to Parquet
         DataService objDataService = new DataService();
@@ -631,7 +622,7 @@ else
         resetInputFileFlag = !resetInputFileFlag;
 
         IsLoadingSheet = false;
-        IsNewTablePopupVisible = false;
+        IsSaveTablePopupVisible = false;
         LoadedDataIsUnsaved = false;
         IsFileSelected = false;
         IsShowFileUpload = true;
@@ -694,9 +685,9 @@ else
 
     // Popups
 
-    private void CloseNewTablePopup()
+    private void CloseSaveTablePopup()
     {
-        IsNewTablePopupVisible = false;
+        IsSaveTablePopupVisible = false;
     }
 
     private void CloseMessagePopup()
@@ -897,8 +888,8 @@ else
     {
         if (CurrentTableName.Trim().Length == 0)
         {
-            // Open the New Table popup
-            IsNewTablePopupVisible = true;
+            // Open the Save Table popup
+            IsSaveTablePopupVisible = true;
         }
         else
         {
