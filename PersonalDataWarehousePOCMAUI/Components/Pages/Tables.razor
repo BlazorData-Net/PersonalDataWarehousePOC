@@ -154,7 +154,7 @@ else
                                     @foreach (var database in colAllDatabases)
                                     {
                                         <option value="@database"
-                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -632,6 +632,9 @@ else
 
         IsLoadingSheet = false;
         IsNewTablePopupVisible = false;
+        LoadedDataIsUnsaved = false;
+        IsFileSelected = false;
+        IsShowFileUpload = true;
         StateHasChanged();
 
         Message = $"{CurrentTableName} saved successfully.";
