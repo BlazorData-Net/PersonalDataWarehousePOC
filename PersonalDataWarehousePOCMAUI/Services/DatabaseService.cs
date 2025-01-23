@@ -30,22 +30,6 @@
             RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse", "Databases");
         }
 
-        #region public List<string> GetDatabaseList()
-        public List<string> GetDatabaseList()
-        {
-            List<string> DatabaseList = new List<string>();
-
-            string[] DatabaseFolders = Directory.GetDirectories(RootFolder);
-
-            foreach (string DatabaseFolder in DatabaseFolders)
-            {
-                DatabaseList.Add(Path.GetFileName(DatabaseFolder));
-            }
-
-            return DatabaseList;
-        }
-        #endregion
-
         #region public void CreateDatabase(string DatabaseName)
         public void CreateDatabase(string DatabaseName)
         {

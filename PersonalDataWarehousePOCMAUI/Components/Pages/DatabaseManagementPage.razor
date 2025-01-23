@@ -150,9 +150,9 @@
     bool DatabasePopupVisible = false;
     bool ShowDeleteConfirmation = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        DatabaseList = databaseService.GetDatabaseList();
+        DatabaseList = await databaseService.GetAllDatabasesAsync();
     }
 
     private void NewDatabase()
@@ -168,7 +168,7 @@
         }
     }
 
-    private void SaveDatabase()
+    private async Task SaveDatabase()
     {
         try
         {
@@ -214,8 +214,8 @@
                 databaseService.UpdateDatabase(PreviousDatabaseName, TempDatabaseName);
             }
 
-            // Update the Database List
-            DatabaseList = databaseService.GetDatabaseList();
+            // Update the Database List            
+            DatabaseList = await databaseService.GetAllDatabasesAsync();
 
             // Select the new database in the dropdown
             CurrentDatabaseName = TempDatabaseName;
@@ -238,7 +238,7 @@
         }
     }
 
-    private void DeleteDatabase()
+    private async Task DeleteDatabase()
     {
         try
         {
@@ -257,7 +257,7 @@
                 });
 
             // Reload the Database List
-            DatabaseList = databaseService.GetDatabaseList();
+            DatabaseList = await databaseService.GetAllDatabasesAsync();
             CurrentDatabaseName = "Default";
         }
         catch (Exception ex)
