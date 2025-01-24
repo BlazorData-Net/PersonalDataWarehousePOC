@@ -7,8 +7,11 @@
 @using PersonalDataWarehousePOC.Services
 @using System.Dynamic
 @using System.Data
+@using PersonalDataWarehousePOCMAUI.Services
 @inject IJSRuntime jsRuntime
-@inject DatabaseService DatabaseService
+@inject DatabaseService databaseService
+@inject DataService DataService
+@inject SettingsService SettingsService
 
 <PageTitle>Reports</PageTitle>
 
@@ -48,7 +51,7 @@
     @if (CurrentReportName != "")
     {
         <span>&nbsp; &nbsp;</span>
-        <button @onclick="Delete">Delete Report</button>
+        <button @onclick="DeleteAsync">Delete Report</button>
         <span>&nbsp; &nbsp;</span>
         <button @onclick="Execute">Display Report</button>
     }
@@ -132,7 +135,7 @@
     <div class="modal-backdrop fade show"></div>
 }
 
-@if (IsNewReportPopupVisible)
+@if (IsSaveReportPopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
         <div class="modal-dialog">
@@ -146,6 +149,22 @@
                     </div>
                     <div class="window-body has-space">
                         <form @onsubmit="SaveReport">
+                            <div>
+                                <label>Select Database: </label>
+                                <select @onchange="@(async (args) =>
+                                {
+                                    CurrentDatabaseName = args.Value?.ToString();
+                                })">
+                                    @foreach (var database in colAllDatabases)
+                                    {
+                                        <option value="@database"
+                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                            @database
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <br />
                             <div>
                                 <label for="ReportName">Report Name:</label>
                                 <input type="text" id="ReportName" maxlength="50" style="width: 150px;" @bind="CurrentReportName" />
@@ -198,44 +217,34 @@
     private List<string> ReportList = new List<string>();
     private string CurrentReportName = "";
 
+    List<string> colAllDatabases = new List<string>();
+    string CurrentDatabaseName = "Default";
+    string CurrentReportNameWithoutDatabase = string.Empty;
+
     private bool IsWizardVisible { get; set; } = false;
-    private bool IsNewReportPopupVisible { get; set; } = false;
+    private bool IsSaveReportPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
 
     private int CurrentPage = 1;
 
     string Message = "";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        LoadReportsListDropdownSelectDefaultReport();
-        LoadTableListDropdown();
+        await LoadReportsListDropdownSelectDefaultReportAsync();
+        colAllDatabases = await databaseService.GetAllDatabasesAsync();
+        await LoadTableAndViewListDropdownAsync();
     }
 
     // Tables and Views Dropdown
 
-    private void LoadTableListDropdown()
+    private async Task LoadTableAndViewListDropdownAsync()
     {
         TableList = new List<string>();
+        TableList = await databaseService.GetAllTablesAsync();
 
-        // Load files from the Parquet folder
-        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
-
-        if (Directory.Exists(parquetFolder))
-        {
-            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
-
-        // Also load files from the Views folder (with .view extension)
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
-
-        if (Directory.Exists(viewsFolder))
-        {
-            TableList.AddRange(Directory.GetFiles(viewsFolder, "*.view")
-                                        .Select(Path.GetFileNameWithoutExtension));
-        }
+        var ViewList = await databaseService.GetAllViewsAsync();
+        TableList.AddRange(ViewList);
 
         if (TableList.Count > 0)
         {
@@ -243,29 +252,19 @@
         }
     }
 
-
     // Report Dropdown
 
-    private void LoadReportListDropdown()
+    private async Task LoadReportListDropdownAsync()
     {
         ReportList = new List<string>();
-
-        // Load the ReportList data
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
-
-        if (Directory.Exists(ReportsFolder))
-        {
-            ReportList = Directory.GetFiles(ReportsFolder, "*.rdlc")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
+        ReportList = await databaseService.GetAllReportsAsync();
     }
 
     // Reports Dropdown
 
-    private void LoadReportsListDropdownSelectDefaultReport()
+    private async Task LoadReportsListDropdownSelectDefaultReportAsync()
     {
-        LoadReportListDropdown();
+        await LoadReportListDropdownAsync();
 
         if (ReportList.Count > 0)
         {
@@ -292,7 +291,7 @@
 
     // Delete
 
-    private void Delete()
+    private async Task DeleteAsync()
     {
         if (CurrentReportName.Trim().Length == 0)
         {
@@ -313,7 +312,7 @@
 
             Message = $"{deletedReportName} deleted!";
 
-            LoadReportsListDropdownSelectDefaultReport();
+            await LoadReportsListDropdownSelectDefaultReportAsync();
         }
     }
 
@@ -328,7 +327,7 @@
         }
 
         IsWizardVisible = false;
-        IsNewReportPopupVisible = true;
+        IsSaveReportPopupVisible = true;
     }
 
     // Popups
@@ -340,7 +339,7 @@
 
     private void CloseNewReportPopup()
     {
-        IsNewReportPopupVisible = false;
+        IsSaveReportPopupVisible = false;
     }
 
     private void CloseOutputReportPopup()
@@ -367,7 +366,7 @@
         }
 
         // Remove spaces and special characters
-        CurrentReportName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentReportName);
+        CurrentReportName = databaseService.RemoveSpacesSpecialCharacters(CurrentReportName);
 
         String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
         var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
@@ -407,7 +406,7 @@
         Message = $"{CurrentReportName} saved!";
 
         // ** Close the popup if visible
-        IsNewReportPopupVisible = false;
+        IsSaveReportPopupVisible = false;
 
         // Reload the dropdown
         ReportList = new List<string>();

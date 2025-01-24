@@ -207,7 +207,7 @@
         {
             var result = new List<string>();
 
-            // Find all subdirectories named "Parquet" under c:\Databases (recursively)
+            // Find all subdirectories named "Parquet" (recursively)
             var parquetDirs = Directory.EnumerateDirectories(RootFolder, "Parquet", SearchOption.AllDirectories);
 
             foreach (var parquetDir in parquetDirs)
@@ -270,6 +270,81 @@
         }
         #endregion
 
+        #region public async Task<List<string>> GetAllViewsAsync()
+        public async Task<List<string>> GetAllViewsAsync()
+        {
+            var result = new List<string>();
+
+            // Find all subdirectories named "Views" (recursively)
+            var viewsDirs = Directory.EnumerateDirectories(RootFolder, "Views", SearchOption.AllDirectories);
+
+            foreach (var viewDir in viewsDirs)
+            {
+                // Get the parent folder name of the "Views" directory
+                string parentFolder = Path.GetFileName(Path.GetDirectoryName(viewDir));
+
+                // Find all .view files in this "Views" directory (no further recursion)
+                var viewFiles = Directory.EnumerateFiles(viewDir, "*.view", SearchOption.TopDirectoryOnly);
+
+                foreach (var file in viewFiles)
+                {
+                    // Extract just the filename
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+
+                    // Format: "ParentFolder/ViewFileName"
+                    result.Add($"{parentFolder}/{fileName}");
+                }
+            }
+
+            // Sort so that folders beginning with "Default" come first, then everything else in alphabetical order
+            result = result
+                // Items whose parent folder starts with "Default" come first
+                .OrderBy(item => item.Split('/')[0].StartsWith("Default", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                // Then, sort alphabetically by the full string
+                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return await Task.FromResult(result);
+        }
+        #endregion
+
+        #region public async Task<List<string>> GetAllReportsAsync()
+        public async Task<List<string>> GetAllReportsAsync()
+        {
+            var result = new List<string>();
+
+            // Find all subdirectories named "Reports" (recursively)
+            var ReportsDirs = Directory.EnumerateDirectories(RootFolder, "Reports", SearchOption.AllDirectories);
+
+            foreach (var viewDir in ReportsDirs)
+            {
+                // Get the parent folder name of the "Reports" directory
+                string parentFolder = Path.GetFileName(Path.GetDirectoryName(viewDir));
+
+                // Find all .view files in this "Reports" directory (no further recursion)
+                var viewFiles = Directory.EnumerateFiles(viewDir, "*.view", SearchOption.TopDirectoryOnly);
+
+                foreach (var file in viewFiles)
+                {
+                    // Extract just the filename
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+
+                    // Format: "ParentFolder/ViewFileName"
+                    result.Add($"{parentFolder}/{fileName}");
+                }
+            }
+
+            // Sort so that folders beginning with "Default" come first, then everything else in alphabetical order
+            result = result
+                // Items whose parent folder starts with "Default" come first
+                .OrderBy(item => item.Split('/')[0].StartsWith("Default", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                // Then, sort alphabetically by the full string
+                .ThenBy(item => item, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return await Task.FromResult(result);
+        }
+        #endregion
 
         // Utililty
 

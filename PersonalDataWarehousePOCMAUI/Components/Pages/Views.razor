@@ -8,7 +8,10 @@
 @using Microsoft.Extensions.AI;
 @using System.Diagnostics.CodeAnalysis
 @using PersonalDataWarehousePOC.Services
-@inject DatabaseService DatabaseService
+@using PersonalDataWarehousePOCMAUI.Services
+@inject DatabaseService databaseService
+@inject DataService DataService
+@inject SettingsService SettingsService
 
 <PageTitle>Views</PageTitle>
 
@@ -52,7 +55,7 @@ else
         @if (CurrentViewName != "")
         {
             <span>&nbsp; &nbsp;</span>
-            <button @onclick="Delete">Delete</button>
+            <button @onclick="DeleteAsync">Delete</button>
         }
         &nbsp;
         <button @onclick="Execute">Execute</button>
@@ -150,7 +153,7 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
-@if (IsNewViewPopupVisible)
+@if (IsSaveViewPopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
         <div class="modal-dialog">
@@ -165,6 +168,22 @@ else
                     </div>
                     <div class="window-body has-space">
                         <form @onsubmit="SaveViewAsync">
+                            <div>
+                                <label>Select Database: </label>
+                                <select @onchange="@(async (args) =>
+                                {
+                                    CurrentDatabaseName = args.Value?.ToString();
+                                })">
+                                    @foreach (var database in colAllDatabases)
+                                    {
+                                        <option value="@database"
+                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                            @database
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <br />
                             <div>
                                 <label for="tableName">View Name:</label>
                                 <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentViewName" />
@@ -246,8 +265,12 @@ else
     private List<string> ViewList = new List<string>();
     private string CurrentViewName = "";
 
+    List<string> colAllDatabases = new List<string>();
+    string CurrentDatabaseName = "Default";
+    string CurrentViewNameWithoutDatabase = string.Empty;
+
     private bool IsWizardVisible { get; set; } = false;
-    private bool IsNewViewPopupVisible { get; set; } = false;
+    private bool IsSaveViewPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
     private string CurrentSelectedTableWizard = "";
 
@@ -263,14 +286,13 @@ else
         objDataParameters = new DataParameters();
         objDataParameters.data = new List<IDictionary<string, object>>();
         objDataParameters.columns = new Dictionary<string, Type>();
-
-        LoadTableListDropdown();
     }
 
     protected override async Task OnInitializedAsync()
     {
-        // Wait for the editor to be initialized
-        await Task.Delay(100).ContinueWith(t => LoadViewsListDropdown());
+        await LoadViewsListDropdownAsync();
+        colAllDatabases = await databaseService.GetAllDatabasesAsync();
+        await LoadTableListDropdownAsync();
     }    
 
     private async Task OnEditorSaveRequested()
@@ -278,12 +300,12 @@ else
         if (CurrentViewName == "")
         {
             // Open a popup to enter the view name
-            IsNewViewPopupVisible = true;
+            IsSaveViewPopupVisible = true;
             return;
         }
 
         // Remove spaces and special characters 
-        CurrentViewName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
+        CurrentViewName = databaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
 
         // Save to file in Data/Views
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
@@ -413,36 +435,18 @@ else
 
     // Table Dropdown
 
-    private void LoadTableListDropdown()
+    private async Task LoadTableListDropdownAsync()
     {
         TableList = new List<string>();
-
-        // Load the TableList data
-        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
-        
-        if (Directory.Exists(parquetFolder))
-        {
-            TableList = Directory.GetFiles(parquetFolder, "*.parquet")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
+        TableList = await databaseService.GetAllTablesAsync();
     }
 
     // Views Dropdown
 
-    private void LoadViewsListDropdown()
+    private async Task LoadViewsListDropdownAsync()
     {
         ViewList = new List<string>();
-
-        // Load the ViewList data
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
-
-        if (Directory.Exists(viewsFolder))
-        {
-            ViewList = Directory.GetFiles(viewsFolder, "*.view")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
+        ViewList = await databaseService.GetAllViewsAsync();
 
         if (ViewList.Count > 0)
         {
@@ -479,7 +483,7 @@ else
 
     // Delete
 
-    private void Delete()
+    private async Task DeleteAsync()
     {
         if (CurrentViewName.Trim().Length == 0)
         {
@@ -519,7 +523,7 @@ else
 
             Message = $"{deletedViewName} deleted!";
 
-            LoadViewsListDropdown();
+            await LoadViewsListDropdownAsync();
         }
     }
 
@@ -584,7 +588,7 @@ else
 
     private void CloseNewViewPopup()
     {
-        IsNewViewPopupVisible = false;
+        IsSaveViewPopupVisible = false;
     }
 
     private void CloseOutputTablePopup()
@@ -613,7 +617,7 @@ else
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
 
         // Remove spaces and special characters
-        CurrentViewName = DatabaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
+        CurrentViewName = databaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
 
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
@@ -723,7 +727,7 @@ else
         Message = $"{CurrentViewName} saved!";
 
         // ** Close the popup if visible
-        IsNewViewPopupVisible = false;
+        IsSaveViewPopupVisible = false;
 
         // Reload the dropdown
         ViewList = new List<string>();
@@ -749,7 +753,7 @@ else
             if (CurrentViewName == "")
             {
                 // Open a popup to enter the view name
-                IsNewViewPopupVisible = true;
+                IsSaveViewPopupVisible = true;
                 return;
             }
 
