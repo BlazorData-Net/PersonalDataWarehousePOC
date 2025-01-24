@@ -144,7 +144,7 @@ else
                             }
                         </select>
                         &nbsp;&nbsp;
-                        <button @onclick="onTableWizard">Select</button>
+                        <button @onclick="onTableWizardAsync">Select</button>
                     </div>
                 </div>
             </div>
@@ -542,7 +542,7 @@ else
 
     // Table Wizard
 
-    private void onTableWizard()
+    private async Task onTableWizardAsync()
     {
         if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
         {
@@ -565,16 +565,15 @@ else
         CurrentScript += $"    // Return the results ToDictionary()  \n";
         CurrentScript += $"    return col{CurrentSelectedTableWizard}.Select(row => row.ToDictionary()).Take(100).ToList();";
         CurrentScript += "\n";
-        CurrentScript += "}\n";
-
-        // if (_editor != null)
-        // {
-        //     _editor.SetValue(CurrentScript);
-        // }
+        CurrentScript += "}\n";        
 
         CloseTableWizardPopup();
 
         CurrentSelectedTableWizard = "";
+
+        await this.QuillCode.InsertText(CurrentScript);
+
+        StateHasChanged();
     }
 
     // Popups
