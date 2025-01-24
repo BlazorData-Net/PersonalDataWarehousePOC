@@ -9,9 +9,13 @@ public class Dataloader
     {
         IEnumerable<IDictionary<string, object>> response = new List<IDictionary<string, object>>();
 
+        // Seperate the table name from the database
+        DataService dataService = new DataService();
+        var (Database, Table) = dataService.ExtractDatabaseAndTable(TableName);
+
         // Load the DataTable
-        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
-        var fileName = Path.Combine(parquetFolder, $"{TableName}.parquet");
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Parquet";
+        var fileName = Path.Combine(parquetFolder, $"{Table}.parquet");
 
         if (System.IO.File.Exists(fileName))
         {
