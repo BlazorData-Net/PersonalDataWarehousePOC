@@ -177,7 +177,7 @@ else
                                     @foreach (var database in colAllDatabases)
                                     {
                                         <option value="@database"
-                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -254,7 +254,7 @@ else
 }
 
 @code {
-    BlazoredTextEditor QuillCode;
+        BlazoredTextEditor QuillCode;
     private bool ContentChanged { get; set; }
     private string CurrentScript { get; set; } = string.Empty;
 
