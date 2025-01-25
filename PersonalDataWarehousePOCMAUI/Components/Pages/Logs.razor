@@ -120,7 +120,7 @@
                         SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
                     };
 
-                picker.FileTypeChoices.Add("All Files", new List<string> { "." });
+                picker.FileTypeChoices.Add("All Files", new List<string> { ".html" });
                 picker.SuggestedFileName = FileName;
 
                 var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;

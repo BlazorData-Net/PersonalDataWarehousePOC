@@ -289,7 +289,7 @@
                 SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
             };
 
-            picker.FileTypeChoices.Add("All Files", new List<string> { "." });
+            picker.FileTypeChoices.Add("All Files", new List<string> { ".pdw" });
             picker.SuggestedFileName = ExportFileName;
 
             var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
@@ -403,12 +403,9 @@
                     {
                         Severity = NotificationSeverity.Error,
                         Summary = "Error",
-                        Detail = $"The file was not saved. {result.ToString()}",
+                        Detail = $"The file was not saved.",
                         Duration = 4000
                     });
-
-                LogService objLogService = new LogService();
-                objLogService.WriteToLog(result.ToString());
             }
         }
         catch (Exception ex)

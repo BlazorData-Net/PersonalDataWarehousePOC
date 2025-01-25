@@ -931,7 +931,7 @@ else
                 SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
             };
 
-        picker.FileTypeChoices.Add("All Files", new List<string> { "." });
+        picker.FileTypeChoices.Add("All Files", new List<string> { ".xlsx" });
         picker.SuggestedFileName = FileName;
 
         var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
@@ -977,7 +977,7 @@ else
                 SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
             };
 
-        picker.FileTypeChoices.Add("All Files", new List<string> { "." });
+        picker.FileTypeChoices.Add("All Files", new List<string> { ".parquet" });
         picker.SuggestedFileName = FileName;
 
         var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
