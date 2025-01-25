@@ -4,7 +4,6 @@
 @using BlazorDatasheet.Menu
 @using BlazorDatasheet.Core.Data
 @using BlazorDatasheet.Core.Formats
-@using CommunityToolkit.Maui.Storage
 @using CsvHelper
 @using ExcelDataReader
 @using Microsoft.Data.SqlClient
@@ -14,6 +13,7 @@
 @using System.Text
 @using System.Reflection
 @using System.Globalization
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Models
 @using System.Text.RegularExpressions
 @using PersonalDataWarehousePOCMAUI.Services
@@ -924,14 +924,32 @@ else
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ExcelContents);
 
-        var fileSaverResult = await FileSaver.Default.SaveAsync($"{Table}.xlsx", stream);
+        var FileName = $"{Table}.xlsx";
+
+        var picker = new Windows.Storage.Pickers.FileSavePicker
+            {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+            };
+
+        picker.FileTypeChoices.Add("All Files", new List<string> { "." });
+        picker.SuggestedFileName = FileName;
+
+        var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+        var fileSaverResult = await picker.PickSaveFileAsync();
 
         if (fileSaverResult != null)
         {
-            if (!fileSaverResult.IsSuccessful)
-            {
-                Message = fileSaverResult.Exception.Message;
-            }
+            // Convert the MemoryStream to a byte array
+            byte[] fileContent = stream.ToArray();
+
+            // Write the content to the selected path
+            await File.WriteAllBytesAsync(fileSaverResult.Path, fileContent);
+        }
+        else
+        {
+            Message = $"Export to Excel cancelled.";
         }
 
         IsLoadingSheet = false;
@@ -952,18 +970,36 @@ else
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ParquetContents);
 
-        var fileSaverResult = await FileSaver.Default.SaveAsync($"{Table}.parquet", stream);
+        var FileName = $"{Table}.parquet";
 
-        IsLoadingSheet = false;
-        StateHasChanged();
+        var picker = new Windows.Storage.Pickers.FileSavePicker
+            {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+            };
+
+        picker.FileTypeChoices.Add("All Files", new List<string> { "." });
+        picker.SuggestedFileName = FileName;
+
+        var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+        var fileSaverResult = await picker.PickSaveFileAsync();
 
         if (fileSaverResult != null)
         {
-            if (!fileSaverResult.IsSuccessful)
-            {
-                Message = fileSaverResult.Exception.Message;
-            }
+            // Convert the MemoryStream to a byte array
+            byte[] fileContent = stream.ToArray();
+
+            // Write the content to the selected path
+            await File.WriteAllBytesAsync(fileSaverResult.Path, fileContent);
         }
+        else
+        {
+            Message = $"Export to Parquet cancelled.";
+        }
+
+        IsLoadingSheet = false;
+        StateHasChanged();
 
         IsLoadingSheet = false;
         IsExportVisible = false;

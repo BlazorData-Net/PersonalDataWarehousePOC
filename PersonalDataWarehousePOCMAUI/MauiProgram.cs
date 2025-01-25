@@ -1,5 +1,4 @@
 ﻿using BlazorDatasheet.Extensions;
-using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Parquet.Schema;
 using PersonalDataWarehousePOC.Services;
@@ -8,7 +7,6 @@ using PersonalDataWarehousePOCMAUI.Models;
 using Radzen;
 using PersonalDataWarehousePOCMAUI.Model;
 using PersonalDataWarehouse.AI;
-using CommunityToolkit.Maui.Core.Primitives;
 
 namespace PersonalDataWarehousePOCMAUI
 {
@@ -19,8 +17,7 @@ namespace PersonalDataWarehousePOCMAUI
             var builder = MauiApp.CreateBuilder();
 
             builder
-                .UseMauiApp<App>()
-                .UseMauiCommunityToolkit()                
+                .UseMauiApp<App>()             
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

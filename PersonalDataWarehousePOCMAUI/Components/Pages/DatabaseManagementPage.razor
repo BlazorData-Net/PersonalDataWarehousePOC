@@ -1,5 +1,4 @@
 ﻿@using System.Text
-@using CommunityToolkit.Maui.Storage
 @using PersonalDataWarehousePOC.Services
 @using PersonalDataWarehousePOCMAUI.Model
 @inject NotificationService NotificationService
@@ -285,10 +284,27 @@
 
             string ExportFileName = $"{CurrentDatabaseName}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.pdw";
 
-            var fileSaverResult = await FileSaver.Default.SaveAsync(ExportFileName, stream);
-
-            if (fileSaverResult.IsSuccessful)
+            var picker = new Windows.Storage.Pickers.FileSavePicker
             {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+            };
+
+            picker.FileTypeChoices.Add("All Files", new List<string> { "." });
+            picker.SuggestedFileName = ExportFileName;
+
+            var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var fileSaverResult = await picker.PickSaveFileAsync();
+
+            if (fileSaverResult != null)
+            {
+                // Convert the MemoryStream to a byte array
+                byte[] fileContent = stream.ToArray();
+
+                // Write the content to the selected path
+                await File.WriteAllBytesAsync(fileSaverResult.Path, fileContent);
+
                 NotificationService.Notify(new NotificationMessage
                     {
                         Severity = NotificationSeverity.Success,
@@ -303,14 +319,10 @@
                     {
                         Severity = NotificationSeverity.Error,
                         Summary = "Error",
-                        Detail = $"The file was not saved. {fileSaverResult.ToString()}",
+                        Detail = $"The file was not saved.",
                         Duration = 4000
                     });
-
-                LogService objLogService = new LogService();
-                objLogService.WriteToLog(fileSaverResult.ToString());
             }
-
         }
         catch (Exception ex)
         {
