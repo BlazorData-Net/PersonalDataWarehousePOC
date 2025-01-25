@@ -914,13 +914,17 @@ else
     {
         IsLoadingSheet = true;
 
+        // Seperate the table name from the database
+        DataService dataService = new DataService();
+        var (Database, Table) = dataService.ExtractDatabaseAndTable(CurrentTableName);
+
         // Export the DataTable to Excel
-        byte[] ExcelContents = await DataService.ExportDataTableToExcelAsync(CurrentDataTable, CurrentTableName);
+        byte[] ExcelContents = await DataService.ExportDataTableToExcelAsync(CurrentDataTable, Table);
 
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ExcelContents);
 
-        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.xlsx", stream);
+        var fileSaverResult = await FileSaver.Default.SaveAsync($"{Table}.xlsx", stream);
 
         if (fileSaverResult != null)
         {
@@ -938,13 +942,17 @@ else
     {
         IsLoadingSheet = true;
 
+        // Seperate the table name from the database
+        DataService dataService = new DataService();
+        var (Database, Table) = dataService.ExtractDatabaseAndTable(CurrentTableName);
+
         // Export the DataTable to Parquet
-        byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(CurrentDataTable, CurrentTableName);
+        byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(CurrentDataTable, Table);
 
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ParquetContents);
 
-        var fileSaverResult = await FileSaver.Default.SaveAsync($"{CurrentTableName}.parquet", stream);
+        var fileSaverResult = await FileSaver.Default.SaveAsync($"{Table}.parquet", stream);
 
         IsLoadingSheet = false;
         StateHasChanged();
