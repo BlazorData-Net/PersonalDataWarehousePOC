@@ -1,0 +1,57 @@
+﻿@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="editor" @ref="element"></div>
+
+@code {
+    [Parameter] public string Language { get; set; }
+    [Parameter] public string Code { get; set; }
+    [Parameter] public EventCallback<string> CodeChanged { get; set; }
+    [Parameter] public Func<string, Position, Task<Suggestion[]>> OnCompletionsRequested { get; set; }
+
+    private DotNetObjectReference<CodeEditor> thisReference;
+    private ElementReference element;
+    private readonly Lazy<Task<IJSObjectReference>> moduleTask;
+
+    public CodeEditor()
+    {
+        thisReference = DotNetObjectReference.Create(this);
+        moduleTask = new(() => JS.InvokeAsync<IJSObjectReference>(
+           "import", "./_content/MonacoRazor/main.js").AsTask());
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var module = await moduleTask.Value;
+            await module.InvokeVoidAsync("init", element, thisReference, Language ?? "csharp", Code);
+        }
+    }
+
+    public async Task UpdateCodeAsync(string code)
+    {
+        var module = await moduleTask.Value;
+        await module.InvokeVoidAsync("updateValue", element, thisReference, code);
+    }
+
+    [JSInvokable]
+    public Task HandleEditorBlur(string newValue)
+    {
+        return CodeChanged.InvokeAsync(newValue);
+    }
+
+    [JSInvokable]
+    public Task<Suggestion[]> GetCompletions(string value, Position position)
+        => OnCompletionsRequested?.Invoke(value, position);
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        thisReference.Dispose();
+        if (moduleTask.IsValueCreated)
+        {
+            var module = await moduleTask.Value;
+            await module.DisposeAsync();
+        }
+    }
+}

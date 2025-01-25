@@ -96,6 +96,14 @@
 	</ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\MonacoRazor\MonacoRazor.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RazorComponent Include="..\MonacoRazor\MonacoRazor.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Content Update="Components\Layout\MainLayout.razor">
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       </Content>

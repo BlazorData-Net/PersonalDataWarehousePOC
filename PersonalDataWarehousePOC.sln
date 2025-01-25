@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOC.Se
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PersonalDataWarehousePOCMAUI", "PersonalDataWarehousePOCMAUI\PersonalDataWarehousePOCMAUI.csproj", "{1DDC41E8-9A6A-4BEA-9404-232E22759CF7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonacoRazor", "MonacoRazor\MonacoRazor.csproj", "{61BAA65D-A737-4CD1-83ED-92C7B0BC3BA9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +36,10 @@ Global
 		{1DDC41E8-9A6A-4BEA-9404-232E22759CF7}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{1DDC41E8-9A6A-4BEA-9404-232E22759CF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DDC41E8-9A6A-4BEA-9404-232E22759CF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61BAA65D-A737-4CD1-83ED-92C7B0BC3BA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61BAA65D-A737-4CD1-83ED-92C7B0BC3BA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61BAA65D-A737-4CD1-83ED-92C7B0BC3BA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61BAA65D-A737-4CD1-83ED-92C7B0BC3BA9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <Import Project="StaticAssets\StaticAssets.targets" />
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Authors>Steve Sanderson</Authors>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <Description>A Blazor component that provides the Monaco code editor. NOTE: This is primarily intended for demo usage and does not expose the entire Monaco API surface.</Description>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+    <Content Update="StaticAssets\*" Pack="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.1" />
+  </ItemGroup>
+
+</Project>

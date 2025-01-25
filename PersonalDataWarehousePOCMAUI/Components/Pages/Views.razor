@@ -66,11 +66,7 @@ else
             <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
         }
         <br />
-        <BlazoredTextEditor @ref="@QuillCode" Syntax="true">
-            <EditorContent>
-                <pre class="ql-syntax" spellcheck="false">@((MarkupString)CurrentScript)</pre>
-            </EditorContent>
-        </BlazoredTextEditor>
+        <CodeEditor @ref=MonacoCodeEditor Language="csharp" Code="@CurrentScript" OnCompletionsRequested="GetCompletionsAsync" />
     </div>
     <br />
 }
@@ -254,7 +250,7 @@ else
 }
 
 @code {
-        BlazoredTextEditor QuillCode;
+    private CodeEditor MonacoCodeEditor { get; set; }
     private bool ContentChanged { get; set; }
     private string CurrentScript { get; set; } = string.Empty;
 
@@ -294,6 +290,15 @@ else
         colAllDatabases = await databaseService.GetAllDatabasesAsync();
         await LoadTableListDropdownAsync();
     }    
+
+    Task<Suggestion[]> GetCompletionsAsync(string currentValue, Position position)
+    {
+        return Task.FromResult(new[]
+        {
+            new Suggestion {Label = "From C#", InsertText = "From C#" },
+            new Suggestion {Label = "OK", InsertText = "OK" },
+        });
+    }
 
     private async Task OnEditorSaveRequested()
     {
@@ -571,9 +576,7 @@ else
 
         CurrentSelectedTableWizard = "";
 
-        await this.QuillCode.InsertText(CurrentScript);
-
-        StateHasChanged();
+        await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
     }
 
     // Popups
