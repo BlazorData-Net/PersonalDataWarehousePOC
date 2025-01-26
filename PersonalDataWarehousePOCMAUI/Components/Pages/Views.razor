@@ -278,8 +278,6 @@ else
 
     protected override void OnInitialized()
     {
-        CurrentScript = SampleCode;
-
         objDataParameters = new DataParameters();
         objDataParameters.data = new List<IDictionary<string, object>>();
         objDataParameters.columns = new Dictionary<string, Type>();
@@ -290,6 +288,26 @@ else
         await LoadViewsListDropdownAsync();
         colAllDatabases = await databaseService.GetAllDatabasesAsync();
         await LoadTableListDropdownAsync();
+
+        if (ViewList.Count > 0)
+        {
+            CurrentViewName = ViewList.First();
+
+            // Separate the view name from the database
+            var (Database, View) = DataService.ExtractDatabaseAndTable(CurrentViewName);
+
+            // Load the DataTable
+            String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
+
+            var fileName = $"{viewsFolder}/{View}.view";
+
+            if (System.IO.File.Exists(fileName))
+            {
+                // Read contents into CurrentScript
+                CurrentScript = System.IO.File.ReadAllText(fileName);
+                StateHasChanged();
+            }
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
