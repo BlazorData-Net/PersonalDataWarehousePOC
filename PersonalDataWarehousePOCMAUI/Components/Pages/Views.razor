@@ -31,7 +31,7 @@ else
             <select @onchange="@(async (args) =>
                     {
                         CurrentViewName = args.Value?.ToString();
-                        LoadView(CurrentViewName);
+                        await LoadViewAsync(CurrentViewName);
                     })">
                 @foreach (var view in ViewList)
                 {
@@ -323,10 +323,7 @@ else
             Message = $"{CurrentViewName} saved!";
         }
 
-        // if (_editor != null)
-        // {
-        //     CurrentScript = await _editor.GetValue();
-        // }
+        await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
 
         await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
@@ -457,11 +454,11 @@ else
         if (ViewList.Count > 0)
         {
             CurrentViewName = ViewList.First();
-            LoadView(CurrentViewName);
+            await LoadViewAsync(CurrentViewName);
         }
     }
 
-    private void LoadView(string paramView)
+    private async Task LoadViewAsync(string paramView)
     {
         // Load the DataTable
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
@@ -473,10 +470,7 @@ else
             // Read contents into CurrentScript
             CurrentScript = System.IO.File.ReadAllText(fileName);
 
-            // if (_editor != null)
-            // {
-            //     _editor.SetValue(CurrentScript);
-            // }
+            await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
 
             // Set CurrentViewName
             CurrentViewName = paramView;
@@ -535,15 +529,12 @@ else
 
     // New Script
 
-    private void NewScript()
+    private async Task NewScript()
     {       
         CurrentScript = SampleCode;
         CurrentViewName = "";
 
-        // if (_editor != null)
-        // {
-        //     _editor.SetValue(CurrentScript);
-        // }
+        await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
     }
 
     // Table Wizard
@@ -737,7 +728,7 @@ else
         }
 
         // Load the view
-        LoadView(CurrentViewName);
+        await LoadViewAsync(CurrentViewName);
     }
 
     // Code Execution
