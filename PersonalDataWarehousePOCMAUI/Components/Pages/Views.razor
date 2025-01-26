@@ -314,7 +314,7 @@ else
         CurrentViewName = databaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
 
         // Save to file in Data/Views
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
 
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
@@ -398,7 +398,7 @@ else
         // ** Write the class to a file
 
         // Define directory for output
-        String directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+        String directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
 
         // Set the file path
         string filePath = $@"{directoryPath}/{CurrentViewName}.cs";
@@ -413,7 +413,7 @@ else
         // Load the class and generate the schema
         // Load the class by using its name and get its type
 
-        String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+        String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
         var codeFile = Path.Combine(ClassesFolder, $"{CurrentViewName}.cs");
 
         if (!System.IO.File.Exists(codeFile))
@@ -432,7 +432,7 @@ else
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
 
         // Step 3: Save the file
-        directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
+        directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports/Data";
         filePath = Path.Combine(directoryPath, $"{CurrentViewName}Schemas.xsd");
         File.WriteAllText(filePath, schemaString);
 
@@ -464,7 +464,7 @@ else
     private void LoadView(string paramView)
     {
         // Load the DataTable
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
 
         var fileName = $"{viewsFolder}/{paramView}.view";
 
@@ -498,7 +498,7 @@ else
         else
         {
             // Delete the file
-            String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+            String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
 
             var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
             if (System.IO.File.Exists(fileName))
@@ -507,7 +507,7 @@ else
             }
 
             // Delete the C# class file
-            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
 
             fileName = Path.Combine(ClassesFolder, $"{CurrentViewName}.cs");
             if (System.IO.File.Exists(fileName))
@@ -516,7 +516,7 @@ else
             }
 
             // Delete the XSD file
-            String ReportsDataFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
+            String ReportsDataFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports/Data";
 
             fileName = Path.Combine(ReportsDataFolder, $"{CurrentViewName}Schemas.xsd");
             if (System.IO.File.Exists(fileName))
@@ -617,18 +617,12 @@ else
             return;
         }
 
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
 
         // Remove spaces and special characters
         CurrentViewName = databaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
 
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
-
-        if (DetectDuplicate(CurrentViewName))
-        {
-            Message = "Name already exists.";
-            return;
-        }
 
         await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
@@ -700,7 +694,7 @@ else
         // ** Write the class to a file
 
         // Set the file path
-        string directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+        string directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
 
         string filePath =  Path.Combine(directoryPath, CurrentViewName + ".cs");
 
@@ -722,7 +716,7 @@ else
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
 
         // Step 2: Save the file
-        directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports/Data";
+        directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports/Data";
 
         filePath = Path.Combine(directoryPath, $"{CurrentViewName}Schemas.xsd");
         File.WriteAllText(filePath, schemaString);
@@ -844,30 +838,6 @@ else
     {
         ShowAI = false;
         Message = "";
-    }
-    #endregion
-
-    #region public static bool DetectDuplicate(string paramViewName)
-    public static bool DetectDuplicate(string paramViewName)
-    {
-        bool result = false;
-
-        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Parquet";
-
-        string fileName = $"{parquetFolder}/{paramViewName}.parquet";
-        var ParquetExists = System.IO.File.Exists(fileName);
-
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
-
-        fileName = $"{viewsFolder}/{paramViewName}.view";
-        var ViewExists = System.IO.File.Exists(fileName);
-
-        if (ParquetExists || ViewExists)
-        {
-            result = true;
-        }
-
-        return result;
     }
     #endregion
 

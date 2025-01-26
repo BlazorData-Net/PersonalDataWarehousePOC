@@ -5,17 +5,13 @@ using System.Data;
 using System.Linq;
 public class Dataloader
 {
-    public async Task<IEnumerable<IDictionary<string, object>>> LoadParquet(string TableName)
+    public async Task<IEnumerable<IDictionary<string, object>>> LoadParquet(string DatabaseName, string TableName)
     {
         IEnumerable<IDictionary<string, object>> response = new List<IDictionary<string, object>>();
 
-        // Seperate the table name from the database
-        DataService dataService = new DataService();
-        var (Database, Table) = dataService.ExtractDatabaseAndTable(TableName);
-
         // Load the DataTable
-        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Parquet";
-        var fileName = Path.Combine(parquetFolder, $"{Table}.parquet");
+        String parquetFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{DatabaseName}/Parquet";
+        var fileName = Path.Combine(parquetFolder, $"{TableName}.parquet");
 
         if (System.IO.File.Exists(fileName))
         {

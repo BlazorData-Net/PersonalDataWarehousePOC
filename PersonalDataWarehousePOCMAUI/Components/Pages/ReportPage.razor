@@ -275,7 +275,7 @@
     private void LoadReport(string paramReport)
     {
         // Load the DataReport
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
         var fileName = Path.Combine(ReportsFolder, $"{paramReport}.rdlc");
 
         if (System.IO.File.Exists(fileName))
@@ -300,7 +300,7 @@
         else
         {
             // Delete the file
-            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
             var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
             if (System.IO.File.Exists(fileName))
             {
@@ -368,17 +368,11 @@
         // Remove spaces and special characters
         CurrentReportName = databaseService.RemoveSpacesSpecialCharacters(CurrentReportName);
 
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
         var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
 
-        if (DetectDuplicate(CurrentReportName))
-        {
-            Message = "Name already exists.";
-            return;
-        }
-
         // Load the code for the class we want to generate the RDL for
-        String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Classes";
+        String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
         var codeFile = Path.Combine(ClassesFolder, $"{CurrentSelectedTableWizard}.cs");
 
         if (!System.IO.File.Exists(codeFile))
@@ -446,24 +440,6 @@
     }
     #endregion
 
-    #region public static bool DetectDuplicate(string paramReportName)
-    public static bool DetectDuplicate(string paramReportName)
-    {
-        bool result = false;
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
-
-        string fileName = $"{ReportsFolder}/{paramReportName}.rdlc";
-        var ReportExists = System.IO.File.Exists(fileName);
-
-        if (ReportExists)
-        {
-            result = true;
-        }
-
-        return result;
-    }
-    #endregion
-
     // Report Viewer
 
     private async Task PrepareReportAsync()
@@ -475,7 +451,7 @@
         var parameters = new[] { new ReportParameter("Title", CurrentReportName) };
 
         // Load the report definition
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
         var reportPath = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
 
         if (!System.IO.File.Exists(reportPath))
@@ -499,7 +475,7 @@
         // Open the .rdlc file and get the SchemaPath to get the ClassName
         String ClassType = "Table";
         var ClassName = XsdGenerator.GetTableName(reportPath);
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
         var fileName = Path.Combine(viewsFolder, $"{ClassName}.view");
         if (System.IO.File.Exists(fileName))
         {
@@ -511,7 +487,7 @@
         {
             // Get the data from the Parquet file
             Dataloader dataloader = new Dataloader();
-            var result = await dataloader.LoadParquet(ClassName);
+            var result = await dataloader.LoadParquet(CurrentDatabaseName, ClassName);
 
             // Get the fields from the first record (ensure result is not empty)
             var fields = result.Any()
@@ -556,7 +532,7 @@
         else
         {
             // Get the data from the View file
-            viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Views";
+            viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
             var viewFile = Path.Combine(viewsFolder, $"{ClassName}.view");
 
             // Read the view file
@@ -610,7 +586,7 @@
         byte[] pdfBytes = report.Render("PDF");
 
         // To display properly we need to save the PDF as a file and re-load it
-        ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Reports";
+        ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
         var pdfPath = System.IO.Path.Combine(ReportsFolder, $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
 
         // Save the pdf to the temp file
