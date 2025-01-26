@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <TargetFrameworks>net9.0-android</TargetFrameworks>
+		<!-- <TargetFrameworks>net9.0-android</TargetFrameworks> -->
         <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
         <!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
 
@@ -98,7 +98,9 @@
 	</ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MonacoRazor\MonacoRazor.csproj" />
+      <ProjectReference Include="..\MonacoRazor\MonacoRazor.csproj">
+        <Private>True</Private>
+      </ProjectReference>
     </ItemGroup>
 
     <ItemGroup>
