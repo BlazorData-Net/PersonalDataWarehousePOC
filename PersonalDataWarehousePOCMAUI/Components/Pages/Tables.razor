@@ -839,10 +839,10 @@ else
             DictionaryMapping.AppendLine(
                 $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
                 + "? dict[\"{propertyName}\"]?.ToString() : null,");
-        }
+        }          
 
         // ** Open the Class.txt template from Templates\Class.txt and replace the content with the codeBuilder
-        string templatePath = Path.Combine("Templates", "Class.txt");
+        string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "class.txt");
 
         // Read the content of the template file
         string templateContent = File.ReadAllText(templatePath);

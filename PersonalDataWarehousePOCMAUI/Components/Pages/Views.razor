@@ -292,6 +292,18 @@ else
         await LoadTableListDropdownAsync();
     }    
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (ViewList.Count > 0)
+            {
+                CurrentViewName = ViewList.First();
+                await LoadViewAsync(CurrentViewName);
+            }
+        }
+    }
+
     Task<Suggestion[]> GetCompletionsAsync(string currentValue, Position position)
     {
         return Task.FromResult(new[]
@@ -377,7 +389,7 @@ else
         }
 
         // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
-        string templatePath = Path.Combine("Templates", "View.txt");
+        string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "View.txt");
 
         // Read the content of the template file
         string templateContent = File.ReadAllText(templatePath);
@@ -450,20 +462,17 @@ else
     {
         ViewList = new List<string>();
         ViewList = await databaseService.GetAllViewsAsync();
-
-        if (ViewList.Count > 0)
-        {
-            CurrentViewName = ViewList.First();
-            await LoadViewAsync(CurrentViewName);
-        }
     }
 
     private async Task LoadViewAsync(string paramView)
     {
-        // Load the DataTable
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
+        // Seperate the view name from the database
+        var (Database, View) = DataService.ExtractDatabaseAndTable(paramView);
 
-        var fileName = $"{viewsFolder}/{paramView}.view";
+        // Load the DataTable
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
+
+        var fileName = $"{viewsFolder}/{View}.view";
 
         if (System.IO.File.Exists(fileName))
         {
@@ -524,6 +533,12 @@ else
             Message = $"{deletedViewName} deleted!";
 
             await LoadViewsListDropdownAsync();
+
+            if (ViewList.Count > 0)
+            {
+                CurrentViewName = ViewList.First();
+                await LoadViewAsync(CurrentViewName);
+            }
         }
     }
 
@@ -608,10 +623,20 @@ else
             return;
         }
 
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
+        // Seperate the view name from the database
+        var (Database, View) = DataService.ExtractDatabaseAndTable(CurrentViewName);
 
         // Remove spaces and special characters
-        CurrentViewName = databaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
+        string CleanedName = databaseService.RemoveSpacesSpecialCharacters(View);
+
+        if (CleanedName != View)
+        {
+            CurrentViewName = CleanedName;
+            Message = $"View Name will be {CurrentViewName}";
+            return;
+        }
+
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
 
         var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
 
