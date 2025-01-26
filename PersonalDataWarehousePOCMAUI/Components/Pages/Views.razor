@@ -52,7 +52,7 @@ else
         }
         <button @onclick="NewScript">New</button>
         &nbsp;
-        <button @onclick="OnEditorSaveRequested">Save</button>
+        <button @onclick="SaveViewName">Save</button>
         @if (CurrentViewName != "")
         {
             <span>&nbsp; &nbsp;</span>
@@ -158,7 +158,7 @@ else
 
                 <div class="window glass active">
                     <div class="title-bar">
-                        <div class="title-bar-text">New View</div>
+                        <div class="title-bar-text">Save View</div>
                         <div class="title-bar-controls">
                             <button aria-label="Close" @onclick="CloseNewViewPopup"></button>
                         </div>
@@ -183,7 +183,7 @@ else
                             <br />
                             <div>
                                 <label for="tableName">View Name:</label>
-                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentViewName" />
+                                <input type="text" id="tableName" maxlength="50" style="width: 300px;" @bind="CurrentViewNameWithoutDatabase" />
                                 &nbsp;&nbsp;&nbsp;&nbsp;
                                 <button type="submit">Submit</button>
                             </div>
@@ -261,10 +261,10 @@ else
     private List<string> TableList = new List<string>();
     private List<string> ViewList = new List<string>();
     private string CurrentViewName = "";
+    private string CurrentViewNameWithoutDatabase = string.Empty;
 
     List<string> colAllDatabases = new List<string>();
     string CurrentDatabaseName = "Default";
-    string CurrentViewNameWithoutDatabase = string.Empty;
 
     private bool IsWizardVisible { get; set; } = false;
     private bool IsSaveViewPopupVisible { get; set; } = false;
@@ -313,33 +313,37 @@ else
         });
     }
 
-    private async Task OnEditorSaveRequested()
+    private void SaveViewName()
     {
-        if (CurrentViewName == "")
+        // Separate the view name from the database
+        var (Database, View) = DataService.ExtractDatabaseAndTable(CurrentViewName);
+
+        CurrentViewNameWithoutDatabase = View;
+
+        IsSaveViewPopupVisible = true;
+    }
+
+    // This method is called when a save does not request a view name
+    private async Task SaveViewAsync()
+    {
+        // Remove spaces and special characters
+        string CleanedName = databaseService.RemoveSpacesSpecialCharacters(CurrentViewNameWithoutDatabase);
+
+        if (CleanedName != CurrentViewNameWithoutDatabase)
         {
-            // Open a popup to enter the view name
-            IsSaveViewPopupVisible = true;
+            CurrentViewNameWithoutDatabase = CleanedName;
+            Message = $"View Name will be {CurrentViewNameWithoutDatabase}";
             return;
         }
-
-        // Remove spaces and special characters 
-        CurrentViewName = databaseService.RemoveSpacesSpecialCharacters(CurrentViewName);
 
         // Save to file in Data/Views
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
 
-        var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
-
-        if (ContentChanged)
-        {
-            Message = $"{CurrentViewName} saved!";
-        }
-
-        await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+        var fileName = Path.Combine(viewsFolder, $"{CurrentViewNameWithoutDatabase}.view");
 
         await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
-        // Execute the code
+        // Execute the code (because we need to get the columns returned)
         var objResult = await RunDynamicCode(CurrentScript);
 
         List<string> columns = new List<string>();
@@ -347,6 +351,7 @@ else
         if (objResult != null)
         {
             // Parse objDataParametersResult.data to a list of dictionaries
+            // Only get the first row to get the columns
             var TempColumns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
 
             columns = TempColumns.Keys.ToList();
@@ -356,7 +361,7 @@ else
 
         // Build the class definition
         StringBuilder ClassDefinition = new StringBuilder();
-        ClassDefinition.AppendLine($"public class {DataService.FirstCharToUpper(CurrentViewName)}");
+        ClassDefinition.AppendLine($"public class {DataService.FirstCharToUpper(CurrentViewNameWithoutDatabase)}");
         ClassDefinition.AppendLine("    {");
 
         // Add an Id property to the class
@@ -397,20 +402,20 @@ else
         // Replace the placeholders
         string codeBuilder = "";
 
-        codeBuilder = templateContent.Replace("**CLASS NAME**", DataService.FirstCharToUpper(CurrentViewName));
+        codeBuilder = templateContent.Replace("**CLASS NAME**", DataService.FirstCharToUpper(CurrentViewNameWithoutDatabase));
         codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
         codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
-        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (DataService.FirstCharToUpper(CurrentViewName) + "s"));
-        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (CurrentViewName.ToLower() + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (DataService.FirstCharToUpper(CurrentViewNameWithoutDatabase) + "s"));
+        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (CurrentViewNameWithoutDatabase.ToLower() + "s"));
         codeBuilder = codeBuilder.Replace("**FIRST FIELD**", columns[0]);
 
         // ** Write the class to a file
 
         // Define directory for output
-        String directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
+        String ClassesPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
 
         // Set the file path
-        string filePath = $@"{directoryPath}/{CurrentViewName}.cs";
+        string filePath = $@"{ClassesPath}/{CurrentViewNameWithoutDatabase}.cs";
 
         // Write the class to file
         File.WriteAllText(filePath, codeBuilder.ToString());
@@ -421,9 +426,7 @@ else
 
         // Load the class and generate the schema
         // Load the class by using its name and get its type
-
-        String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
-        var codeFile = Path.Combine(ClassesFolder, $"{CurrentViewName}.cs");
+        var codeFile = Path.Combine(ClassesPath, $"{CurrentViewNameWithoutDatabase}.cs");
 
         if (!System.IO.File.Exists(codeFile))
         {
@@ -435,15 +438,24 @@ else
         var code = System.IO.File.ReadAllText(codeFile);
 
         // Get the Type for the class we want to generate the RDL for
-        var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(CurrentViewName));
+        var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(CurrentViewNameWithoutDatabase));
 
         // Step 1: Generate the schema string
         string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
 
         // Step 3: Save the file
-        directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports/Data";
-        filePath = Path.Combine(directoryPath, $"{CurrentViewName}Schemas.xsd");
+        string DataPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports/Data";
+        filePath = Path.Combine(DataPath, $"{CurrentViewNameWithoutDatabase}Schemas.xsd");
         File.WriteAllText(filePath, schemaString);
+
+        CurrentViewName = $"{CurrentDatabaseName}/{CurrentViewNameWithoutDatabase}";
+
+        await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+
+        if (ContentChanged)
+        {
+            Message = $"{CurrentViewNameWithoutDatabase} saved!";
+        }
 
         ContentChanged = false;
     }
@@ -466,7 +478,7 @@ else
 
     private async Task LoadViewAsync(string paramView)
     {
-        // Seperate the view name from the database
+        // Separate the view name from the database
         var (Database, View) = DataService.ExtractDatabaseAndTable(paramView);
 
         // Load the DataTable
@@ -500,34 +512,37 @@ else
         }
         else
         {
-            // Delete the file
-            String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
+            // Separate the view name from the database
+            var (Database, View) = DataService.ExtractDatabaseAndTable(CurrentViewName);
 
-            var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
+            // Delete the file
+            String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
+
+            var fileName = Path.Combine(viewsFolder, $"{View}.view");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the C# class file
-            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
+            String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Classes";
 
-            fileName = Path.Combine(ClassesFolder, $"{CurrentViewName}.cs");
+            fileName = Path.Combine(ClassesFolder, $"{View}.cs");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
             // Delete the XSD file
-            String ReportsDataFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports/Data";
+            String ReportsDataFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports/Data";
 
-            fileName = Path.Combine(ReportsDataFolder, $"{CurrentViewName}Schemas.xsd");
+            fileName = Path.Combine(ReportsDataFolder, $"{View}Schemas.xsd");
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
-            string deletedViewName = CurrentViewName;
+            string deletedViewName = View;
             CurrentViewName = string.Empty;
 
             Message = $"{deletedViewName} deleted!";
@@ -613,148 +628,7 @@ else
     private void CloseMessagePopup()
     {
         Message = "";
-    }
-
-    private async Task SaveViewAsync()
-    {
-        if (string.IsNullOrEmpty(CurrentViewName))
-        {
-            Message = "Please enter a view name.";
-            return;
-        }
-
-        // Seperate the view name from the database
-        var (Database, View) = DataService.ExtractDatabaseAndTable(CurrentViewName);
-
-        // Remove spaces and special characters
-        string CleanedName = databaseService.RemoveSpacesSpecialCharacters(View);
-
-        if (CleanedName != View)
-        {
-            CurrentViewName = CleanedName;
-            Message = $"View Name will be {CurrentViewName}";
-            return;
-        }
-
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
-
-        var fileName = Path.Combine(viewsFolder, $"{CurrentViewName}.view");
-
-        await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
-
-        // Execute the code
-        var objResult = await RunDynamicCode(CurrentScript);
-
-        List<string> columns = new List<string>();
-
-        if (objResult != null)
-        {
-            // Parse objDataParametersResult.data to a list of dictionaries
-            var TempColumns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
-
-            columns = TempColumns.Keys.ToList();
-        }
-
-        // ** Build the class definition and dictionary mapping
-
-        // Build the class definition
-        StringBuilder ClassDefinition = new StringBuilder();
-        ClassDefinition.AppendLine($"public class {DataService.FirstCharToUpper(CurrentViewName)}");
-        ClassDefinition.AppendLine("    {");
-
-        // Add an Id property to the class
-        ClassDefinition.AppendLine("        public int Id { get; set; }");
-
-        // For each column in the DataTable, create a string property
-        foreach (var column in columns)
-        {
-            // Ensure the property name is a valid C# identifier
-            string propertyName = column.Replace(" ", "_");
-
-            ClassDefinition.AppendLine
-            ($"        public string {propertyName} {{ get; set; }}");
-        }
-
-        ClassDefinition.AppendLine("    }");
-
-        // Build the dictionaryMapping
-        StringBuilder DictionaryMapping = new StringBuilder();
-
-        foreach (var column in columns)
-        {
-            // Replace spaces in the column name with underscores to make it a valid C# identifier
-            string propertyName = column.Replace(" ", "_");
-
-            // Build the line:
-            DictionaryMapping.AppendLine(
-                $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
-                + "? dict[\"{propertyName}\"]?.ToString() : null,");
-        }
-
-        // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
-        string templatePath = Path.Combine("Templates", "View.txt");
-
-        // Read the content of the template file
-        string templateContent = File.ReadAllText(templatePath);
-
-        // Replace the placeholders
-        string codeBuilder = "";
-
-        codeBuilder = templateContent.Replace("**CLASS NAME**", DataService.FirstCharToUpper(CurrentViewName));
-        codeBuilder = codeBuilder.Replace("**CLASS DEFINITION**", ClassDefinition.ToString());
-        codeBuilder = codeBuilder.Replace("**DICTIONARY MAPPING**", DictionaryMapping.ToString());
-        codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (DataService.FirstCharToUpper(CurrentViewName) + "s"));
-        codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (CurrentViewName.ToLower() + "s"));
-        codeBuilder = codeBuilder.Replace("**FIRST FIELD**", columns[0]);
-
-        // ** Write the class to a file
-
-        // Set the file path
-        string directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
-
-        string filePath =  Path.Combine(directoryPath, CurrentViewName + ".cs");
-
-        // Write the class to file
-        // Write the class to file
-        File.WriteAllText(filePath, codeBuilder.ToString());
-
-        // **********************
-        // ** Create the xsd file
-        // **********************
-
-        // Load the class and generate the schema
-        // Load the class by using its name and get its type
-
-        // Load the class using the contents in codeBuilder.ToString() and get its type
-        var ClassType = XsdGenerator.GetTypeFromCode(codeBuilder.ToString(), DataService.FirstCharToUpper(CurrentViewName));
-
-        // Step 1: Generate the schema string
-        string schemaString = XsdGenerator.GenerateSchemaForType(ClassType);
-
-        // Step 2: Save the file
-        directoryPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports/Data";
-
-        filePath = Path.Combine(directoryPath, $"{CurrentViewName}Schemas.xsd");
-        File.WriteAllText(filePath, schemaString);
-
-        Message = $"{CurrentViewName} saved!";
-
-        // ** Close the popup if visible
-        IsSaveViewPopupVisible = false;
-
-        // Reload the dropdown
-        ViewList = new List<string>();
-
-        if (Directory.Exists(viewsFolder))
-        {
-            ViewList = Directory.GetFiles(viewsFolder, "*.view")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
-
-        // Load the view
-        await LoadViewAsync(CurrentViewName);
-    }
+    }   
 
     // Code Execution
 
@@ -770,8 +644,8 @@ else
                 return;
             }
 
-            //  Save the content before executing
-            await OnEditorSaveRequested();
+            //  Save the view before executing
+            await SaveViewAsync();
 
             // Execute the code
             var objResult = await RunDynamicCode(CurrentScript);
