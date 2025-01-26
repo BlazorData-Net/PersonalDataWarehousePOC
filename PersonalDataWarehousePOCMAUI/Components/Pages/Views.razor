@@ -360,6 +360,9 @@ else
 
             var fileName = Path.Combine(viewsFolder, $"{CurrentViewNameWithoutDatabase}.view");
 
+            // Get the current script
+            CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
             await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
             // Execute the code (because we need to get the columns returned)
@@ -677,7 +680,10 @@ else
 
             CurrentViewNameWithoutDatabase = View;
 
-            //  Save the view before executing
+            // Get the current script
+            CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            //  Save the view 
             await SaveViewAsync();
 
             // Execute the code

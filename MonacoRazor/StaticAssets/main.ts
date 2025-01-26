@@ -53,6 +53,12 @@ export function updateValue(
     }
 }
 
+// Get the curent value of the editor
+export function getValue(element: HTMLElement) {
+    const editor = editorMap.get(element);
+    return editor ? editor.getValue() : '';
+}
+
 class RemoteCompletionItemProvider implements monaco.languages.CompletionItemProvider {
     public triggerCharacters = ['.'];
 
