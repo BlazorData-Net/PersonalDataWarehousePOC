@@ -15,7 +15,7 @@ Follow the structure and include inline code comments to make it understandable.
    - Tables need to be loaded using the `Dataloader`.
    - Example of loading data from a table:
      ```csharp
-     var colTableName = await Dataloader.LoadParquet("TableName");
+     var colTableName = var result = await dataloader.LoadParquet(DatabaseName, TableName);
      ```
 3. This is the current Table schema information for all existing tables:
    - ## CURRENT SCHEMA ##.

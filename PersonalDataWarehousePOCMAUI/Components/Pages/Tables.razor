@@ -856,7 +856,8 @@ else
         codeBuilder = codeBuilder.Replace("**CLASS UPPERCASE WITH AN S**", (DataService.FirstCharToUpper(Table) + "s"));
         codeBuilder = codeBuilder.Replace("**CLASS LOWERCASE WITH AN S**", (Table.ToLower() + "s"));
         codeBuilder = codeBuilder.Replace("**FIRST FIELD**", dt.Columns[0].ColumnName);
-        codeBuilder = codeBuilder.Replace("**FILE NAME**", $"{Database}/{Table}");
+        codeBuilder = codeBuilder.Replace("**DATABASE NAME**", Database);
+        codeBuilder = codeBuilder.Replace("**FILE NAME**", Table);
 
         // ** Write the class to a file
 
