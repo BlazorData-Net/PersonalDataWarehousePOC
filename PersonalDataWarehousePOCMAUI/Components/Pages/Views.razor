@@ -56,7 +56,7 @@ else
         @if (CurrentViewName != "")
         {
             <span>&nbsp; &nbsp;</span>
-            <button @onclick="DeleteAsync">Delete</button>
+            <button @onclick="DeleteConfirmation">Delete</button>
         }
         &nbsp;
         <button @onclick="Execute">Execute</button>
@@ -225,6 +225,35 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (ShowDeleteConfirmation)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Confirm Delete</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseDeleteConfirmationPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="DeleteAsync">Yes</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="CloseDeleteConfirmationPopup">No</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @if (Message != "")
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -271,6 +300,8 @@ else
     private bool IsNewOutputPopupVisible { get; set; } = false;
     private string CurrentSelectedTableWizard = "";
 
+    private bool ShowDeleteConfirmation { get; set; } = false;
+
     private bool ShowAI { get; set; } = false;
     private string AIMessage = "";
 
@@ -307,6 +338,10 @@ else
                 CurrentScript = System.IO.File.ReadAllText(fileName);
                 StateHasChanged();
             }
+        }
+        else
+        {
+            CurrentScript = SampleCode;
         }
     }
 
@@ -596,12 +631,19 @@ else
 
             Message = $"{deletedViewName} deleted!";
 
+            ShowDeleteConfirmation = false;
+
             await LoadViewsListDropdownAsync();
 
             if (ViewList.Count > 0)
             {
                 CurrentViewName = ViewList.First();
                 await LoadViewAsync(CurrentViewName);
+            }
+            else
+            {
+                CurrentScript = SampleCode;
+                await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
             }
         }
     }
@@ -677,6 +719,16 @@ else
     private void CloseMessagePopup()
     {
         Message = "";
+    }
+
+    private void DeleteConfirmation()
+    {
+        ShowDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmationPopup()
+    {
+        ShowDeleteConfirmation = false;
     }
 
     // Code Execution
