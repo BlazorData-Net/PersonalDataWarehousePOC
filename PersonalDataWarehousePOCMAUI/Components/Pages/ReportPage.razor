@@ -380,7 +380,14 @@
         }
 
         // Remove spaces and special characters
-        CurrentReportNameWithoutDatabase = databaseService.RemoveSpacesSpecialCharacters(CurrentReportNameWithoutDatabase);
+        string CleanedName = databaseService.RemoveSpacesSpecialCharacters(CurrentReportNameWithoutDatabase);
+
+        if (CleanedName != CurrentReportNameWithoutDatabase)
+        {
+            CurrentReportNameWithoutDatabase = CleanedName;
+            Message = $"Report Name will be {CurrentReportNameWithoutDatabase}";
+            return;
+        }
 
         // Check for duplicates
         if (DetectDuplicates(CurrentDatabaseName, CurrentReportNameWithoutDatabase))
