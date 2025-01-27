@@ -603,6 +603,13 @@ else
             return;
         }
 
+        // Check for duplicates
+        if (DetectDuplicates(CurrentDatabaseName, CurrentTableNameWithoutDatabase))
+        {
+            Message = "A View or Report with this name already exists.";
+            return;
+        }
+
         // Add the database name to the table name
         CurrentTableNameWithoutDatabase = $"{CurrentDatabaseName}/{CurrentTableNameWithoutDatabase}";
 
@@ -1195,6 +1202,33 @@ else
         }
 
         return ReturnType;
+    }
+    #endregion
+
+    // Duplicates
+
+    #region public static bool DetectDuplicates(string paramDatabaseName, string paramParquetName)
+    public static bool DetectDuplicates(string paramDatabaseName, string paramParquetName)
+    {
+        bool result = false;
+
+        // Check if the table name already exists
+        String folderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{paramDatabaseName}/Views";
+
+        string fileName = $"{folderPath}/{paramParquetName}.view";
+        var ParquetExists = System.IO.File.Exists(fileName);
+
+        String ReportsFolderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/{paramDatabaseName}/Reports";
+
+        fileName = $"{ReportsFolderPath}/{paramParquetName}.rdlc";
+        var ViewExists = System.IO.File.Exists(fileName);
+
+        if (ParquetExists || ViewExists)
+        {
+            result = true;
+        }
+
+        return result;
     }
     #endregion
 }

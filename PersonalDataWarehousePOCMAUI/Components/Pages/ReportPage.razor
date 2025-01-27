@@ -167,7 +167,7 @@
                             <br />
                             <div>
                                 <label for="ReportName">Report Name:</label>
-                                <input type="text" id="ReportName" maxlength="50" style="width: 150px;" @bind="CurrentReportName" />
+                                <input type="text" id="ReportName" maxlength="50" style="width: 150px;" @bind="CurrentReportNameWithoutDatabase" />
                                 &nbsp;&nbsp;
                                 <button type="submit">Submit</button>
                             </div>
@@ -326,6 +326,18 @@
             return;
         }
 
+        if (CurrentReportName.Trim().Length == 0)
+        {
+            CurrentReportNameWithoutDatabase = "";
+        }
+        else
+        {
+            // Strip out Database from CurrentReportName and set to CurrentReportNameWithoutDatabase
+            var (Database, Table) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+            CurrentReportNameWithoutDatabase = Table;
+        }
+
+        // Open the New Table popup
         IsWizardVisible = false;
         IsSaveReportPopupVisible = true;
     }
@@ -357,19 +369,28 @@
         Message = "";
     }
 
+    // Save
+
     private void SaveReport()
     {
-        if (string.IsNullOrEmpty(CurrentReportName))
+        if (string.IsNullOrEmpty(CurrentReportNameWithoutDatabase))
         {
             Message = "Please enter a Report name.";
             return;
         }
 
         // Remove spaces and special characters
-        CurrentReportName = databaseService.RemoveSpacesSpecialCharacters(CurrentReportName);
+        CurrentReportNameWithoutDatabase = databaseService.RemoveSpacesSpecialCharacters(CurrentReportNameWithoutDatabase);
+
+        // Check for duplicates
+        if (DetectDuplicates(CurrentDatabaseName, CurrentReportNameWithoutDatabase))
+        {
+            Message = "A Table or View with this name already exists.";
+            return;
+        }
 
         String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
-        var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
+        var fileName = Path.Combine(ReportsFolder, $"{CurrentReportNameWithoutDatabase}.rdlc");
 
         // Load the code for the class we want to generate the RDL for
         String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
@@ -390,14 +411,17 @@
         // Generate an RDL string dynamically:
         string rdlXml = DynamicRdlBuilder.GenerateDynamicRdl(
             ClassType,
-            reportTitle: $"{CurrentReportName} Report",
+            reportTitle: $"{CurrentReportNameWithoutDatabase} Report",
             schemaPath: @$"{ReportsFolder}\Data\{CurrentSelectedTableWizard}.xsd"
         );
 
         // You can then save the string to a .rdl file:
         System.IO.File.WriteAllText(fileName, rdlXml);
 
-        Message = $"{CurrentReportName} saved!";
+        Message = $"{CurrentReportNameWithoutDatabase} saved!";
+
+        // Add the database name to the CurrentReportName
+        CurrentReportName = $"{CurrentDatabaseName}/{CurrentReportNameWithoutDatabase}";
 
         // ** Close the popup if visible
         IsSaveReportPopupVisible = false;
@@ -664,6 +688,34 @@
             Message = ex.GetBaseException().Message;
             return null;
         }
+    }
+    #endregion
+
+
+    // Duplicates
+
+    #region public static bool DetectDuplicates(string paramDatabaseName, string paramParquetName)
+    public static bool DetectDuplicates(string paramDatabaseName, string paramParquetName)
+    {
+        bool result = false;
+
+        // Check if the table name already exists
+        String folderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{paramDatabaseName}/Views";
+
+        string fileName = $"{folderPath}/{paramParquetName}.view";
+        var ParquetExists = System.IO.File.Exists(fileName);
+
+        String ReportsFolderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/{paramDatabaseName}/Reports";
+
+        fileName = $"{ReportsFolderPath}/{paramParquetName}.rdlc";
+        var ViewExists = System.IO.File.Exists(fileName);
+
+        if (ParquetExists || ViewExists)
+        {
+            result = true;
+        }
+
+        return result;
     }
     #endregion
 }
