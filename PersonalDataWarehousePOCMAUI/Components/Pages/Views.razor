@@ -416,6 +416,14 @@ else
                 return;
             }
 
+            // Check for duplicates
+            if (DetectDuplicates(CurrentDatabaseName, CurrentViewNameWithoutDatabase))
+            {
+                IsLoading = false;
+                Message = "A Table or Report with this name already exists.";
+                return;
+            }
+
             // Save to file in Data/Views
             String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
 
@@ -749,6 +757,33 @@ else
         await LoadViewAsync(CurrentViewName);
     }
 
+    // Duplicates
+
+    #region public static bool DetectDuplicates(string paramDatabaseName, string paramViewName)
+    public static bool DetectDuplicates(string paramDatabaseName, string paramViewName)
+    {
+        bool result = false;
+
+        // Check if the table name already exists
+        String folderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{paramDatabaseName}/Parquet";
+
+        string fileName = $"{folderPath}/{paramViewName}.parquet";
+        var ParquetExists = System.IO.File.Exists(fileName);
+
+        String ReportsFolderPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/{paramDatabaseName}/Reports";
+
+        fileName = $"{ReportsFolderPath}/{paramViewName}.rdlc";
+        var ViewExists = System.IO.File.Exists(fileName);
+
+        if (ParquetExists || ViewExists)
+        {
+            result = true;
+        }
+
+        return result;
+    }
+    #endregion
+
     // Code Execution
 
     #region RunCode
@@ -815,6 +850,8 @@ else
         }
     }
     #endregion
+
+    // AI
 
     #region AI
     private async Task AIbtn()
