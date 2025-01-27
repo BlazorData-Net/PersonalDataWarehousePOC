@@ -403,6 +403,7 @@ else
 
             if (CleanedName != CurrentViewNameWithoutDatabase)
             {
+                IsLoading = false;
                 CurrentViewNameWithoutDatabase = CleanedName;
                 Message = $"View Name will be {CurrentViewNameWithoutDatabase}";
                 return;
@@ -535,6 +536,8 @@ else
             }
 
             ContentChanged = false;
+
+            await LoadViewsListDropdownAsync();
         }
         catch (Exception ex)
         {
