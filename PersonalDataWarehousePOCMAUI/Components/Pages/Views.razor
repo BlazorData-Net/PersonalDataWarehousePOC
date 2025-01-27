@@ -686,6 +686,9 @@ else
             return;
         }
 
+        // Separate the view name from the database
+        var (DatabaseName, TableName) = DataService.ExtractDatabaseAndTable(CurrentSelectedTableWizard);
+
         CurrentScript = $"using System;\n";
         CurrentScript += $"using System.Collections.Generic;\n";
         CurrentScript += $"using System.Linq;\n";
@@ -695,11 +698,11 @@ else
         CurrentScript += "{\n";
         CurrentScript += $"    // Create a Dataloader \n";
         CurrentScript += $"    Dataloader objDataloader = new Dataloader();\n";
-        CurrentScript += $"    // Call LoadParquet to load {CurrentSelectedTableWizard} into col{CurrentSelectedTableWizard} \n";
-        CurrentScript += $@"    var col{CurrentSelectedTableWizard} = await objDataloader.LoadParquet(""{CurrentSelectedTableWizard}"");";
+        CurrentScript += $"    // Call LoadParquet to load {TableName} into col{TableName} \n";
+        CurrentScript += $@"    var col{TableName} = await objDataloader.LoadParquet(""{DatabaseName}"",""{TableName}"");";
         CurrentScript += $"\n";
         CurrentScript += $"    // Return the results ToDictionary()  \n";
-        CurrentScript += $"    return col{CurrentSelectedTableWizard}.Select(row => row.ToDictionary()).Take(100).ToList();";
+        CurrentScript += $"    return col{TableName}.Select(row => row.ToDictionary()).Take(100).ToList();";
         CurrentScript += "\n";
         CurrentScript += "}\n";
 
