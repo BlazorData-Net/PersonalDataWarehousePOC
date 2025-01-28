@@ -109,17 +109,13 @@
 		<PackageReference Include="Azure.Identity" Version="1.13.2" />
 		<PackageReference Include="Radzen.Blazor" Version="5.7.10" />
 		<PackageReference Include="ReportViewerCore.NETCore" Version="15.1.25" />
+		<PackageReference Include="SimpleBlazorMonaco" Version="1.0.6" />
 		<PackageReference Include="SSH.NET" Version="2024.2.0" />
 		<PackageReference Include="CsvHelper" Version="33.0.1" />
 		<PackageReference Include="Parquet.Net" Version="4.23.5" />
+		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0" />
 		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
 	</ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\MonacoRazor\MonacoRazor.csproj">
-        <Private>True</Private>
-      </ProjectReference>
-    </ItemGroup>
 
     <ItemGroup>
       <RazorComponent Include="..\MonacoRazor\MonacoRazor.csproj" />
