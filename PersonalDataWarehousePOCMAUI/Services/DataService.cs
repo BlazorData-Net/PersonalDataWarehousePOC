@@ -193,7 +193,7 @@
 
             // Data Directory
             String folderPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases";
-            
+
             string fileName = $"{folderPath}/{Database}/Parquet/{Table}.parquet";
 
             using (var fileStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
@@ -271,6 +271,39 @@
                 // Return the byte array from the memory stream
                 return await Task.FromResult(memoryStream.ToArray());
             }
+        }
+        #endregion
+
+        #region public DataTable ConvertToDataTable(IEnumerable<IDictionary<string, object>> sourceData, IDictionary<string, Type> columnsDefinition)
+        public DataTable ConvertToDataTable(
+            IEnumerable<IDictionary<string, object>> sourceData,
+            IDictionary<string, Type> columnsDefinition)
+        {
+            var dt = new DataTable();
+
+            // 1. Add columns to the DataTable
+            foreach (var column in columnsDefinition)
+            {
+                dt.Columns.Add(column.Key, column.Value);
+            }
+
+            // 2. For each record in sourceData, create a row in the DataTable
+            foreach (var record in sourceData)
+            {
+                var row = dt.NewRow();
+                foreach (var column in columnsDefinition)
+                {
+                    // Make sure the record actually contains this key
+                    // and handle null or missing values as appropriate
+                    if (record.ContainsKey(column.Key))
+                        row[column.Key] = record[column.Key] ?? DBNull.Value;
+                    else
+                        row[column.Key] = DBNull.Value;
+                }
+                dt.Rows.Add(row);
+            }
+
+            return dt;
         } 
         #endregion
 

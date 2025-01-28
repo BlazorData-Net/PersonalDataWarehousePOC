@@ -10,6 +10,7 @@
 @using PersonalDataWarehousePOC.Services
 @using PersonalDataWarehousePOCMAUI.Services
 @using MonacoRazor
+@using System.Data
 @inject DatabaseService databaseService
 @inject DataService DataService
 @inject SettingsService SettingsService
@@ -67,6 +68,8 @@ else
         }
         &nbsp;
         <button @onclick="Execute">Execute</button>
+        &nbsp;
+        <button @onclick="Export">Export</button>
         &nbsp;
         <button @onclick="OpenAIPopup">AI</button>
         @if (ContentChanged)
@@ -261,6 +264,38 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (IsExportVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Export</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseExportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+
+                        <div role="progressbar" class="marquee" style="width: 100%; display: @(IsLoadingSheet ? "block" : "none");"></div>
+
+                        <div style="display: @(IsLoadingSheet ? "none" : "block");">
+                            <span>&nbsp; &nbsp;</span>
+                            <button @onclick="ExportExcel">Excel</button>
+                            <span>&nbsp; &nbsp;</span>
+                            <button @onclick="ExportParquet">Parquet</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @if (Message != "")
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -305,6 +340,8 @@ else
     private bool IsWizardVisible { get; set; } = false;
     private bool IsSaveViewPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
+    private bool IsExportVisible { get; set; } = false;
+    private bool IsLoadingSheet { get; set; } = false;
     private string CurrentSelectedTableWizard = "";
 
     private bool ShowDeleteConfirmation { get; set; } = false;
@@ -752,6 +789,11 @@ else
         ShowDeleteConfirmation = false;
     }
 
+    private void CloseExportPopup()
+    {
+        IsExportVisible = false;
+    }
+
     private async Task Reset()
     {
         CurrentScript = SampleCode;
@@ -853,6 +895,172 @@ else
         }
     }
     #endregion
+
+    // Exports
+
+    private async Task Export()
+    {
+        if (CurrentViewName.Trim().Length == 0)
+        {
+            // Open the Save Table popup
+            await SaveViewAsync();
+        }
+        else
+        {
+            IsExportVisible = true;
+        }
+    }
+
+    private async Task ExportExcel()
+    {
+        IsLoadingSheet = true;
+
+        // Seperate the View name from the database
+        DataService dataService = new DataService();
+        var (DatabaseName, ViewName) = dataService.ExtractDatabaseAndTable(CurrentViewName);
+
+        // Get the current script
+        CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+        //  Save the view
+        await SaveViewAsync();
+
+        // Execute the code
+        var objResult = await RunDynamicCode(CurrentScript);
+
+        if (objResult == null)
+        {
+            Message = "No data to export.";
+            IsLoadingSheet = false;
+            IsExportVisible = false;
+            return;
+        }
+        // Parse objDataParametersResult.data to a list of dictionaries
+        var columns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+        objDataParameters = new DataParameters
+            {
+                data = objResult,
+                columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
+            };
+
+        // Turn data into a DataTable
+        DataTable dt = DataService.ConvertToDataTable(objDataParameters.data, objDataParameters.columns);
+
+        // Export the DataTable to Excel
+        byte[] ExcelContents = await DataService.ExportDataTableToExcelAsync(dt, ViewName);
+
+        // Read DocumentContents into a MemoryStream
+        var stream = new MemoryStream(ExcelContents);
+
+        var FileName = $"{ViewName}.xlsx";
+
+        var picker = new Windows.Storage.Pickers.FileSavePicker
+            {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+            };
+
+        picker.FileTypeChoices.Add("All Files", new List<string> { ".xlsx" });
+        picker.SuggestedFileName = FileName;
+
+        var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+        var fileSaverResult = await picker.PickSaveFileAsync();
+
+        if (fileSaverResult != null)
+        {
+            // Convert the MemoryStream to a byte array
+            byte[] fileContent = stream.ToArray();
+
+            // Write the content to the selected path
+            await File.WriteAllBytesAsync(fileSaverResult.Path, fileContent);
+        }
+        else
+        {
+            Message = $"Export to Excel cancelled.";
+        }
+
+        IsLoadingSheet = false;
+        IsExportVisible = false;
+    }
+
+    private async Task ExportParquet()
+    {
+        IsLoadingSheet = true;
+
+        // Seperate the View name from the database
+        DataService dataService = new DataService();
+        var (DatabaseName, ViewName) = dataService.ExtractDatabaseAndTable(CurrentViewName);
+
+        // Get the current script
+        CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+        //  Save the view
+        await SaveViewAsync();
+
+        // Execute the code
+        var objResult = await RunDynamicCode(CurrentScript);
+
+        if (objResult == null)
+        {
+            Message = "No data to export.";
+            IsLoadingSheet = false;
+            IsExportVisible = false;
+            return;
+        }
+        // Parse objDataParametersResult.data to a list of dictionaries
+        var columns = objResult.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+
+        objDataParameters = new DataParameters
+            {
+                data = objResult,
+                columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
+            };
+
+        // Turn data into a DataTable
+        DataTable dt = DataService.ConvertToDataTable(objDataParameters.data, objDataParameters.columns);
+
+        // Export the DataTable to Parquet
+        byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(dt, ViewName);
+
+        // Read DocumentContents into a MemoryStream
+        var stream = new MemoryStream(ParquetContents);
+
+        var FileName = $"{ViewName}.parquet";
+
+        var picker = new Windows.Storage.Pickers.FileSavePicker
+            {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+            };
+
+        picker.FileTypeChoices.Add("All Files", new List<string> { ".parquet" });
+        picker.SuggestedFileName = FileName;
+
+        var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+        var fileSaverResult = await picker.PickSaveFileAsync();
+
+        if (fileSaverResult != null)
+        {
+            // Convert the MemoryStream to a byte array
+            byte[] fileContent = stream.ToArray();
+
+            // Write the content to the selected path
+            await File.WriteAllBytesAsync(fileSaverResult.Path, fileContent);
+        }
+        else
+        {
+            Message = $"Export to Parquet cancelled.";
+        }
+
+        IsLoadingSheet = false;
+        StateHasChanged();
+
+        IsLoadingSheet = false;
+        IsExportVisible = false;
+    }
 
     // AI
 
