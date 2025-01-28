@@ -898,26 +898,29 @@ else
 
     // Exports
 
-    private async Task Export()
+    private void Export()
     {
         if (CurrentViewName.Trim().Length == 0)
         {
             // Open the Save Table popup
-            await SaveViewAsync();
+            SaveViewName();
         }
         else
         {
             IsExportVisible = true;
+
+            // Separate the view name from the database
+            var (Database, View) = DataService.ExtractDatabaseAndTable(CurrentViewName);
+
+            CurrentViewNameWithoutDatabase = View;
         }
     }
 
     private async Task ExportExcel()
     {
-        IsLoadingSheet = true;
+        // Note: CurrentViewNameWithoutDatabase was set in the Export method
 
-        // Seperate the View name from the database
-        DataService dataService = new DataService();
-        var (DatabaseName, ViewName) = dataService.ExtractDatabaseAndTable(CurrentViewName);
+        IsLoadingSheet = true;
 
         // Get the current script
         CurrentScript = await MonacoCodeEditor.GetCodeAsync();
@@ -948,12 +951,12 @@ else
         DataTable dt = DataService.ConvertToDataTable(objDataParameters.data, objDataParameters.columns);
 
         // Export the DataTable to Excel
-        byte[] ExcelContents = await DataService.ExportDataTableToExcelAsync(dt, ViewName);
+        byte[] ExcelContents = await DataService.ExportDataTableToExcelAsync(dt, CurrentViewNameWithoutDatabase);
 
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ExcelContents);
 
-        var FileName = $"{ViewName}.xlsx";
+        var FileName = $"{CurrentViewNameWithoutDatabase}.xlsx";
 
         var picker = new Windows.Storage.Pickers.FileSavePicker
             {
@@ -987,11 +990,9 @@ else
 
     private async Task ExportParquet()
     {
-        IsLoadingSheet = true;
+        // Note: CurrentViewNameWithoutDatabase was set in the Export method
 
-        // Seperate the View name from the database
-        DataService dataService = new DataService();
-        var (DatabaseName, ViewName) = dataService.ExtractDatabaseAndTable(CurrentViewName);
+        IsLoadingSheet = true;
 
         // Get the current script
         CurrentScript = await MonacoCodeEditor.GetCodeAsync();
@@ -1022,12 +1023,12 @@ else
         DataTable dt = DataService.ConvertToDataTable(objDataParameters.data, objDataParameters.columns);
 
         // Export the DataTable to Parquet
-        byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(dt, ViewName);
+        byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(dt, CurrentViewNameWithoutDatabase);
 
         // Read DocumentContents into a MemoryStream
         var stream = new MemoryStream(ParquetContents);
 
-        var FileName = $"{ViewName}.parquet";
+        var FileName = $"{CurrentViewNameWithoutDatabase}.parquet";
 
         var picker = new Windows.Storage.Pickers.FileSavePicker
             {
