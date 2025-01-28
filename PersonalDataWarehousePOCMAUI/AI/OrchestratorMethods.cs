@@ -72,11 +72,13 @@ namespace PersonalDataWarehouse.AI
                 OpenAIClientOptions options = new OpenAIClientOptions();
                 options.NetworkTimeout = TimeSpan.FromSeconds(520);
 
+                options.Endpoint = new Uri(Endpoint);
+
                 return new OpenAIClient(
                     apiKeyCredential, options)
                     .AsChatClient(AIModel);
             }
-            else // Azure OpenAI
+            else if (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI")
             {
                 AzureOpenAIClientOptions options = new AzureOpenAIClientOptions();
                 options.NetworkTimeout = TimeSpan.FromSeconds(520);
@@ -85,6 +87,23 @@ namespace PersonalDataWarehouse.AI
                     new Uri(Endpoint),
                     apiKeyCredential, options)
                     .AsChatClient(AIModel);
+            }
+            else if (SettingsService.Settings.ApplicationSettings.AIType == "LocalLLM")
+            {
+                OpenAIClientOptions options = new OpenAIClientOptions();
+                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+
+                options.Endpoint = new Uri(Endpoint);
+
+                return new OpenAIClient(
+                    apiKeyCredential, options)
+                    .AsChatClient(AIModel);
+            }
+            else // Ollama
+            {
+                return new OllamaChatClient(
+                    new Uri(Endpoint),
+                    AIModel);
             }
         }
         #endregion
@@ -228,6 +247,24 @@ namespace PersonalDataWarehouse.AI
                 DisplayLength = display_length;
             }
         }
+        #endregion
+
+        #region public static string ExtractJsonFromResponse(string input)
+        public static string ExtractJsonFromResponse(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            int startIndex = input.IndexOf('{');
+            int endIndex = input.LastIndexOf('}');
+
+            // Validate positions
+            if (startIndex == -1 || endIndex == -1 || endIndex < startIndex)
+                return string.Empty;
+
+            // Extract and return the substring that should represent valid JSON
+            return input.Substring(startIndex, endIndex - startIndex + 1);
+        } 
         #endregion
     }
 }

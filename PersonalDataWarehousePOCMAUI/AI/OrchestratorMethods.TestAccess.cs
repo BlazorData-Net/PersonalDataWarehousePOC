@@ -23,6 +23,9 @@ namespace PersonalDataWarehouse.AI
                 return false;
             }
 
+            // Pass though ExtractJsonFromResponse
+            var json = ExtractJsonFromResponse(response.Choices.FirstOrDefault().Text);
+
             return true;
         }
         #endregion
