@@ -17,14 +17,14 @@
             <DatabaseManagementPage />
         </RadzenTabsItem>
         <RadzenTabsItem Text="AI">
-            <div class="grid gap-md p-sm-12">
-                <div class="col-8 col-sm-4">
-                    <div class="stack gap-md">
+            <div>
+                <div>
+                    <div>
 
                         <!-- OpenAI Service Type -->
                         <div>
                             <label for="aiType"><b>OpenAI Service Type:</b></label><br />
-                            <InputSelect id="aiType" @bind-Value="AIType" @onchange="ChangeAIType" class="form-control select-width">
+                            <InputSelect id="aiType" @bind-Value="AIType" class="form-control select-width">
                                 @foreach (var type in colAITypes)
                                 {
                                     <option value="@type">@type</option>
@@ -45,6 +45,8 @@
                         @if (AIType == "OpenAI")
                         {
                             <!-- Default AI Model -->
+                            AIModel = DefaultAIModel;
+                            Endpoint = "https://api.openai.com";
                             <div>
                                 <label for="aiModel"><b>Default AI Model:</b></label><br />
                                 <InputSelect id="aiModel" @bind-Value="AIModel" class="form-control select-width">
@@ -276,18 +278,6 @@
                     Detail = ex.Message,
                     Duration = 8000
                 });
-        }
-    }
-
-    private void ChangeAIType(ChangeEventArgs e)
-    {
-        AIType = e.Value.ToString();
-
-        // Set the default model based on the AI Type
-        if (AIType == "OpenAI")
-        {
-            AIModel = DefaultAIModel;
-            Endpoint = "https://api.openai.com";
         }
     }
 }
