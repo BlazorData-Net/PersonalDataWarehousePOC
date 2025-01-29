@@ -29,18 +29,12 @@ namespace PersonalDataWarehouse.AI
 
         // Utility Methods
 
-        #region public async Task<IChatClient> CreateAIChatClientAsync(string AIModel)
-        public async Task<IChatClient> CreateAIChatClientAsync(string AIModel)
+        #region public IChatClient CreateAIChatClient(string AIType, string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
+        public IChatClient CreateAIChatClient(string AIType, string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
         {
-            // Get APIKey from secure settings
-            string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? ""; 
-
-            string Endpoint = SettingsService.Settings.ApplicationSettings.Endpoint;
-            string AIEmbeddingModel = SettingsService.Settings.ApplicationSettings.AIEmbeddingModel;
-
             ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
 
-            if (SettingsService.Settings.ApplicationSettings.AIType == "OpenAI")
+            if (AIType == "OpenAI")
             {
                 OpenAIClientOptions options = new OpenAIClientOptions();
                 options.NetworkTimeout = TimeSpan.FromSeconds(520);
@@ -49,7 +43,7 @@ namespace PersonalDataWarehouse.AI
                     apiKeyCredential, options)
                     .AsChatClient(AIModel);
             }
-            else // Azure OpenAI
+            else if (AIType == "Azure OpenAI")
             {
                 AzureOpenAIClientOptions options = new AzureOpenAIClientOptions();
                 options.NetworkTimeout = TimeSpan.FromSeconds(520);
@@ -59,39 +53,18 @@ namespace PersonalDataWarehouse.AI
                     apiKeyCredential, options)
                     .AsChatClient(AIModel);
             }
-        }
-        #endregion
-
-        #region public IChatClient CreateAIChatClient(string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
-        public IChatClient CreateAIChatClient(string AIModel, string ApiKey, string Endpoint, string AIEmbeddingModel)
-        {
-            ApiKeyCredential apiKeyCredential = new ApiKeyCredential(ApiKey);
-
-            if (SettingsService.Settings.ApplicationSettings.AIType == "OpenAI")
+            else if (AIType == "LM Studio")
             {
                 OpenAIClientOptions options = new OpenAIClientOptions();
                 options.NetworkTimeout = TimeSpan.FromSeconds(520);
 
                 options.Endpoint = new Uri(Endpoint);
 
-                return new OpenAIClient(
-                    apiKeyCredential, options)
-                    .AsChatClient(AIModel);
-            }
-            else if (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI")
-            {
-                AzureOpenAIClientOptions options = new AzureOpenAIClientOptions();
-                options.NetworkTimeout = TimeSpan.FromSeconds(520);
-
-                return new AzureOpenAIClient(
-                    new Uri(Endpoint),
-                    apiKeyCredential, options)
-                    .AsChatClient(AIModel);
-            }
-            else if (SettingsService.Settings.ApplicationSettings.AIType == "LocalLLM")
-            {
-                OpenAIClientOptions options = new OpenAIClientOptions();
-                options.NetworkTimeout = TimeSpan.FromSeconds(520);
+                // If Endpoint does not end with "/v1/", append it
+                if (!Endpoint.EndsWith("/v1/"))
+                {
+                    Endpoint += "/v1/";
+                }
 
                 options.Endpoint = new Uri(Endpoint);
 

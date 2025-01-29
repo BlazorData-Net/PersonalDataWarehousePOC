@@ -22,101 +22,104 @@
                     <div class="stack gap-md">
 
                         <!-- OpenAI Service Type -->
-                        <div class="form-group">
-                            <label for="aiType"><b>OpenAI Service Type:</b></label>
-                            <select id="aiType"
-                            class="form-control"
-                            style="width:300px"
-                            @bind="AIType">
+                        <div>
+                            <label for="aiType"><b>OpenAI Service Type:</b></label><br />
+                            <InputSelect id="aiType" @bind-Value="AIType" @onchange="ChangeAIType" class="form-control select-width">
                                 @foreach (var type in colAITypes)
                                 {
                                     <option value="@type">@type</option>
                                 }
-                            </select>
+                            </InputSelect>
                         </div>
                         <br />
-                        <!-- ApiKey -->
-                        <div class="form-group">
-                            <label for="apiKey"><b>ApiKey:</b></label>
-                            <input id="apiKey"
-                            type="password"
-                            class="form-control"
-                            style="width:450px"
-                            @bind="ApiKey"
-                            @onkeydown="APIKeyDetection" />
-                        </div>
-                        <br />
-                        <!-- Conditional Fields Based on AIType -->
+                        @if ((AIType == "OpenAI") || (AIType == "Azure OpenAI"))
+                        {
+                            <div>
+                                <label for="apiKey"><b>Api Key:</b></label><br />
+                                <InputText id="apiKey" @bind-Value="ApiKey"
+                                           class="form-control input-width"
+                                           @oninput="HandleApiKeyChange" />
+                            </div>
+                            <br />
+                        }
                         @if (AIType == "OpenAI")
                         {
                             <!-- Default AI Model -->
-                            <div class="form-group">
-                                <label for="aiModel"><b>Default AI Model:</b></label>
-                                <select id="aiModel"
-                                class="form-control"
-                                style="width:300px"
-                                @bind="AIModel">
+                            <div>
+                                <label for="aiModel"><b>Default AI Model:</b></label><br />
+                                <InputSelect id="aiModel" @bind-Value="AIModel" class="form-control select-width">
                                     @foreach (var model in colModels)
                                     {
-                                        <option value="@model">@model</option>
+                                        <option value="@model"
+                                                selected="@(model == AIModel ? "selected" : null)">@model</option>
                                     }
-                                </select>
+                                </InputSelect>
                             </div>
-                            <br />
                         }
                         else if (AIType == "Azure OpenAI")
                         {
                             <!-- Azure OpenAI Model Deployment Name -->
-                            <div class="form-group">
-                                <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label>
-                                <input id="azureModel"
-                                type="text"
-                                class="form-control"
-                                style="width:450px"
-                                @bind="AIModel" />
+                            <div>
+                                <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label><br />
+                                <InputText id="azureModel" @bind-Value="AIModel"
+                                           class="form-control input-width" />
                             </div>
                             <br />
-
                             <!-- Azure OpenAI Endpoint -->
-                            <div class="form-group">
-                                <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label>
-                                <input id="endpoint"
-                                type="text"
-                                class="form-control"
-                                style="width:450px"
-                                @bind="Endpoint" />
+                            <div>
+                                <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label><br />
+                                <InputText id="endpoint" @bind-Value="Endpoint"
+                                           class="form-control input-width" />
+                            </div>
+                        }
+                        else if ((AIType == "LM Studio") || (AIType == "Ollma"))
+                        {
+                            <!-- Local LLM Endpoint -->
+                            <div>
+                                <label for="endpoint"><b>Endpoint:</b></label><br />
+                                <InputText id="endpoint" @bind-Value="Endpoint"
+                                           class="form-control input-width" />
                             </div>
                             <br />
+                            <!-- Local LLM Model -->
+                            <div>
+                                <label for="localModel"><b>Model Name:</b></label><br />
+                                <InputText id="localModel" @bind-Value="AIModel"
+                                           class="form-control input-width" />
+                            </div>
                         }
                         <br />
-                        <!-- Conditional Buttons Based on Settings -->
-                        @if (!IsSettingsEntered)
-                        {
-                            @if (AIType == "OpenAI")
+                        <div class="mt-md">
+                            @if (!IsSettingsEntered)
+                            {
+                                <!-- Show a 'Get Key' link only for OpenAI/Azure. -->
+                                @if (AIType == "OpenAI" || AIType == "Azure OpenAI")
+                                {
+                                    <button type="button"
+                                            @onclick="OpenAIKeyLink"
+                                            class="btn-wide">
+                                        Get @AIType API Key
+                                    </button>
+                                }
+                                else if (AIType == "Local LLM")
+                                {
+                                    <!-- Local LLM doesn't require a key. You could hide or show a message here. -->
+                                    <button type="button"
+                                            disabled
+                                            class="btn-wide">
+                                        No external key needed
+                                    </button>
+                                }
+                            }
+                            else
                             {
                                 <button type="button"
-                                @onclick="GetAPIKey"
-                                style="margin-bottom: 10px; width: 500px">
-                                    An OpenAI API Key is required (Click here to get one)
+                                        @onclick="SettingsSave"
+                                        class="btn-wide">
+                                    Save
                                 </button>
                             }
-                            else if (AIType == "Azure OpenAI")
-                            {
-                                <button type="button"
-                                @onclick="GetAzureAPIKey"
-                                style="margin-bottom: 10px; width: 500px">
-                                    An Azure OpenAI API Key is required (Click here to get one)
-                                </button>
-                            }
-                        }
-                        else
-                        {
-                            <button type="button"
-                            @onclick="SettingsSave"
-                            style="margin-bottom: 10px; width: 500px">
-                                Save
-                            </button>
-                        }
+                        </div>
 
                     </div>
                 </div>
@@ -129,29 +132,34 @@
 </RadzenTabs>
 
 @code {
-    [Parameter] public EventCallback SettingsChanged { get; set; }
-    OrchestratorMethods OrchestratorMethods;
+    // Services
+    private OrchestratorMethods OrchestratorMethods;
 
-    string DefaultAIModel = "gpt-4o";
+    // Fields
+    private bool IsSettingsEntered = false;
 
-    string ApiKey = "";
-    string AIModel = "gpt-4o";
-    string AIType = "OpenAI";
-    string Endpoint = "";
-    string AIEmbeddingModel = "";
-    string ApiVersion = "";
+    // Default Values
+    private string DefaultAIModel = "gpt-4o";
+    private string ApiKey = "";
+    private string AIModel = "gpt-4o";
+    private string AIType = "OpenAI";
+    private string Endpoint = "";
+    private string AIEmbeddingModel = "";
+    private string ApiVersion = "";
 
-    List<string> colAITypes = new List<string>()
-                {
-                   "OpenAI","Azure OpenAI"
-                };
+    // Collections
+    private readonly List<string> colAITypes = new()
+    {
+        "OpenAI",
+        "Azure OpenAI",
+        "LM Studio",
+        "Ollma"
+    };
 
-    List<string> colModels = new List<string>()
-                {
-                   "gpt-4o","gpt-4o-mini","gpt-4-turbo"
-                };
-
-    bool IsSettingsEntered = false;
+    private readonly List<string> colModels = new()
+    {
+        "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,7 +172,6 @@
 
         Endpoint = SettingsService.Settings.ApplicationSettings.Endpoint;
         ApiVersion = SettingsService.Settings.ApplicationSettings.ApiVersion;
-        AIEmbeddingModel = SettingsService.Settings.ApplicationSettings.AIEmbeddingModel;
         AIModel = SettingsService.Settings.ApplicationSettings.AIModel;
         AIType = SettingsService.Settings.ApplicationSettings.AIType;
 
@@ -178,21 +185,30 @@
         }
     }
 
-    private async Task GetAPIKey()
+    private void HandleApiKeyChange(ChangeEventArgs e)
     {
-        // Open a new window to the OpenAI API Key page
-        await JSRuntime.InvokeVoidAsync("open", "https://platform.openai.com/account/api-keys");
-    }
+        // Mark settings as entered if the user starts typing an API key
+        ApiKey = e.Value?.ToString() ?? string.Empty;
 
-    private async Task GetAzureAPIKey()
-    {
-        // Open a new window to the Azure OpenAI API Key page
-        await JSRuntime.InvokeVoidAsync("open", "https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal");
+        IsSettingsEntered = !string.IsNullOrWhiteSpace(ApiKey);
     }
 
     private void APIKeyDetection(KeyboardEventArgs args)
     {
         IsSettingsEntered = true;
+    }
+
+    private async Task OpenAIKeyLink()
+    {
+        if (AIType == "OpenAI")
+        {
+            await JSRuntime.InvokeVoidAsync("open", "https://platform.openai.com/account/api-keys", "_blank");
+        }
+        else // "Azure OpenAI"
+        {
+            await JSRuntime.InvokeVoidAsync("open",
+                "https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal", "_blank");
+        }
     }
 
     private async Task SettingsSave()
@@ -241,7 +257,7 @@
             await settingsService.UpdateSettingsAsync(applicationSettings);
 
             // Test API Key
-            var result = await OrchestratorMethods.TestAccess(AIModel, ApiKey, Endpoint, AIEmbeddingModel);
+            var result = await OrchestratorMethods.TestAccess(AIType, AIModel, ApiKey, Endpoint, AIEmbeddingModel);
 
             NotificationService.Notify(new NotificationMessage
                 {
@@ -250,9 +266,6 @@
                     Detail = "Saved",
                     Duration = 4000
                 });
-
-            // Notify parent that settings have changed
-            await SettingsChanged.InvokeAsync();
         }
         catch (Exception ex)
         {
@@ -266,10 +279,12 @@
         }
     }
 
-    private void ChangeAIType(dynamic paramAIType)
+    private void ChangeAIType(ChangeEventArgs e)
     {
+        AIType = e.Value.ToString();
+
         // Set the default model based on the AI Type
-        if (paramAIType == "OpenAI")
+        if (AIType == "OpenAI")
         {
             AIModel = DefaultAIModel;
             Endpoint = "https://api.openai.com";
