@@ -275,6 +275,7 @@
         public async Task<string> GetAllTableSchemaAsync()
         {
             StringBuilder result = new StringBuilder();
+            string CurrentLine = string.Empty;
 
             // Find all subdirectories named "Parquet" (recursively)
             var parquetDirs = Directory.EnumerateDirectories(RootFolder, "Parquet", SearchOption.AllDirectories);
@@ -310,12 +311,19 @@
                         // Read the class file
                         var alllines = File.ReadAllLines(classFile);
 
+                        result.Append("Table Schema:");
+                        result.Append(Environment.NewLine);
+
                         // Only add the lines that begin with public string or public int and remove { get; set; }
                         foreach (var line in alllines)
                         {
                             if (line.Contains("public string") || line.Contains("public int"))
                             {
-                                result.Append(line.Replace(" { get; set; }", ""));
+                                // Remove uneeded text
+                                CurrentLine = line.Replace(" { get; set; }", "");
+                                CurrentLine = CurrentLine.Replace("public ", "");
+
+                                result.Append(CurrentLine);
                                 result.Append(Environment.NewLine);
                             }
                         }

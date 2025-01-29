@@ -1110,13 +1110,13 @@ else
             string templateContent = File.ReadAllText(templatePath);
 
             // Replace the placeholders
-            string codeBuilder = "";
+            string AIRequest = "";
 
-            codeBuilder = templateContent.Replace("## CURRENT SCHEMA ##", DataSchema);
-            codeBuilder = codeBuilder.Replace("## CURRENT CODE ##", CurrentScript);
-            codeBuilder = codeBuilder.Replace("## CURRENT REQUEST ##", AIMessage);
+            AIRequest = templateContent.Replace("## CURRENT SCHEMA ##", DataSchema);
+            AIRequest = AIRequest.Replace("## CURRENT CODE ##", CurrentScript);
+            AIRequest = AIRequest.Replace("## CURRENT REQUEST ##", AIMessage);
 
-            var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIMessage);
+            var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
 
             IsLoading = false;
             ShowAI = false;

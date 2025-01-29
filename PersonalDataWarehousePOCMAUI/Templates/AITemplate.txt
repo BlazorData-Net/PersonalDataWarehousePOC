@@ -3,7 +3,11 @@
 2) Your task is to generate C# LINQ to Objects method code based on the given specifications. 
 3) Please create a json response containing code for generating C# LINQ to Objects method with the specified signature and functionality. 
 4) Follow the structure and include inline code comments to make it understandable.
-5) If you cannot generate the code, please provide an error message in the "Error" field and suggest what the user can do to resolve the issue.
+5) All generated code should be valid C# code and should be able to run without any compilation errors.
+6) The code should be generated based on the specifications provided in the prompt.
+7) All code that references the Database and Table schema must use the `Dataloader` object.
+8) All code that references the Database and Table schema must only use colums that are present in the schema.
+9) If you cannot generate the code, please provide an error message in the "Error" field and suggest what the user can do to resolve the issue.
 
 ---
 
@@ -21,13 +25,13 @@
      var colTableName = var result = await dataloader.LoadParquet(DatabaseName, TableName);
      ```
 3. This is the current Database and Table schema information for all existing data:
-   - ## CURRENT SCHEMA ##.
+   - ## CURRENT SCHEMA ##
 
 4. This is the current code that should be considered (this may be blank):
-- ## CURRENT CODE ##.
+- ## CURRENT CODE ##
 
 5. This is the current request:
-- ## CURRENT REQUEST ##.
+- ## CURRENT REQUEST ##
 
 6. **Response Format**:
    - JSON format with two fields: `Response` and `Error`.
