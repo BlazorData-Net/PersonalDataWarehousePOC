@@ -7,6 +7,7 @@
 @using OpenAI;
 @using Microsoft.Extensions.AI;
 @using System.Diagnostics.CodeAnalysis
+@using PersonalDataWarehouse.AI
 @using PersonalDataWarehousePOC.Services
 @using PersonalDataWarehousePOCMAUI.Services
 @using MonacoRazor
@@ -14,6 +15,7 @@
 @inject DatabaseService databaseService
 @inject DataService DataService
 @inject SettingsService SettingsService
+@inject OrchestratorMethods OrchestratorMethods
 
 <PageTitle>Views</PageTitle>
 
@@ -1070,23 +1072,63 @@ else
     {
         try
         {
-            var OPENAI_API_KEY = "";
+            // Determine if AI is set-up
 
-            if (string.IsNullOrEmpty(OPENAI_API_KEY))
+            // Get APIKey from secure settings
+            string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
+
+            if (string.IsNullOrEmpty(ApiKey))
             {
-                Message = "Please set the OPENAI_API_KEY in appsettings.json";
-                return;
+                if ((SettingsService.Settings.ApplicationSettings.AIType == "OpenAI") || (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI"))
+                {                   
+                    Message = "Please set up AI in Setings";
+                    return;
+                }
+            }
+
+            if ((SettingsService.Settings.ApplicationSettings.AIType == "LM Studio") || (SettingsService.Settings.ApplicationSettings.AIType == "Ollma"))
+            {
+                if ((SettingsService.Settings.ApplicationSettings.Endpoint.Trim() == ""))
+                {
+                    Message = "Please set up AI in Setings";
+                    return;
+                }
             }
 
             IsLoading = true;
 
-            IChatClient client = new OpenAIClient(OPENAI_API_KEY).AsChatClient(modelId: "gpt-4o-mini");
-            var response = await client.CompleteAsync(AIMessage);
+            // Get the current script
+            CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            // Get the current Schema
+            var DataSchema = await databaseService.GetAllTableSchemaAsync();
+
+            // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
+            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplate.txt");
+
+            // Read the content of the template file
+            string templateContent = File.ReadAllText(templatePath);
+
+            // Replace the placeholders
+            string codeBuilder = "";
+
+            codeBuilder = templateContent.Replace("## CURRENT SCHEMA ##", DataSchema);
+            codeBuilder = codeBuilder.Replace("## CURRENT CODE ##", CurrentScript);
+            codeBuilder = codeBuilder.Replace("## CURRENT REQUEST ##", AIMessage);
+
+            var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIMessage);
 
             IsLoading = false;
             ShowAI = false;
 
-            Message = response.Choices[0].Text;
+            if (AIResponse.Error != "")
+            {
+                Message = AIResponse.Error;
+                return;
+            }
+
+            // Update the code in the editor
+            await MonacoCodeEditor.UpdateCodeAsync(AIResponse.Response);
         }
         catch (Exception ex)
         {

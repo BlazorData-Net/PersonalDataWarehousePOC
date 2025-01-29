@@ -259,7 +259,7 @@
             await settingsService.UpdateSettingsAsync(applicationSettings);
 
             // Test API Key
-            var result = await OrchestratorMethods.TestAccess(AIType, AIModel, ApiKey, Endpoint, AIEmbeddingModel);
+            var result = await OrchestratorMethods.TestAccessAsync(AIType, AIModel, ApiKey, Endpoint, AIEmbeddingModel);
 
             NotificationService.Notify(new NotificationMessage
                 {

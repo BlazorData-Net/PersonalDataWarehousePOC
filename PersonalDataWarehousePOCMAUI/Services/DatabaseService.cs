@@ -13,6 +13,7 @@
     using System.Text;
     using Newtonsoft.Json;
     using PersonalDataWarehousePOCMAUI.Model;
+    using Microsoft.Maui.Storage;
 
     public class DatabaseService
     {
@@ -268,6 +269,62 @@
             // Return via Task to match the async signature.
             return await Task.FromResult(result);
         }
+        #endregion
+
+        #region public async Task<string> GetAllTableSchemaAsync()
+        public async Task<string> GetAllTableSchemaAsync()
+        {
+            StringBuilder result = new StringBuilder();
+
+            // Find all subdirectories named "Parquet" (recursively)
+            var parquetDirs = Directory.EnumerateDirectories(RootFolder, "Parquet", SearchOption.AllDirectories);
+
+            foreach (var parquetDir in parquetDirs)
+            {
+                // get database name from the parent folder of the "Parquet" directory
+                string databaseName = Path.GetFileName(Path.GetDirectoryName(parquetDir));
+
+                result.Append($"Database: {databaseName}");
+                result.Append(Environment.NewLine);
+
+                // Get the parent folder name of the "Parquet" directory
+                string parentFolder = Path.GetFileName(Path.GetDirectoryName(parquetDir));
+
+                // Find all .parquet files in this "Parquet" directory (no further recursion)
+                var parquetFiles = Directory.EnumerateFiles(parquetDir, "*.parquet", SearchOption.TopDirectoryOnly);
+
+                foreach (var file in parquetFiles)
+                {
+                    // Extract just the filename
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+
+                    // Format: "ParentFolder/ParquetFileName"
+                    result.Append($"Table: {fileName}");
+                    result.Append(Environment.NewLine);
+
+                    // Get the Class file for this table from the "Classes" directory
+                    string classFile = Path.Combine(RootFolder, databaseName, "Classes", $"{fileName}.cs");
+
+                    if (File.Exists(classFile))
+                    {
+                        // Read the class file
+                        var alllines = File.ReadAllLines(classFile);
+
+                        // Only add the lines that begin with public string or public int and remove { get; set; }
+                        foreach (var line in alllines)
+                        {
+                            if (line.Contains("public string") || line.Contains("public int"))
+                            {
+                                result.Append(line.Replace(" { get; set; }", ""));
+                                result.Append(Environment.NewLine);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return await Task.FromResult(result.ToString());
+        } 
         #endregion
 
         #region public async Task<List<string>> GetAllViewsAsync()
