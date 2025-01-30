@@ -17,23 +17,29 @@
    ```csharp
    public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()
    ```
+2. Do not place ReturnResult() in a class. It should be a standalone method.
 
-2. **Table Loading**:
-   - Tables need to be loaded using the `Dataloader`.
+3. The method should return an `IEnumerable<IDictionary<string, object>>`.
+
+4. The method should be asynchronous.
+
+5. **Table Loading**:
+   - Tables need to be loaded must use the `Dataloader`.
    - Example of loading data from a table:
      ```csharp
      var colTableName = var result = await dataloader.LoadParquet(DatabaseName, TableName);
      ```
-3. This is the current Database and Table schema information for all existing data:
+
+6. This is the current Database and Table schema information for all existing data:
    - ## CURRENT SCHEMA ##
 
-4. This is the current code that should be considered (this may be blank):
+7. This is the current code that should be considered (this may be blank):
 - ## CURRENT CODE ##
 
-5. This is the current request:
+8. This is the current request:
 - ## CURRENT REQUEST ##
 
-6. **Response Format**:
+9. **Response Format**:
    - JSON format with two fields: `Response` and `Error`.
    - Example:
      ```json
@@ -53,7 +59,7 @@
 **Result:**
 ```json
 {
-  "Response": "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Threading.Tasks;\n\npublic class RandomDataGenerator\n{\n    private static readonly Random Random = new Random();\n    private static readonly string[] FirstNames = { \"John\", \"Jane\", \"Alice\", \"Bob\", \"Eve\", \"Charlie\", \"Mia\", \"Liam\", \"Noah\", \"Emma\" };\n    private static readonly string[] LastNames = { \"Smith\", \"Johnson\", \"Williams\", \"Brown\", \"Jones\", \"Garcia\", \"Miller\", \"Davis\", \"Martinez\", \"Hernandez\" };\n\n    public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n    {\n        return await Task.FromResult(Enumerable.Range(1, 10).Select(id => new Dictionary<string, object>\n        {\n            { \"EmployeeId\", id.ToString(\"D4\") }, // Generates IDs like \"0001\", \"0002\"\n            { \"FirstName\", FirstNames[Random.Next(FirstNames.Length)] },\n            { \"LastName\", LastNames[Random.Next(LastNames.Length)] }\n        }));\n    }\n}",
+  "Response": "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Threading.Tasks;\n    private static readonly Random Random = new Random();\n    private static readonly string[] FirstNames = { \"John\", \"Jane\", \"Alice\", \"Bob\", \"Eve\", \"Charlie\", \"Mia\", \"Liam\", \"Noah\", \"Emma\" };\n    private static readonly string[] LastNames = { \"Smith\", \"Johnson\", \"Williams\", \"Brown\", \"Jones\", \"Garcia\", \"Miller\", \"Davis\", \"Martinez\", \"Hernandez\" };\n\n    public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n    {\n        return await Task.FromResult(Enumerable.Range(1, 10).Select(id => new Dictionary<string, object>\n        {\n            { \"EmployeeId\", id.ToString(\"D4\") }, // Generates IDs like \"0001\", \"0002\"\n            { \"FirstName\", FirstNames[Random.Next(FirstNames.Length)] },\n            { \"LastName\", LastNames[Random.Next(LastNames.Length)] }\n        }));\n    }",
   "Error": ""
 }
 ```
