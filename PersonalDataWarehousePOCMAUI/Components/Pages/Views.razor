@@ -79,7 +79,11 @@ else
             <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
         }
         <br />
-        <CodeEditor @ref="@MonacoCodeEditor" Language="csharp" Code="@CurrentScript" OnCompletionsRequested="GetCompletionsAsync" />
+        <CodeEditor @ref="@MonacoCodeEditor" 
+            Language="csharp" 
+            Code="@CurrentScript"
+            MinHeight="500px"
+            OnCompletionsRequested="GetCompletionsAsync" />
     </div>
     <br />
 }
