@@ -80,10 +80,10 @@ else
         }
         <br />
         <CodeEditor @ref="@MonacoCodeEditor" 
-            Language="csharp" 
-            Code="@CurrentScript"
-            MinHeight="500px"
-            OnCompletionsRequested="GetCompletionsAsync" />
+        Language="csharp" 
+        Code="@CurrentScript"
+        MinHeight="500px"
+        OnCompletionsRequested="GetCompletionsAsync" />
     </div>
     <br />
 }
@@ -102,26 +102,31 @@ else
                         </div>
                     </div>
                     <div class="window-body has-space">
-
-                        <RadzenDataGrid Data="@objDataParameters.data"
-                        ColumnWidth="200px"
-                        AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
-                        FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
-                            <Columns>
-                                @foreach (var column in objDataParameters.columns)
-                                {
-                                    <RadzenDataGridColumn @key=@column.Key
-                                    Title="@column.Key"
-                                    Type="column.Value"
-                                    Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
-                                        <Template>
-                                            @context[@column.Key]
-                                        </Template>
-                                    </RadzenDataGridColumn>
-                                }
-                            </Columns>
-                        </RadzenDataGrid>
-
+                        @if (IsOutputLoading)
+                        {
+                            <div role="progressbar" class="marquee" style="width: 100%"></div>
+                        }
+                        else
+                        {
+                            <RadzenDataGrid Data="@objDataParameters.data"
+                            ColumnWidth="200px"
+                            AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
+                            FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
+                                <Columns>
+                                    @foreach (var column in objDataParameters.columns)
+                                    {
+                                        <RadzenDataGridColumn @key=@column.Key
+                                        Title="@column.Key"
+                                        Type="column.Value"
+                                        Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
+                                            <Template>
+                                                @context[@column.Key]
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                    }
+                                </Columns>
+                            </RadzenDataGrid>
+                        }
                     </div>
                 </div>
             </div>
@@ -343,6 +348,7 @@ else
 
     private bool IsLoading { get; set; } = false;
     private bool IsAILoading { get; set; } = false;
+    private bool IsOutputLoading { get; set; } = false;
     private List<string> TableList = new List<string>();
     private List<string> ViewList = new List<string>();
     private string CurrentViewName = "";
@@ -868,6 +874,10 @@ else
             //  Save the view
             await SaveViewAsync();
 
+            IsOutputLoading = true;
+            IsNewOutputPopupVisible = true;
+            StateHasChanged();
+
             // Execute the code
             var objResult = await RunDynamicCode(CurrentScript);
 
@@ -882,12 +892,14 @@ else
                         columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
                     };
             }
-
-            // Show the output
-            IsNewOutputPopupVisible = true;
+           
+            IsOutputLoading = false;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
+            IsNewOutputPopupVisible = false;
+            IsOutputLoading = false;
             Message = ex.GetBaseException().Message;
         }
     }
