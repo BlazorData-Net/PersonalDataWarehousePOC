@@ -44,18 +44,10 @@
                         }
                         @if (AIType == "OpenAI")
                         {
-                            <!-- Default AI Model -->
-                            AIModel = DefaultAIModel;
-                            Endpoint = "https://api.openai.com";
                             <div>
-                                <label for="aiModel"><b>Default AI Model:</b></label><br />
-                                <InputSelect id="aiModel" @bind-Value="AIModel" class="form-control select-width">
-                                    @foreach (var model in colModels)
-                                    {
-                                        <option value="@model"
-                                                selected="@(model == AIModel ? "selected" : null)">@model</option>
-                                    }
-                                </InputSelect>
+                                <label for="azureModel"><b>OpenAI Model:</b></label><br />
+                                <InputText id="azureModel" @bind-Value="AIModel"
+                                           class="form-control input-width" />
                             </div>
                         }
                         else if (AIType == "Azure OpenAI")
@@ -101,15 +93,6 @@
                                             @onclick="OpenAIKeyLink"
                                             class="btn-wide">
                                         Get @AIType API Key
-                                    </button>
-                                }
-                                else if (AIType == "Local LLM")
-                                {
-                                    <!-- Local LLM doesn't require a key. You could hide or show a message here. -->
-                                    <button type="button"
-                                            disabled
-                                            class="btn-wide">
-                                        No external key needed
                                     </button>
                                 }
                             }
@@ -160,7 +143,7 @@
 
     private readonly List<string> colModels = new()
     {
-        "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"
+        "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1-mini", "o3-mini"
     };
 
     protected override async Task OnInitializedAsync()
