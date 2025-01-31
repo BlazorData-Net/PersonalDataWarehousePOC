@@ -55,34 +55,50 @@ else
     </div>
     <br />
     <div>
-        @if (TableList.Count > 0)
-        {
-            <button @onclick="OpenWizard">Table Wizard</button>
-            <span>&nbsp;</span>
-        }
-        <button @onclick="NewScript">New</button>
-        &nbsp;
-        <button @onclick="SaveViewName">Save</button>
-        @if (CurrentViewName != "")
-        {
-            <span>&nbsp; &nbsp;</span>
-            <button @onclick="DeleteConfirmation">Delete</button>
-        }
-        &nbsp;
-        <button @onclick="Execute">Execute</button>
-        &nbsp;
-        <button @onclick="Export">Export</button>
-        &nbsp;
-        <button @onclick="OpenAIPopup">AI</button>
+        <div class="rz-p-sm-1" style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
+            @if (TableList.Count > 0)
+            {
+                <button @onclick="OpenWizard" title="Table Wizard" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">table_chart</i>
+                </button>
+            }
+
+            <button @onclick="NewScript" title="New" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">note_add</i>
+            </button>
+
+            <button @onclick="SaveViewName" title="Save" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">save</i>
+            </button>
+
+            @if (!string.IsNullOrEmpty(CurrentViewName))
+            {
+                <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">delete</i>
+                </button>
+            }
+
+            <button @onclick="Execute" title="Execute" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">play_arrow</i>
+            </button>
+
+            <button @onclick="Export" title="Export" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">file_download</i>
+            </button>
+
+            <button @onclick="OpenAIPopup" title="AI" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">smart_toy</i>
+            </button>
         @if (ContentChanged)
         {
             <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
         }
-        <br />
+        </div>
         <CodeEditor @ref="@MonacoCodeEditor" 
         Language="csharp" 
         Code="@CurrentScript"
         MinHeight="500px"
+        Margin="0px"
         OnCompletionsRequested="GetCompletionsAsync" />
     </div>
     <br />

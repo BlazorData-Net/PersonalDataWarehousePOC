@@ -317,7 +317,7 @@
                         // Only add the lines that begin with public string or public int and remove { get; set; }
                         foreach (var line in alllines)
                         {
-                            if (line.Contains("public string") || line.Contains("public int"))
+                            if (line.Contains("public string"))
                             {
                                 // Remove uneeded text
                                 CurrentLine = line.Replace(" { get; set; }", "");
