@@ -7,7 +7,10 @@
 6) The code should be generated based on the specifications provided in the prompt.
 7) All code that references the Database and Table schema must use the `Dataloader` object.
 8) All code that references the Database and Table schema must only use colums that are present in the schema.
-9) If you cannot generate the code, please provide an error message in the "Error" field and suggest what the user can do to resolve the issue.
+9) All keys should be explicitly typed as string.
+10) Ensure that values retain their original types (e.g., int for counts).
+11) Do not use boxing or implicit conversion to object.
+12) If you cannot generate the code, please provide an error message in the "Error" field and suggest what the user can do to resolve the issue.
 
 ---
 
