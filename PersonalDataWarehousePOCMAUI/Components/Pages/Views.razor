@@ -110,8 +110,7 @@ else
                         {
                             <RadzenDataGrid Data="@objDataParameters.data"
                             ColumnWidth="200px"
-                            AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand"
-                            FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true">
+                            AllowFiltering="false" AllowPaging="true" AllowSorting="false">
                                 <Columns>
                                     @foreach (var column in objDataParameters.columns)
                                     {
@@ -892,7 +891,18 @@ else
                         columns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"))
                     };
             }
-           
+
+            // If there is a message, display it
+            // Otherwise, display the data
+            if (Message != "")
+            {
+                IsNewOutputPopupVisible = false;                
+            }
+            else
+            {
+                IsNewOutputPopupVisible = true;
+            }
+
             IsOutputLoading = false;
             StateHasChanged();
         }
@@ -901,6 +911,7 @@ else
             IsNewOutputPopupVisible = false;
             IsOutputLoading = false;
             Message = ex.GetBaseException().Message;
+            StateHasChanged();
         }
     }
 
