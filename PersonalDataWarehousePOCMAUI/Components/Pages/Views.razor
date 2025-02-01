@@ -71,6 +71,14 @@ else
                 <i class="material-icons" style="color:black;">save</i>
             </button>
 
+            <button disabled="@(CanUndo == false)" @onclick="() => Undo()" title="Undo" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">undo</i>
+            </button>
+
+            <button disabled="@(CanRedo == false)" @onclick="() => Redo()" title="Redo" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">redo</i>
+            </button>
+
             @if (!string.IsNullOrEmpty(CurrentViewName))
             {
                 <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
@@ -89,18 +97,18 @@ else
             <button @onclick="OpenAIPopup" title="AI" style="background:none;border:none;">
                 <i class="material-icons" style="color:black;">psychology</i>
             </button>
-        @if (ContentChanged)
-        {
-            <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
-        }
+            @if (ContentChanged)
+            {
+                <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
+            }
         </div>
-        <CodeEditor @ref="@MonacoCodeEditor" 
-        Language="csharp" 
-        Code="@CurrentScript"
-        MinHeight="500px"
-        Width="90%"
-        Margin="0px"
-        OnCompletionsRequested="GetCompletionsAsync" />
+        <CodeEditor @ref="@MonacoCodeEditor"
+                    Language="csharp"
+                    Code="@CurrentScript"
+                    MinHeight="500px"
+                    Width="90%"
+                    Margin="0px"
+                    OnCompletionsRequested="GetCompletionsAsync" />
     </div>
     <br />
 }
@@ -126,15 +134,15 @@ else
                         else
                         {
                             <RadzenDataGrid Data="@objDataParameters.data"
-                            ColumnWidth="200px"
-                            AllowFiltering="false" AllowPaging="true" AllowSorting="false">
+                                            ColumnWidth="200px"
+                                            AllowFiltering="false" AllowPaging="true" AllowSorting="false">
                                 <Columns>
                                     @foreach (var column in objDataParameters.columns)
                                     {
                                         <RadzenDataGridColumn @key=@column.Key
-                                        Title="@column.Key"
-                                        Type="column.Value"
-                                        Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
+                                                              Title="@column.Key"
+                                                              Type="column.Value"
+                                                              Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
                                             <Template>
                                                 @context[@column.Key]
                                             </Template>
@@ -211,7 +219,7 @@ else
                                     @foreach (var database in colAllDatabases)
                                     {
                                         <option value="@database"
-                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -255,8 +263,8 @@ else
                         {
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
-                                style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                </textarea>
+                                          style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
+                                                </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -373,6 +381,11 @@ else
     List<string> colAllDatabases = new List<string>();
     string CurrentDatabaseName = "Default";
 
+    private Stack<string> undoStack = new();
+    private Stack<string> redoStack = new();
+    private bool CanUndo => undoStack.Count > 0;
+    private bool CanRedo => redoStack.Count > 0;
+
     private bool IsWizardVisible { get; set; } = false;
     private bool IsSaveViewPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
@@ -446,6 +459,46 @@ else
         });
     }
 
+    // Undo/Redo
+
+    // Called when the user clicks the Undo button.
+    private async Task Undo()
+    {
+        if (CanUndo)
+        {
+            // Get the current script
+            CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            // Push the current text onto the redo stack.
+            redoStack.Push(CurrentScript);
+
+            // Pop the last state from the undo stack and set it as the current text.
+            CurrentScript = undoStack.Pop();
+
+            await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+        }
+    }
+
+    // Called when the user clicks the Redo button.
+    private async Task Redo()
+    {
+        if (CanRedo)
+        {
+            // Get the current script
+            CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            // Push the current state onto the undo stack.
+            undoStack.Push(CurrentScript);
+
+            // Pop the last undone state from the redo stack and set it as the current text.
+            CurrentScript = redoStack.Pop();
+
+            await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+        }
+    }
+
+    // SAVE
+
     private void SaveViewName()
     {
         if (CurrentViewName != "")
@@ -504,6 +557,9 @@ else
 
             // Get the current script
             CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            // Update the Undo stack
+            undoStack.Push(CurrentScript);
 
             await System.IO.File.WriteAllTextAsync(fileName, CurrentScript);
 
@@ -668,6 +724,11 @@ else
 
             await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
 
+            // Update the Undo/Redo stacks
+            undoStack.Clear();
+            redoStack.Clear();
+            undoStack.Push(CurrentScript);
+
             // Set CurrentViewName
             CurrentViewName = paramView;
         }
@@ -743,6 +804,15 @@ else
 
     private async Task NewScript()
     {
+        // Save the current script
+        CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+        if (CurrentScript != "")
+        {
+            // Update the Undo/Redo stacks
+            undoStack.Push(CurrentScript);
+        }
+
         CurrentScript = SampleCode;
         CurrentViewName = "";
 
@@ -753,6 +823,15 @@ else
 
     private async Task onTableWizardAsync()
     {
+        // Save the current script
+        CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+        if (CurrentScript != "")
+        {
+            // Update the Undo/Redo stacks
+            undoStack.Push(CurrentScript);
+        }
+
         if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
         {
             Message = "Please select a table.";
@@ -913,7 +992,7 @@ else
             // Otherwise, display the data
             if (Message != "")
             {
-                IsNewOutputPopupVisible = false;                
+                IsNewOutputPopupVisible = false;
             }
             else
             {
@@ -1132,7 +1211,7 @@ else
             if (string.IsNullOrEmpty(ApiKey))
             {
                 if ((SettingsService.Settings.ApplicationSettings.AIType == "OpenAI") || (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI"))
-                {                   
+                {
                     Message = "Please set up AI in Setings";
                     return;
                 }
@@ -1149,7 +1228,13 @@ else
 
             // Get the current script
             CurrentScript = await MonacoCodeEditor.GetCodeAsync();
-                        
+
+            if (CurrentScript != "")
+            {
+                // Update the Undo/Redo stacks
+                undoStack.Push(CurrentScript);
+            }
+
             IsAILoading = true;
             StateHasChanged();
 
@@ -1172,7 +1257,7 @@ else
             var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
 
             IsAILoading = false;
-            ShowAI = false;            
+            ShowAI = false;
 
             if (AIResponse.Error != "")
             {
