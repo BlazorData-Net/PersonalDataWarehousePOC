@@ -19,7 +19,7 @@
 @inject DataService DataService
 @inject SettingsService SettingsService
 @inject OrchestratorMethods OrchestratorMethods
-
+@inject IJSRuntime JS
 <PageTitle>Kusto Queries</PageTitle>
 <h4>Kusto Queries</h4>
 <br />
@@ -121,7 +121,7 @@ else
             OnCompletionsRequested="GetCompletionsAsync" />
 
             <div style="overflow: auto;">
-                <iframe style="width:1000px; min-height: 500px;" srcdoc="@table"></iframe>
+                <iframe id="KQLcaptureArea" style="width:1000px; min-height: 500px;" srcdoc="@table"></iframe>
             </div>
         </RadzenStack>
     </div>
@@ -749,17 +749,9 @@ else
     // Export
     // -----------------------------------------
 
-    private void Export()
+    private async Task Export()
     {
-        if (string.IsNullOrWhiteSpace(CurrentQueryName))
-        {
-            SaveQueryName();
-        }
-        else
-        {
-            var (database, qName) = DataService.ExtractDatabaseAndTable(CurrentQueryName);
-            CurrentQueryNameWithoutDatabase = qName;
-        }
+        var pngDataUrl = await JS.InvokeAsync<string>("captureDivAsPng", "KQLcaptureArea");
     }
 
     // -----------------------------------------
