@@ -3,6 +3,8 @@
 @using System.Text
 @using KustoLoco.Core
 @using KustoLoco.Core.Console
+@using KustoLoco.Core.DataSource
+@using KustoLoco.Core.DataSource.Columns
 @using KustoLoco.Core.Settings
 @using KustoLoco.Rendering
 @using Microsoft.Extensions.AI
@@ -12,6 +14,7 @@
 @using PersonalDataWarehousePOCMAUI.Services
 @using MonacoRazor
 @using System.Data
+@using System.Diagnostics
 @inject DatabaseService databaseService
 @inject DataService DataService
 @inject SettingsService SettingsService
@@ -276,7 +279,6 @@ else
     private string dataSchema = "";
 
     private MarkupString table;
-    private readonly KustoQueryContext kustoContext = new();
 
     private DataParameters objDataParameters = new DataParameters();
 
@@ -689,12 +691,24 @@ else
                 DataName = ViewName;
             }
 
-            IReadOnlyCollection<Dictionary<string, object>> BoundDataSourceData = DataSourceData
-                .Select(x => x.ToDictionary(y => y.Key, y => y.Value))
-                .ToList();
+            // Get the fields from the first record (ensure result is not empty)
+            var fields = DataSourceData.Any()
+                ? DataSourceData.First().Keys.ToList()
+                : new List<string>();
 
-            kustoContext.CopyDataIntoTable(DataName, BoundDataSourceData);
-            var columnName = objDataParameters.columns.First();
+            var tableBuilder = TableBuilder.CreateEmpty(DataName, DataSourceData.Count());
+
+            // Add the columns to the table
+            foreach (var field in fields)
+            {
+                object[] items = DataSourceData.Select(x => x[field]).ToArray();
+                tableBuilder.WithColumn(field, typeof(string), (IReadOnlyCollection<object>)(object)items);
+            }
+
+            var tableSource = tableBuilder.ToTableSource();
+
+            var kustoContext = new KustoQueryContext();
+            kustoContext.AddTable(tableBuilder);
 
             var result = await kustoContext.RunQuery(CurrentScript);
             var renderer = new KustoResultRenderer(new KustoSettingsProvider());
