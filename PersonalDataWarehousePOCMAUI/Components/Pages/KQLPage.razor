@@ -59,7 +59,7 @@ else
                             })">
             @foreach (var table in TableList)
             {
-                <option value="@table">
+                <option value="@table" selected="@(table == CurrentSelectedTableWizard ? "selected" : null)">
                     @table
                 </option>
             }
@@ -383,8 +383,10 @@ else
             ? 0
             : x.StartsWith("Default/") ? -1 : 1);
 
-        // Add: * Select DataSource* at teh end of the list
+        // Add: * Select DataSource* at the end of the list
         TableList.Add("*Select DataSource*");
+
+        CurrentSelectedTableWizard = TableList.Last();
     }
 
     // -----------------------------------------
@@ -433,7 +435,21 @@ else
 
         if (File.Exists(fileName))
         {
-            CurrentScript = File.ReadAllText(fileName);
+            string FileContent = File.ReadAllText(fileName);
+
+            // Set CurrentSelectedTableWizard
+            // find ~~~ in FileContent and set everything after that to CurrentScript
+            int index = FileContent.IndexOf("~~~");
+            if (index > 0)
+            {
+                CurrentSelectedTableWizard = FileContent.Substring(0, index);
+                CurrentScript = FileContent.Substring(index + 3);
+            }
+            else
+            {
+                CurrentSelectedTableWizard = "*Select DataSource*";
+                CurrentScript = FileContent;
+            }
 
             CurrentQueryName = paramQueryName;
 
@@ -490,8 +506,7 @@ else
             {
                 IsLoading = false;
                 CurrentQueryNameWithoutDatabase = cleanedName;
-                Message = $"Query name changed to {CurrentQueryNameWithoutDatabase}. Please click Save again.";
-                return;
+                Message = $"Query name changed to {CurrentQueryNameWithoutDatabase}.";
             }
 
             // Get the code from the editor
@@ -507,10 +522,15 @@ else
                 "Databases",
                 CurrentDatabaseName,
                 "KQLQueries");
+
             Directory.CreateDirectory(queriesFolder); // ensure it exists
 
             string fileName = Path.Combine(queriesFolder, $"{CurrentQueryNameWithoutDatabase}.kql");
-            File.WriteAllText(fileName, CurrentScript);
+
+            // Put the name of the Datasource in the query file
+            string QueryFileContent = $"{CurrentSelectedTableWizard}~~~{CurrentScript}";
+
+            File.WriteAllText(fileName, QueryFileContent);
 
             CurrentQueryName = $"{CurrentDatabaseName}/{CurrentQueryNameWithoutDatabase}";
 
