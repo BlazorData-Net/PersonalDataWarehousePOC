@@ -40,7 +40,7 @@ else
                     @foreach (var query in QueryList)
                     {
                         <option value="@query"
-                                selected="@(query == CurrentQueryName ? "selected" : null)">
+                        selected="@(query == CurrentQueryName ? "selected" : null)">
                             @query
                         </option>
                     }
@@ -51,17 +51,24 @@ else
                 <button @onclick="Reset">Reset</button>
             }
         }
+        &nbsp;&nbsp;
+        <label>Data Source: </label>
+        <select @onchange="@(async (args) =>
+                            {
+                                CurrentSelectedTableWizard = args.Value?.ToString();
+                            })">
+            @foreach (var table in TableList)
+            {
+                <option value="@table">
+                    @table
+                </option>
+            }
+        </select>
     </div>
     <br />
     <div>
         <div class="rz-p-sm-1"
-             style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
-            @if (TableList.Count > 0)
-            {
-                <button @onclick="OpenWizard" title="Table Wizard" style="background:none;border:none;">
-                    <i class="material-icons" style="color:black;">table_chart</i>
-                </button>
-            }
+        style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
             <button @onclick="NewScript" title="New" style="background:none;border:none;">
                 <i class="material-icons" style="color:black;">note_add</i>
             </button>
@@ -104,12 +111,12 @@ else
         <RadzenRow class="rz-text-align-left" Gap="1rem">
             <RadzenColumn Size="4">
                 <CodeEditor @ref="@MonacoCodeEditor"
-                            Language="kusto"
-                            Code="@CurrentScript"
-                            MinHeight="500px"
-                            Width="700px"
-                            Margin="0px"
-                            OnCompletionsRequested="GetCompletionsAsync" />
+                Language="kusto"
+                Code="@CurrentScript"
+                MinHeight="500px"
+                Width="700px"
+                Margin="0px"
+                OnCompletionsRequested="GetCompletionsAsync" />
             </RadzenColumn>
             <RadzenColumn>
                 <div style="flex-grow: 1; overflow: auto;">
@@ -122,42 +129,6 @@ else
 }
 
 <!-- POPUPS -->
-@if (IsWizardVisible)
-{
-    <div class="modal fade show" style="display: block;" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-                <div class="window glass active">
-                    <div class="title-bar">
-                        <div class="title-bar-text">Wizard</div>
-                        <div class="title-bar-controls">
-                            <button aria-label="Close" @onclick="CloseTableWizardPopup"></button>
-                        </div>
-                    </div>
-                    <div class="window-body has-space">
-                        <label>Select: </label>
-                        <select @onchange="@(async (args) =>
-                            {
-                                CurrentSelectedTableWizard = args.Value?.ToString();
-                            })">
-                            @foreach (var table in TableList)
-                            {
-                                <option value="@table">
-                                    @table
-                                </option>
-                            }
-                        </select>
-                        &nbsp;&nbsp;
-                        <button @onclick="onTableWizardAsync">Select</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
-}
-
 @if (IsSaveQueryPopupVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -182,7 +153,7 @@ else
                                     @foreach (var database in AllDatabases)
                                     {
                                         <option value="@database"
-                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -192,8 +163,8 @@ else
                             <div>
                                 <label for="kqlQueryName">Query Name:</label>
                                 <input type="text" id="kqlQueryName" maxlength="50"
-                                       style="width: 300px;"
-                                       @bind="CurrentQueryNameWithoutDatabase" />
+                                style="width: 300px;"
+                                @bind="CurrentQueryNameWithoutDatabase" />
                                 &nbsp;&nbsp;&nbsp;&nbsp;
                                 <button type="submit">Submit</button>
                             </div>
@@ -228,8 +199,8 @@ else
                         {
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
-                                          style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                                </textarea>
+                                style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
+                                </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -330,7 +301,6 @@ else
 
     // Popups
     private bool IsSaveQueryPopupVisible { get; set; } = false;
-    private bool IsWizardVisible { get; set; } = false;
     private bool IsLoadingSheet { get; set; } = false;
     private bool ShowDeleteConfirmation { get; set; } = false;
     private bool ShowAI { get; set; } = false;
@@ -358,22 +328,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        dataSchema = await databaseService.GetAllTableSchemaAsync();
-        suggestions = await databaseService.GetAllTableCompletionsAsync();
         await LoadQueryListAsync();
         await LoadTableListDropdownAsync();
 
         // Possibly load all database names
         AllDatabases = await databaseService.GetAllDatabasesAsync();
 
-        // If we have queries, load the first by default
-        if (QueryList.Count > 0)
+        if (QueryList.Count == 0)
         {
-            CurrentQueryName = QueryList.First();
-            await LoadQueryAsync(CurrentQueryName);
-        }
-        else
-        {
+            CurrentQueryName = "";
             CurrentScript = SampleKql;
         }
     }
@@ -419,6 +382,9 @@ else
             (x, y) => x.StartsWith("Default/") == y.StartsWith("Default/")
             ? 0
             : x.StartsWith("Default/") ? -1 : 1);
+
+        // Add: * Select DataSource* at teh end of the list
+        TableList.Add("*Select DataSource*");
     }
 
     // -----------------------------------------
@@ -469,16 +435,18 @@ else
         {
             CurrentScript = File.ReadAllText(fileName);
 
-            // reset editor content
-            await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+            if (MonacoCodeEditor != null)
+            {
+                await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
 
-            // Clear undo/redo
-            undoStack.Clear();
-            redoStack.Clear();
-            undoStack.Push(CurrentScript);
+                // Clear undo/redo
+                undoStack.Clear();
+                redoStack.Clear();
+                undoStack.Push(CurrentScript);
 
-            CurrentQueryName = paramQueryName;
-            StateHasChanged();
+                CurrentQueryName = paramQueryName;
+                StateHasChanged();
+            }
         }
         else
         {
@@ -600,14 +568,6 @@ else
             CurrentScript = SampleKql;
             await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
         }
-    }
-
-    private async Task RunQuery()
-    {
-        var query = await MonacoCodeEditor.GetCodeAsync();
-        var result = await kustoContext.RunQuery(query);
-        var renderer = new KustoResultRenderer(new KustoSettingsProvider());
-        table = new MarkupString(renderer.RenderToHtml(result));
     }
 
     // -----------------------------------------
@@ -822,53 +782,7 @@ else
         ShowAI = false;
         Message = "";
     }
-
-    // Table Wizard
-
-    private async Task onTableWizardAsync()
-    {
-        // Save the current script
-        CurrentScript = await MonacoCodeEditor.GetCodeAsync();
-
-        if (CurrentScript != "")
-        {
-            // Update the Undo/Redo stacks
-            undoStack.Push(CurrentScript);
-        }
-
-        if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
-        {
-            Message = "Please select a table.";
-            return;
-        }
-
-        // Separate the view name from the database
-        var (DatabaseName, TableName) = DataService.ExtractDatabaseAndTable(CurrentSelectedTableWizard);
-
-        CurrentScript = $"using System;\n";
-        CurrentScript += $"using System.Collections.Generic;\n";
-        CurrentScript += $"using System.Linq;\n";
-        CurrentScript += $"using System.Threading.Tasks;\n";
-        CurrentScript += $"\n";
-        CurrentScript += $"public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n";
-        CurrentScript += "{\n";
-        CurrentScript += $"    // Create a Dataloader \n";
-        CurrentScript += $"    Dataloader objDataloader = new Dataloader();\n";
-        CurrentScript += $"    // Call LoadParquet to load {TableName} into col{TableName} \n";
-        CurrentScript += $@"    var col{TableName} = await objDataloader.LoadParquet(""{DatabaseName}"",""{TableName}"");";
-        CurrentScript += $"\n";
-        CurrentScript += $"    // Return the results ToDictionary()  \n";
-        CurrentScript += $"    return col{TableName}.Select(row => row.ToDictionary()).Take(100).ToList();";
-        CurrentScript += "\n";
-        CurrentScript += "}\n";
-
-        CloseTableWizardPopup();
-
-        CurrentSelectedTableWizard = "";
-
-        await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
-    }
-
+    
     // -----------------------------------------
     // Other Popup Close Methods
     // -----------------------------------------
@@ -891,18 +805,6 @@ else
     private void CloseDeleteConfirmationPopup()
     {
         ShowDeleteConfirmation = false;
-    }
-
-    private void OpenWizard()
-    {
-        CurrentSelectedTableWizard = TableList.FirstOrDefault();
-        CurrentQueryName = ""; // So the new Query name popup will show on Save
-        IsWizardVisible = true;
-    }
-
-    private void CloseTableWizardPopup()
-    {
-        IsWizardVisible = false;
     }
 
     // -----------------------------------------
