@@ -75,10 +75,24 @@
         window.captureDivAsPng = async function (elementId) {
             var element = document.getElementById(elementId);
             if (!element) {
-                throw `Element with id "${elementId}" not found.`;
+                throw `Element with ID "${elementId}" not found.`;
             }
-            const canvas = await html2canvas(element);
+            // Use 'useCORS' and a white background if needed
+            const canvas = await html2canvas(element, {
+                useCORS: true,
+                backgroundColor: "#ffffff",
+                logging: true // logs progress to console
+            });
             return canvas.toDataURL("image/png");
+        };
+
+        window.saveAsFile = function (fileName, base64Data) {
+            const link = document.createElement("a");
+            link.href = base64Data;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
     </script>
 </body>

@@ -119,9 +119,10 @@ else
             Width="700px"
             Margin="0px"
             OnCompletionsRequested="GetCompletionsAsync" />
-
+            <div id="KQLcaptureArea">
             <div style="overflow: auto;">
-                <iframe id="KQLcaptureArea" style="width:1000px; min-height: 500px;" srcdoc="@table"></iframe>
+                <iframe style="width:1000px; min-height: 500px;" srcdoc="@table"></iframe>
+                </div>
             </div>
         </RadzenStack>
     </div>
@@ -752,6 +753,9 @@ else
     private async Task Export()
     {
         var pngDataUrl = await JS.InvokeAsync<string>("captureDivAsPng", "KQLcaptureArea");
+
+        // Save the PNG to the user's Downloads folder
+        await JS.InvokeVoidAsync("saveAsFile", "KQLCapture.png", pngDataUrl);
     }
 
     // -----------------------------------------
