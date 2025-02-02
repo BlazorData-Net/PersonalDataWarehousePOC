@@ -363,15 +363,28 @@ else
     private async Task LoadTableListDropdownAsync()
     {
         TableList = new List<string>();
-        TableList = await databaseService.GetAllTablesAsync();
+
+        var colTables = await databaseService.GetAllTablesAsync();
+
+        if (colTables.Count > 0)
+        {
+            // Add each table to the list prepended with "Table: "
+            foreach (var table in colTables)
+            {
+                TableList.Add($"Table: {table}");
+            }
+        }
 
         // Get all Views
-        var views = await databaseService.GetAllViewsAsync();
+        var colViews = await databaseService.GetAllViewsAsync();
 
-        if (views.Count > 0)
+        if (colViews.Count > 0)
         {
-            // Add views to the table list
-            TableList.AddRange(views);
+            // Add each view to the list prepended with "View: "
+            foreach (var view in colViews)
+            {
+                TableList.Add($"View: {view}");
+            }
         }
 
         // Sort the list
