@@ -53,6 +53,12 @@ else
     <div>
         <div class="rz-p-sm-1"
              style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
+            @if (TableList.Count > 0)
+            {
+                <button @onclick="OpenWizard" title="Table Wizard" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">table_chart</i>
+                </button>
+            }
             <button @onclick="NewScript" title="New" style="background:none;border:none;">
                 <i class="material-icons" style="color:black;">note_add</i>
             </button>
@@ -106,43 +112,34 @@ else
 }
 
 <!-- POPUPS -->
-@if (IsOutputPopupVisible)
+@if (IsWizardVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
-        <div class="modal-dialog" style="max-width: 90%; margin-top: 5%;">
+        <div class="modal-dialog">
             <div class="modal-content">
+
                 <div class="window glass active">
                     <div class="title-bar">
-                        <div class="title-bar-text">Output</div>
+                        <div class="title-bar-text">Table Wizard</div>
                         <div class="title-bar-controls">
-                            <button aria-label="Close" @onclick="CloseOutputPopup"></button>
+                            <button aria-label="Close" @onclick="CloseTableWizardPopup"></button>
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        @if (IsOutputLoading)
-                        {
-                            <div role="progressbar" class="marquee" style="width: 100%"></div>
-                        }
-                        else
-                        {
-                            <RadzenDataGrid Data="@objDataParameters.data"
-                                            ColumnWidth="200px"
-                                            AllowFiltering="false" AllowPaging="true" AllowSorting="false">
-                                <Columns>
-                                    @foreach (var column in objDataParameters.columns)
-                                    {
-                                        <RadzenDataGridColumn @key=@column.Key
-                                                              Title="@column.Key"
-                                                              Type="column.Value"
-                                                              Property="@PropertyAccess.GetDynamicPropertyExpression(column.Key, column.Value)">
-                                            <Template>
-                                                @context[@column.Key]
-                                            </Template>
-                                        </RadzenDataGridColumn>
-                                    }
-                                </Columns>
-                            </RadzenDataGrid>
-                        }
+                        <label>Select Table: </label>
+                        <select @onchange="@(async (args) =>
+                            {
+                                CurrentSelectedTableWizard = args.Value?.ToString();
+                            })">
+                            @foreach (var table in TableList)
+                            {
+                                <option value="@table">
+                                    @table
+                                </option>
+                            }
+                        </select>
+                        &nbsp;&nbsp;
+                        <button @onclick="onTableWizardAsync">Select</button>
                     </div>
                 </div>
             </div>
@@ -293,6 +290,7 @@ else
     private CodeEditor MonacoCodeEditor { get; set; }
     private bool ContentChanged { get; set; }
     private string CurrentScript { get; set; } = string.Empty;
+    private List<string> TableList = new List<string>();
 
     private DataParameters objDataParameters = new DataParameters();
 
@@ -307,6 +305,7 @@ else
 
     private List<string> AllDatabases = new();
     private string CurrentDatabaseName = "Default";
+    private string CurrentSelectedTableWizard = "";
 
     // Undo/Redo
     private Stack<string> undoStack = new();
@@ -316,7 +315,7 @@ else
 
     // Popups
     private bool IsSaveQueryPopupVisible { get; set; } = false;
-    private bool IsOutputPopupVisible { get; set; } = false;
+    private bool IsWizardVisible { get; set; } = false;
     private bool IsLoadingSheet { get; set; } = false;
     private bool ShowDeleteConfirmation { get; set; } = false;
     private bool ShowAI { get; set; } = false;
@@ -346,6 +345,7 @@ else
     {
         // Load a list of queries from disk or wherever you store them
         await LoadQueryListAsync();
+        await LoadTableListDropdownAsync();
 
         // Possibly load all database names
         AllDatabases = await databaseService.GetAllDatabasesAsync();
@@ -379,6 +379,14 @@ else
             new Suggestion { Label = "StormEvents", InsertText = "StormEvents" },
             new Suggestion { Label = "Where", InsertText = "where" },
         });
+    }
+
+    // Table Dropdown
+
+    private async Task LoadTableListDropdownAsync()
+    {
+        TableList = new List<string>();
+        TableList = await databaseService.GetAllTablesAsync();
     }
 
     // -----------------------------------------
@@ -609,7 +617,6 @@ else
 
             // Show output loading
             IsOutputLoading = true;
-            IsOutputPopupVisible = true;
             StateHasChanged();
 
             // Execute the KQL (replace with your KqlService logic)
@@ -620,7 +627,6 @@ else
         }
         catch (Exception ex)
         {
-            IsOutputPopupVisible = false;
             IsOutputLoading = false;
             Message = ex.GetBaseException().Message;
             StateHasChanged();
@@ -771,6 +777,52 @@ else
         Message = "";
     }
 
+    // Table Wizard
+
+    private async Task onTableWizardAsync()
+    {
+        // Save the current script
+        CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+        if (CurrentScript != "")
+        {
+            // Update the Undo/Redo stacks
+            undoStack.Push(CurrentScript);
+        }
+
+        if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
+        {
+            Message = "Please select a table.";
+            return;
+        }
+
+        // Separate the view name from the database
+        var (DatabaseName, TableName) = DataService.ExtractDatabaseAndTable(CurrentSelectedTableWizard);
+
+        CurrentScript = $"using System;\n";
+        CurrentScript += $"using System.Collections.Generic;\n";
+        CurrentScript += $"using System.Linq;\n";
+        CurrentScript += $"using System.Threading.Tasks;\n";
+        CurrentScript += $"\n";
+        CurrentScript += $"public async Task<IEnumerable<IDictionary<string, object>>> ReturnResult()\n";
+        CurrentScript += "{\n";
+        CurrentScript += $"    // Create a Dataloader \n";
+        CurrentScript += $"    Dataloader objDataloader = new Dataloader();\n";
+        CurrentScript += $"    // Call LoadParquet to load {TableName} into col{TableName} \n";
+        CurrentScript += $@"    var col{TableName} = await objDataloader.LoadParquet(""{DatabaseName}"",""{TableName}"");";
+        CurrentScript += $"\n";
+        CurrentScript += $"    // Return the results ToDictionary()  \n";
+        CurrentScript += $"    return col{TableName}.Select(row => row.ToDictionary()).Take(100).ToList();";
+        CurrentScript += "\n";
+        CurrentScript += "}\n";
+
+        CloseTableWizardPopup();
+
+        CurrentSelectedTableWizard = "";
+
+        await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+    }
+
     // -----------------------------------------
     // Other Popup Close Methods
     // -----------------------------------------
@@ -778,11 +830,6 @@ else
     private void CloseSaveQueryPopup()
     {
         IsSaveQueryPopupVisible = false;
-    }
-
-    private void CloseOutputPopup()
-    {
-        IsOutputPopupVisible = false;
     }
 
     private void CloseMessagePopup()
@@ -798,6 +845,18 @@ else
     private void CloseDeleteConfirmationPopup()
     {
         ShowDeleteConfirmation = false;
+    }
+
+    private void OpenWizard()
+    {
+        CurrentSelectedTableWizard = TableList.FirstOrDefault();
+        CurrentQueryName = ""; // So the new Query name popup will show on Save
+        IsWizardVisible = true;
+    }
+
+    private void CloseTableWizardPopup()
+    {
+        IsWizardVisible = false;
     }
 
     // -----------------------------------------
