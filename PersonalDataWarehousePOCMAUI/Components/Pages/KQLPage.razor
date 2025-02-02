@@ -43,7 +43,7 @@ else
                     @foreach (var query in QueryList)
                     {
                         <option value="@query"
-                        selected="@(query == CurrentQueryName ? "selected" : null)">
+                                selected="@(query == CurrentQueryName ? "selected" : null)">
                             @query
                         </option>
                     }
@@ -71,7 +71,7 @@ else
     <br />
     <div>
         <div class="rz-p-sm-1"
-        style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
+             style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
             <button @onclick="NewScript" title="New" style="background:none;border:none;">
                 <i class="material-icons" style="color:black;">note_add</i>
             </button>
@@ -153,7 +153,7 @@ else
                                     @foreach (var database in AllDatabases)
                                     {
                                         <option value="@database"
-                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -163,8 +163,8 @@ else
                             <div>
                                 <label for="kqlQueryName">Query Name:</label>
                                 <input type="text" id="kqlQueryName" maxlength="50"
-                                style="width: 300px;"
-                                @bind="CurrentQueryNameWithoutDatabase" />
+                                       style="width: 300px;"
+                                       @bind="CurrentQueryNameWithoutDatabase" />
                                 &nbsp;&nbsp;&nbsp;&nbsp;
                                 <button type="submit">Submit</button>
                             </div>
@@ -199,8 +199,8 @@ else
                         {
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
-                                style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                </textarea>
+                                          style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
+                                                </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -311,9 +311,7 @@ else
     private string SampleKql = @"
     // Sample KQL:
     // Show the first few rows of your table
-    // Replace <TableName> with an actual table
-    <TableName>
-    | take 100
+    <TableName> | take 100
     ";
 
     protected override void OnInitialized()
@@ -327,11 +325,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadQueryListAsync();
-        await LoadTableListDropdownAsync();
-
-        // Possibly load all database names
+        // load all database names
         AllDatabases = await databaseService.GetAllDatabasesAsync();
+
+        LoadQueryList();
+
+        await LoadTableListDropdownAsync();
 
         if (QueryList.Count == 0)
         {
@@ -349,13 +348,33 @@ else
         }
     }
 
-    Task<Suggestion[]> GetCompletionsAsync(string currentValue, Position position)
+    public Task<Suggestion[]> GetCompletionsAsync(string currentValue, Position position)
     {
-        // Search suggestions
-        var result = suggestions.Where(x => x.Label.StartsWith(currentValue, StringComparison.OrdinalIgnoreCase)).ToArray();
+        // Common Kusto Query Language items
+        var kqlSuggestions = new[]
+        {
+            new Suggestion { Label = "let",         InsertText = "let "         },
+            new Suggestion { Label = "where",       InsertText = "where "       },
+            new Suggestion { Label = "project",     InsertText = "project "     },
+            new Suggestion { Label = "extend",      InsertText = "extend "      },
+            new Suggestion { Label = "summarize",   InsertText = "summarize "   },
+            new Suggestion { Label = "count()",     InsertText = "count()"      },
+            new Suggestion { Label = "distinct",    InsertText = "distinct "    },
+            new Suggestion { Label = "top",         InsertText = "top "         },
+            new Suggestion { Label = "orderby",     InsertText = "order by "    },
+            new Suggestion { Label = "join",        InsertText = "join "        },
+            new Suggestion { Label = "union",       InsertText = "union "       },
+            new Suggestion { Label = "take",        InsertText = "take "        },
+            new Suggestion { Label = "skip",        InsertText = "skip "        },
+            new Suggestion { Label = "filter",      InsertText = "filter "      },
+            new Suggestion { Label = "search",      InsertText = "search "      },
+            new Suggestion { Label = "parse",       InsertText = "parse "       },
+            new Suggestion { Label = "evaluate",    InsertText = "evaluate "    },
+        };
 
-        return Task.FromResult(result);
+        return Task.FromResult(kqlSuggestions);
     }
+
 
     // Table Dropdown
 
@@ -405,28 +424,29 @@ else
     // Load/Save/Deleting Queries
     // -----------------------------------------
 
-    private async Task LoadQueryListAsync()
+    private void LoadQueryList()
     {
-        // Example: Grab all .kql files in your "KQLQueries" folder
-        // Adjust this path to your actual location
-        string queriesFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "PersonalDataWarehouse",
-            "Databases",
-            CurrentDatabaseName,
-            "KQLQueries");
-
         QueryList.Clear();
 
-        if (Directory.Exists(queriesFolder))
+        foreach (var database in AllDatabases)
         {
-            var files = Directory.GetFiles(queriesFolder, "*.kql");
-            foreach (var file in files)
+            string queriesFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "PersonalDataWarehouse",
+                "Databases",
+                database,
+                "KQLQueries");
+
+            if (Directory.Exists(queriesFolder))
             {
-                // The “QueryName” might be "DatabaseName/filename"
-                string justFile = Path.GetFileNameWithoutExtension(file);
-                // E.g. "Default/MyQuery"
-                QueryList.Add($"{CurrentDatabaseName}/{justFile}");
+                var files = Directory.GetFiles(queriesFolder, "*.kql");
+                foreach (var file in files)
+                {
+                    // The “QueryName” might be "DatabaseName/filename"
+                    string justFile = Path.GetFileNameWithoutExtension(file);
+                    // E.g. "Default/MyQuery"
+                    QueryList.Add($"{database}/{justFile}");
+                }
             }
         }
     }
@@ -474,7 +494,7 @@ else
                 // Clear undo/redo
                 undoStack.Clear();
                 redoStack.Clear();
-                undoStack.Push(CurrentScript);                
+                undoStack.Push(CurrentScript);
             }
         }
         else
@@ -552,7 +572,7 @@ else
             Message = $"Query saved: {CurrentQueryNameWithoutDatabase}";
 
             // Refresh list
-            await LoadQueryListAsync();
+            LoadQueryList();
         }
         catch (Exception ex)
         {
@@ -589,7 +609,7 @@ else
         ShowDeleteConfirmation = false;
         CurrentQueryName = string.Empty;
 
-        await LoadQueryListAsync();
+        LoadQueryList();
 
         if (QueryList.Count > 0)
         {
@@ -755,7 +775,32 @@ else
             undoStack.Push(current);
         }
 
-        CurrentScript = SampleKql;
+        if (CurrentSelectedTableWizard == "*Select DataSource*")
+        {
+            CurrentScript = SampleKql;
+        }
+        else
+        {
+            if (CurrentSelectedTableWizard.StartsWith("Table:"))
+            {
+                string TableWizardName = CurrentSelectedTableWizard.Substring(7);
+
+                // Separate the table name from the database
+                var (Database, TableName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+
+                CurrentScript = SampleKql.Replace("<TableName>", TableName);
+            }
+            else if (CurrentSelectedTableWizard.StartsWith("View:"))
+            {
+                string TableWizardName = CurrentSelectedTableWizard.Substring(6);
+
+                // Separate the view name from the database
+                var (Database, ViewName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+
+                CurrentScript = SampleKql.Replace("<TableName>", ViewName);
+            }
+        }
+
         CurrentQueryName = "";
         await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
     }
@@ -869,7 +914,7 @@ else
         ShowAI = false;
         Message = "";
     }
-    
+
     // -----------------------------------------
     // Other Popup Close Methods
     // -----------------------------------------
