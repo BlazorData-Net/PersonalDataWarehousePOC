@@ -31,6 +31,28 @@ public class Dataloader
         return response;
     }
 
+    public async Task<IEnumerable<IDictionary<string, object>>> LoadView(string DatabaseName, string ViewName)
+    {
+        IEnumerable<IDictionary<string, object>> response = new List<IDictionary<string, object>>();
+
+        // Load the DataTable
+        String viewFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{DatabaseName}/Views";
+        var fileName = Path.Combine(viewFolder, $"{ViewName}.view");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            // Read the View File
+            string paramCode = System.IO.File.ReadAllText(fileName);
+
+            // Convert the DataTable to a List of Dictionaries
+            response = await RunDynamicCode(paramCode);
+
+            return response;
+        }
+
+        return response;
+    }
+
     public async Task<IEnumerable<IDictionary<string, object>>> RunDynamicCode(string paramCode)
     {
         dynamic script = CSScript.Evaluator.LoadMethod(paramCode);

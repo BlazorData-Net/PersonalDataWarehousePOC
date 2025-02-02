@@ -1,6 +1,10 @@
 ﻿@page "/kqlpage"
 @using System.Text.Json
 @using System.Text
+@using KustoLoco.Core
+@using KustoLoco.Core.Console
+@using KustoLoco.Core.Settings
+@using KustoLoco.Rendering
 @using Microsoft.Extensions.AI
 @using System.Diagnostics.CodeAnalysis
 @using PersonalDataWarehouse.AI
@@ -14,7 +18,6 @@
 @inject OrchestratorMethods OrchestratorMethods
 
 <PageTitle>Kusto Queries</PageTitle>
-
 <h4>Kusto Queries</h4>
 <br />
 @if (IsLoading)
@@ -98,15 +101,22 @@ else
                 <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
             }
         </div>
-
-        <!-- Language changed to "kusto" or "kql" -->
-        <CodeEditor @ref="@MonacoCodeEditor"
-                    Language="kusto"
-                    Code="@CurrentScript"
-                    MinHeight="500px"
-                    Width="200px"
-                    Margin="0px"
-                    OnCompletionsRequested="GetCompletionsAsync" />
+        <RadzenRow class="rz-text-align-left" Gap="1rem">
+            <RadzenColumn Size="4">
+                <CodeEditor @ref="@MonacoCodeEditor"
+                            Language="kusto"
+                            Code="@CurrentScript"
+                            MinHeight="500px"
+                            Width="700px"
+                            Margin="0px"
+                            OnCompletionsRequested="GetCompletionsAsync" />
+            </RadzenColumn>
+            <RadzenColumn>
+                <div style="flex-grow: 1; overflow: auto;">
+                    <iframe style="width: 100%; height: 90%;" srcdoc="@table"></iframe>
+                </div>
+            </RadzenColumn>
+        </RadzenRow>
     </div>
     <br />
 }
@@ -219,7 +229,7 @@ else
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
                                           style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                        </textarea>
+                                                </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -291,6 +301,11 @@ else
     private bool ContentChanged { get; set; }
     private string CurrentScript { get; set; } = string.Empty;
     private List<string> TableList = new List<string>();
+    List<Suggestion> suggestions = new List<Suggestion>();
+    private string dataSchema = "";
+
+    private MarkupString table;
+    private readonly KustoQueryContext kustoContext = new();
 
     private DataParameters objDataParameters = new DataParameters();
 
@@ -343,7 +358,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // Load a list of queries from disk or wherever you store them
+        dataSchema = await databaseService.GetAllTableSchemaAsync();
+        suggestions = await databaseService.GetAllTableCompletionsAsync();
         await LoadQueryListAsync();
         await LoadTableListDropdownAsync();
 
@@ -373,12 +389,10 @@ else
 
     Task<Suggestion[]> GetCompletionsAsync(string currentValue, Position position)
     {
-        // Example: Provide KQL completions
-        return Task.FromResult(new[]
-        {
-            new Suggestion { Label = "StormEvents", InsertText = "StormEvents" },
-            new Suggestion { Label = "Where", InsertText = "where" },
-        });
+        // Search suggestions
+        var result = suggestions.Where(x => x.Label.StartsWith(currentValue, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+        return Task.FromResult(result);
     }
 
     // Table Dropdown
@@ -402,8 +416,8 @@ else
 
         // sort so that entries that begin with "default/" are listed first
         TableList.Sort(
-            (x, y) => x.StartsWith("Default/") == y.StartsWith("Default/") 
-            ? 0 
+            (x, y) => x.StartsWith("Default/") == y.StartsWith("Default/")
+            ? 0
             : x.StartsWith("Default/") ? -1 : 1);
     }
 
@@ -588,6 +602,14 @@ else
         }
     }
 
+    private async Task RunQuery()
+    {
+        var query = await MonacoCodeEditor.GetCodeAsync();
+        var result = await kustoContext.RunQuery(query);
+        var renderer = new KustoResultRenderer(new KustoSettingsProvider());
+        table = new MarkupString(renderer.RenderToHtml(result));
+    }
+
     // -----------------------------------------
     // Undo/Redo
     // -----------------------------------------
@@ -637,8 +659,14 @@ else
             IsOutputLoading = true;
             StateHasChanged();
 
-            // Execute the KQL (replace with your KqlService logic)
-            //var objResult = await KqlService.ExecuteKqlAsync(CurrentDatabaseName, CurrentScript);           
+            IReadOnlyCollection<Dictionary<string, object>> myMutableThings = new List<Dictionary<string, object>>();
+
+            kustoContext.CopyDataIntoTable("Data", myMutableThings);
+            var columnName = objDataParameters.columns.First();
+
+            var result = await kustoContext.RunQuery(CurrentScript);
+            var renderer = new KustoResultRenderer(new KustoSettingsProvider());
+            table = new MarkupString(renderer.RenderToHtml(result));
 
             IsOutputLoading = false;
             StateHasChanged();
@@ -735,7 +763,7 @@ else
 
             // Possibly embed your KQL schema in the prompt
             // For instance, get table schema from the DB service
-            var dataSchema = await databaseService.GetAllTableSchemaAsync();
+            dataSchema = await databaseService.GetAllTablesViewsSchemaAsync();
 
             // Suppose you have a prompt template for KQL
             string promptTemplatePath = Path.Combine(

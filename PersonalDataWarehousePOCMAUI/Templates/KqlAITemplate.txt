@@ -47,7 +47,7 @@ I will now give some some information about the schema of the tables that you wi
    - Specify any particular operations such as filtering, joining, aggregating, or projecting data.
 
 2. **Table Loading**:
-   - Tables need to be referenced using their respective names in the Kusto database.
+   - Tables need to be referenced using their respective names in the database.
    - Example of referencing a table:
      ```kql
      TableName
