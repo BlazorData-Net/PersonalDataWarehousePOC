@@ -111,22 +111,19 @@ else
                 <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
             }
         </div>
-        <RadzenRow class="rz-text-align-left" Gap="1rem">
-            <RadzenColumn Size="4">
-                <CodeEditor @ref="@MonacoCodeEditor"
-                Language="kusto"
-                Code="@CurrentScript"
-                MinHeight="500px"
-                Width="700px"
-                Margin="0px"
-                OnCompletionsRequested="GetCompletionsAsync" />
-            </RadzenColumn>
-            <RadzenColumn>
-                <div style="flex-grow: 1; overflow: auto;">
-                    <iframe style="width: 100%; height: 90%;" srcdoc="@table"></iframe>
-                </div>
-            </RadzenColumn>
-        </RadzenRow>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+            <CodeEditor @ref="@MonacoCodeEditor"
+                        Language="csharp"
+                        Code="@CurrentScript"
+                        MinHeight="500px"
+                        Width="700px"
+                        Margin="0px"
+                        OnCompletionsRequested="GetCompletionsAsync" />
+
+            <div style="overflow: auto;">
+                <iframe style="width:1000px; min-height: 500px;" srcdoc="@table"></iframe>
+            </div>
+        </RadzenStack>
     </div>
     <br />
 }
@@ -653,9 +650,13 @@ else
                 return;
             }
 
-            // get latest code
+            // Separate the view name from the database
+            var (QueryDatabase, QueryName) = DataService.ExtractDatabaseAndTable(CurrentQueryName);
+
+            CurrentQueryNameWithoutDatabase = QueryName;
+
+            // Get latest code
             CurrentScript = await MonacoCodeEditor.GetCodeAsync();
-            await SaveQueryAsync();
 
             // Show output loading
             IsOutputLoading = true;
