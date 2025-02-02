@@ -513,105 +513,62 @@
             ClassType = "View";
         }
 
+        IEnumerable<IDictionary<string, object>> result = new List<IDictionary<string, object>>();
+
+        Dataloader dataloader = new Dataloader();
+
         // Get the data based on the ClassType
+
         if (ClassType == "Table")
         {
-            // Get the data from the Parquet file
-            Dataloader dataloader = new Dataloader();
-            var result = await dataloader.LoadParquet(CurrentDatabaseName, ClassName);
-
-            // Get the fields from the first record (ensure result is not empty)
-            var fields = result.Any()
-                ? result.First().Keys.ToList()
-                : new List<string>();
-
-            // Create a DataTable
-            DataTable dt = new DataTable("MyDataTable");
-
-            // Add an Id column
-            dt.Columns.Add("Id", typeof(int));
-
-            // Add columns for all fields (replace spaces with underscores)
-            foreach (var field in fields)
-            {
-                string columnName = field.Replace(" ", "_");
-                dt.Columns.Add(columnName, typeof(object));
-            }
-
-            // Fill the DataTable rows
-            int i = 0;
-            foreach (var item in result)
-            {
-                DataRow newRow = dt.NewRow();
-                newRow["Id"] = i++;
-
-                foreach (var field in fields)
-                {
-                    string columnName = field.Replace(" ", "_");
-                    newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
-                }
-
-                dt.Rows.Add(newRow);
-            }
-
-            // Add the data source to the report
-            report.DataSources.Add(new ReportDataSource("DataSet1", dt));
-
-            // Set any report parameters (if needed)
-            report.SetParameters(parameters);
+            // Get the data from the Parquet file            
+            result = await dataloader.LoadParquet(CurrentDatabaseName, ClassName);
         }
-        else
+        else // View
         {
             // Get the data from the View file
-            viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
-            var viewFile = Path.Combine(viewsFolder, $"{ClassName}.view");
+            result = await dataloader.LoadView(CurrentDatabaseName, ClassName);           
+        }
 
-            // Read the view file
-            var viewContent = System.IO.File.ReadAllText(viewFile);
+        // Get the fields from the first record (ensure result is not empty)
+        var fields = result.Any()
+            ? result.First().Keys.ToList()
+            : new List<string>();
 
-            // Execute the code
-            var result = await RunDynamicCode(viewContent);
+        // Create a DataTable
+        DataTable dt = new DataTable("MyDataTable");
 
-            // Get the fields from the first record (ensure result is not empty)
-            var fields = result.Any()
-                ? result.First().Keys.ToList()
-                : new List<string>();
+        // Add an Id column
+        dt.Columns.Add("Id", typeof(int));
 
-            // Create a DataTable
-            DataTable dt = new DataTable("MyDataTable");
+        // Add columns for all fields (replace spaces with underscores)
+        foreach (var field in fields)
+        {
+            string columnName = field.Replace(" ", "_");
+            dt.Columns.Add(columnName, typeof(object));
+        }
 
-            // Add an Id column
-            dt.Columns.Add("Id", typeof(int));
+        // Fill the DataTable rows
+        int i = 0;
+        foreach (var item in result)
+        {
+            DataRow newRow = dt.NewRow();
+            newRow["Id"] = i++;
 
-            // Add columns for all fields (replace spaces with underscores)
             foreach (var field in fields)
             {
                 string columnName = field.Replace(" ", "_");
-                dt.Columns.Add(columnName, typeof(object));
+                newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
             }
 
-            // Fill the DataTable rows
-            int i = 0;
-            foreach (var item in result)
-            {
-                DataRow newRow = dt.NewRow();
-                newRow["Id"] = i++;
-
-                foreach (var field in fields)
-                {
-                    string columnName = field.Replace(" ", "_");
-                    newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
-                }
-
-                dt.Rows.Add(newRow);
-            }
-
-            // Add the data source to the report
-            report.DataSources.Add(new ReportDataSource("DataSet1", dt));
-
-            // Set any report parameters (if needed)
-            report.SetParameters(parameters);
+            dt.Rows.Add(newRow);
         }
+
+        // Add the data source to the report
+        report.DataSources.Add(new ReportDataSource("DataSet1", dt));
+
+        // Set any report parameters (if needed)
+        report.SetParameters(parameters);
 
         // Render the report to a PDF byte array
         byte[] pdfBytes = report.Render("PDF");
