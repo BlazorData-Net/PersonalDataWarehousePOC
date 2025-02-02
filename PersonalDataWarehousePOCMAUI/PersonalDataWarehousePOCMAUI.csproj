@@ -72,6 +72,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Include="Templates\KqlAITemplate.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Include="Templates\AITemplate.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

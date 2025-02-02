@@ -55,6 +55,13 @@
                 Directory.CreateDirectory(ClassesPath);
             }
 
+            // Create the KQLQueries folder
+            string KQLQueriesPath = Path.Combine(RootFolder, DatabaseName, "KQLQueries");
+            if (!Directory.Exists(KQLQueriesPath))
+            {
+                Directory.CreateDirectory(KQLQueriesPath);
+            }
+
             // Create the Reports folder
             string ReportsPath = Path.Combine(RootFolder, DatabaseName, "Reports");
             if (!Directory.Exists(ReportsPath))
