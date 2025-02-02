@@ -435,6 +435,10 @@ else
         {
             CurrentScript = File.ReadAllText(fileName);
 
+            CurrentQueryName = paramQueryName;
+
+            StateHasChanged();
+
             if (MonacoCodeEditor != null)
             {
                 await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
@@ -442,10 +446,7 @@ else
                 // Clear undo/redo
                 undoStack.Clear();
                 redoStack.Clear();
-                undoStack.Push(CurrentScript);
-
-                CurrentQueryName = paramQueryName;
-                StateHasChanged();
+                undoStack.Push(CurrentScript);                
             }
         }
         else
