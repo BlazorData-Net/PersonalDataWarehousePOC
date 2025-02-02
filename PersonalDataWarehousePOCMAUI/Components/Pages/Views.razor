@@ -375,9 +375,11 @@ else
     private bool IsOutputLoading { get; set; } = false;
     private List<string> TableList = new List<string>();
     private List<string> ViewList = new List<string>();
+    private string DataSchema = "";
     private string CurrentViewName = "";
     private string CurrentViewNameWithoutDatabase = string.Empty;
 
+    List<Suggestion> suggestions = new List<Suggestion>();
     List<string> colAllDatabases = new List<string>();
     string CurrentDatabaseName = "Default";
 
@@ -409,6 +411,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        DataSchema = await databaseService.GetAllTableSchemaAsync();
+        suggestions = await databaseService.GetAllTableCompletionsAsync();
         await LoadViewsListDropdownAsync();
         colAllDatabases = await databaseService.GetAllDatabasesAsync();
         await LoadTableListDropdownAsync();
@@ -452,11 +456,10 @@ else
 
     Task<Suggestion[]> GetCompletionsAsync(string currentValue, Position position)
     {
-        return Task.FromResult(new[]
-        {
-            new Suggestion {Label = "From C#", InsertText = "From C#" },
-            new Suggestion {Label = "OK", InsertText = "OK" },
-        });
+        // Search suggestions
+        var result = suggestions.Where(x => x.Label.StartsWith(currentValue, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+        return Task.FromResult(result);
     }
 
     // Undo/Redo
@@ -1237,9 +1240,6 @@ else
 
             IsAILoading = true;
             StateHasChanged();
-
-            // Get the current Schema
-            var DataSchema = await databaseService.GetAllTableSchemaAsync();
 
             // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
             string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplate.txt");

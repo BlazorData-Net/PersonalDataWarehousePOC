@@ -14,6 +14,7 @@
     using Newtonsoft.Json;
     using PersonalDataWarehousePOCMAUI.Model;
     using Microsoft.Maui.Storage;
+    using MonacoRazor;
 
     public class DatabaseService
     {
@@ -416,6 +417,63 @@
 
             return await Task.FromResult(result);
         }
+        #endregion
+
+        #region public async Task<List<Suggestion>> GetAllTableCompletionsAsync()
+        public async Task<List<Suggestion>> GetAllTableCompletionsAsync()
+        {
+            var suggestions = new List<Suggestion>();
+
+            // Find all subdirectories named "Parquet" (recursively)
+            var parquetDirs = Directory.EnumerateDirectories(RootFolder, "Parquet", SearchOption.AllDirectories);
+
+            foreach (var parquetDir in parquetDirs)
+            {
+                // get database name from the parent folder of the "Parquet" directory
+                string databaseName = Path.GetFileName(Path.GetDirectoryName(parquetDir));
+
+                // Find all .parquet files in this "Parquet" directory (no further recursion)
+                var parquetFiles = Directory.EnumerateFiles(parquetDir, "*.parquet", SearchOption.TopDirectoryOnly);
+
+                foreach (var file in parquetFiles)
+                {
+                    // Extract just the file name without extension (could be your "table" name)
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+
+                    // Build the path to the corresponding .cs file in the "Classes" directory
+                    string classFile = Path.Combine(RootFolder, databaseName, "Classes", $"{fileName}.cs");
+
+                    if (File.Exists(classFile))
+                    {
+                        // Read the class file
+                        var allLines = File.ReadAllLines(classFile);
+
+                        // Only add the lines that begin with public string or public int and remove { get; set; }
+                        foreach (var line in allLines)
+                        {
+                            // You can extend conditions for other property types if needed
+                            if (line.Contains("public string") || line.Contains("public int"))
+                            {
+                                // Remove unneeded text
+                                var currentObject = line
+                                    .Replace(" { get; set; }", "")
+                                    .Replace("public ", "");
+
+                                // Create a new Suggestion
+                                suggestions.Add(new Suggestion
+                                {
+                                    Label = $"{fileName}/{currentObject}",
+                                    InsertText = $"{fileName}/{currentObject}"
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Return the collection of suggestions
+            return await Task.FromResult(suggestions);
+        } 
         #endregion
 
         // Utililty

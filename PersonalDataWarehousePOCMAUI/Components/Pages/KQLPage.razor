@@ -104,7 +104,7 @@ else
                     Language="kusto"
                     Code="@CurrentScript"
                     MinHeight="500px"
-                    Width="90%"
+                    Width="200px"
                     Margin="0px"
                     OnCompletionsRequested="GetCompletionsAsync" />
     </div>
@@ -120,13 +120,13 @@ else
 
                 <div class="window glass active">
                     <div class="title-bar">
-                        <div class="title-bar-text">Table Wizard</div>
+                        <div class="title-bar-text">Wizard</div>
                         <div class="title-bar-controls">
                             <button aria-label="Close" @onclick="CloseTableWizardPopup"></button>
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        <label>Select Table: </label>
+                        <label>Select: </label>
                         <select @onchange="@(async (args) =>
                             {
                                 CurrentSelectedTableWizard = args.Value?.ToString();
@@ -387,6 +387,24 @@ else
     {
         TableList = new List<string>();
         TableList = await databaseService.GetAllTablesAsync();
+
+        // Get all Views
+        var views = await databaseService.GetAllViewsAsync();
+
+        if (views.Count > 0)
+        {
+            // Add views to the table list
+            TableList.AddRange(views);
+        }
+
+        // Sort the list
+        TableList.Sort();
+
+        // sort so that entries that begin with "default/" are listed first
+        TableList.Sort(
+            (x, y) => x.StartsWith("Default/") == y.StartsWith("Default/") 
+            ? 0 
+            : x.StartsWith("Default/") ? -1 : 1);
     }
 
     // -----------------------------------------
