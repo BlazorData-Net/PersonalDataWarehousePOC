@@ -63,10 +63,10 @@ I will now give some some information about the schema of the tables that you wi
    - ## USER REQUEST ##
 
 6. **Response Format**:
-   - JSON format with two fields: `Code` and `Error`.
+   - JSON format with two fields: `Response` and `Error`.
    - Example:
      {
-       "Code": "",
+       "Response": "",
        "Error": ""
      }
 
@@ -80,6 +80,6 @@ I will now give some some information about the schema of the tables that you wi
 
 **Result:**
 {
-  "Code": "// KQL Query to retrieve the top 10 most active users based on the number of logins in the last 30 days\n\nLoginData\n| where LoginDate >= ago(30d) // Filter logins from the last 30 days\n| summarize LoginCount = count() by UserId // Count logins per user\n| top 10 by LoginCount desc // Select top 10 users with the highest login counts\n| project UserId, LoginCount // Select the UserId and LoginCount columns",
+  "Response": "// KQL Query to retrieve the top 10 most active users based on the number of logins in the last 30 days\n\nLoginData\n| where LoginDate >= ago(30d) // Filter logins from the last 30 days\n| summarize LoginCount = count() by UserId // Count logins per user\n| top 10 by LoginCount desc // Select top 10 users with the highest login counts\n| project UserId, LoginCount // Select the UserId and LoginCount columns",
   "Error": ""
 }
