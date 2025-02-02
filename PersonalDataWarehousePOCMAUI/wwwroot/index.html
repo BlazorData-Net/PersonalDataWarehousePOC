@@ -36,7 +36,6 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script src="_content/Blazored.TextEditor/quill-blot-formatter.min.js"></script>
     <script src="_content/Blazored.TextEditor/Blazored-BlazorQuill.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="_framework/blazor.webview.js" autostart="false"></script>
     <script src="_content/BlazorDatasheet/blazor-datasheet.js" type="text/javascript"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
@@ -70,29 +69,6 @@
             getPageCount: (containerRef) => {
                 return ongetPageCount(containerRef);
             }
-        };
-
-        window.captureDivAsPng = async function (elementId) {
-            var element = document.getElementById(elementId);
-            if (!element) {
-                throw `Element with ID "${elementId}" not found.`;
-            }
-            // Use 'useCORS' and a white background if needed
-            const canvas = await html2canvas(element, {
-                useCORS: true,
-                backgroundColor: "#ffffff",
-                logging: true // logs progress to console
-            });
-            return canvas.toDataURL("image/png");
-        };
-
-        window.saveAsFile = function (fileName, base64Data) {
-            const link = document.createElement("a");
-            link.href = base64Data;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         };
     </script>
 </body>
