@@ -274,6 +274,7 @@ else
     private List<string> TableList = new List<string>();
     List<Suggestion> suggestions = new List<Suggestion>();
 
+    private readonly KustoQueryContext kustoContext = new();
     private MarkupString table;
 
     private DataParameters objDataParameters = new DataParameters();
@@ -727,7 +728,6 @@ else
 
             var tableSource = tableBuilder.ToTableSource();
 
-            var kustoContext = new KustoQueryContext();
             kustoContext.AddTable(tableBuilder);
 
             var result = await kustoContext.RunQuery(CurrentScript);
@@ -853,80 +853,26 @@ else
             IsAILoading = true;
             StateHasChanged();
 
-            StringBuilder dataSchema = new StringBuilder();
+            // Get Table Schema
+            string schema = "";
+            var sb = new StringBuilder();
 
-            // Possibly embed your KQL schema in the prompt
-            if (CurrentSelectedTableWizard == "*Select DataSource*")
+            foreach (var table in kustoContext.Tables())
             {
-                dataSchema.Append("");
-            }
-            else
-            {
-                string RootFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PersonalDataWarehouse", "Databases");
+                sb.AppendLine($"The table named '{table.Name}' has the following columns");
 
-                if (CurrentSelectedTableWizard.StartsWith("Table:"))
+                var cols = table.ColumnNames.Zip(table.Type.Columns)
+                    .Select(z => $"  {z.First} is of type {z.Second.Type.Name}")
+                    .ToArray();
+
+                foreach (var column in cols)
                 {
-                    string TableWizardName = CurrentSelectedTableWizard.Substring(7);
-
-                    // Separate the table name from the database
-                    var (Database, TableName) = DataService.ExtractDatabaseAndTable(TableWizardName);
-
-                    string classFile = Path.Combine(RootFolder, Database, "Classes", $"{TableName}.cs");
-
-                    if (File.Exists(classFile))
-                    {
-                        // Read the class file
-                        var allLines = File.ReadAllLines(classFile);
-
-                        // Only add the lines that begin with public string or public int and remove { get; set; }
-                        foreach (var line in allLines)
-                        {
-                            // You can extend conditions for other property types if needed
-                            if (line.Contains("public string") || line.Contains("public int"))
-                            {
-                                // Remove unneeded text
-                                var currentObject = line
-                                    .Replace(" { get; set; }", "")
-                                    .Replace("public ", "");
-
-                                dataSchema.Append(currentObject);
-                            }
-                        }
-                    }
+                    sb.AppendLine(column);
                 }
-                else if (CurrentSelectedTableWizard.StartsWith("View:"))
-                {
-                    string TableWizardName = CurrentSelectedTableWizard.Substring(6);
 
-                    // Separate the view name from the database
-                    var (Database, ViewName) = DataService.ExtractDatabaseAndTable(TableWizardName);
-
-                    string classFile = Path.Combine(RootFolder, Database, "Classes", $"{ViewName}.cs");
-
-                    if (File.Exists(classFile))
-                    {
-                        // Read the class file
-                        var allLines = File.ReadAllLines(classFile);
-
-                        // Only add the lines that begin with public string or public int and remove { get; set; }
-                        foreach (var line in allLines)
-                        {
-                            // You can extend conditions for other property types if needed
-                            if (line.Contains("public string") || line.Contains("public int"))
-                            {
-                                // Remove unneeded text
-                                var currentObject = line
-                                    .Replace(" { get; set; }", "")
-                                    .Replace("public ", "");
-
-                                dataSchema.Append(currentObject);
-                            }
-                        }
-                    }
-                }                
+                schema = sb.ToString();
             }
 
-            // Suppose you have a prompt template for KQL
             string promptTemplatePath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
                 "Templates",
@@ -935,7 +881,7 @@ else
             string template =  File.ReadAllText(promptTemplatePath);
 
             string aiRequest = template
-                .Replace("## CURRENT SCHEMA ##", dataSchema.ToString())
+                .Replace("## CURRENT SCHEMA ##", schema)
                 .Replace("## CURRENT KQL ##", CurrentScript)
                 .Replace("## USER REQUEST ##", AIMessage);
 
