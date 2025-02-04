@@ -1,4 +1,5 @@
 ﻿@page "/kqlpage"
+@using System.Collections.Specialized
 @using System.Text.Json
 @using System.Text
 @using KustoLoco.Core
@@ -691,7 +692,6 @@ else
 
                 // Get the data from the Parquet file
                 DataSourceData = await dataloader.LoadParquet(Database, TableName);
-
                 DataName = TableName;
             }
             else if (CurrentSelectedTableWizard.StartsWith("View:"))
@@ -703,29 +703,19 @@ else
 
                 // Get the data from the View file
                 DataSourceData = await dataloader.LoadView(CurrentDatabaseName, ViewName);
-
                 DataName = ViewName;
             }
-
-            // Get the fields from the first record (ensure result is not empty)
-            var fields = DataSourceData.Any()
-                ? DataSourceData.First().Keys.ToList()
-                : new List<string>();
-
-            var tableBuilder = TableBuilder.CreateEmpty(DataName, DataSourceData.Count());
-
-            // Add the columns to the table
-            foreach (var field in fields)
-            {
-                object[] items = DataSourceData.Select(x => x[field]).ToArray();
-                tableBuilder.WithColumn(field, typeof(string), (IReadOnlyCollection<object>)(object)items);
-            }
-
-            var tableSource = tableBuilder.ToTableSource();
-
-            tableSource = AutoInferColumnTypes(tableSource);
-
-            kustoContext.AddTable(tableBuilder);
+            //transform to ordered dictionaries to make import easier
+            var orderedData = DataSourceData.Select(ToOrdered).ToArray();
+            var tableSource=TableBuilder.FromOrderedDictionarySet(DataName, orderedData)
+                .ToTableSource();
+            //auto infer any string columns (columns which are already typed will be skipped)
+            //this is generally safe to do but can lead to unwanted inference, for example in 
+            //a column where you have strings that look like numbers but you actually want to keep them as strings
+            //for some reason so you might want a more sophisticated policy in future.
+            tableSource = TableBuilder.AutoInferColumnTypes(tableSource, new NullConsole()); 
+            
+            kustoContext.AddTable(tableSource);
 
             var result = await kustoContext.RunQuery(CurrentScript);
             var renderer = new KustoResultRenderer(new KustoSettingsProvider());
@@ -740,6 +730,17 @@ else
             Message = ex.GetBaseException().Message;
             StateHasChanged();
         }
+    }
+
+    private OrderedDictionary ToOrdered(IDictionary<string, object> dict)
+    {
+        var o = new OrderedDictionary();
+        foreach (var key in dict.Keys.OrderBy(k => k))
+        {
+            o[key] = dict[key];
+        }
+
+        return o;
     }
 
     // -----------------------------------------
@@ -937,37 +938,4 @@ else
 
     // Utility
 
-    public ITableSource AutoInferColumnTypes(ITableSource other)
-    {
-        ITableChunk[] array = other.GetData().ToArray();
-        int num = array.Length;
-        if (num <= 1)
-        {
-            if (num == 0)
-            {
-                return other;
-            }
-
-            BaseColumn[] columns = array[0].Columns;
-            if (columns.Length == 0)
-            {
-                return other;
-            }
-
-            string[] array2 = other.ColumnNames.ToArray();
-            BaseColumn[] array3 = columns.Zip(array2, delegate (BaseColumn col, string name)
-            {
-                BaseColumn baseColumn = ColumnTypeInferrer.AutoInfer(col);
-                return baseColumn;
-            }).ToArray();
-            TableBuilder tableBuilder = TableBuilder.CreateEmpty(other.Name, columns[0].RowCount);
-            for (int i = 0; i < columns.Length; i++)
-            {
-                tableBuilder.WithColumn(array2[i], array3[i]);
-            }
-            return tableBuilder.ToTableSource();
-        }
-
-        throw new NotImplementedException("can currently only infer types for single chunk tables");
-    }
 }
