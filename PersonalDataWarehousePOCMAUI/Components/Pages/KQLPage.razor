@@ -723,6 +723,8 @@ else
 
             var tableSource = tableBuilder.ToTableSource();
 
+            tableSource = AutoInferColumnTypes(tableSource);
+
             kustoContext.AddTable(tableBuilder);
 
             var result = await kustoContext.RunQuery(CurrentScript);
@@ -931,5 +933,41 @@ else
     {
         public IEnumerable<IDictionary<string, object>> data { get; set; }
         public Dictionary<string, Type> columns { get; set; }
+    }
+
+    // Utility
+
+    public ITableSource AutoInferColumnTypes(ITableSource other)
+    {
+        ITableChunk[] array = other.GetData().ToArray();
+        int num = array.Length;
+        if (num <= 1)
+        {
+            if (num == 0)
+            {
+                return other;
+            }
+
+            BaseColumn[] columns = array[0].Columns;
+            if (columns.Length == 0)
+            {
+                return other;
+            }
+
+            string[] array2 = other.ColumnNames.ToArray();
+            BaseColumn[] array3 = columns.Zip(array2, delegate (BaseColumn col, string name)
+            {
+                BaseColumn baseColumn = ColumnTypeInferrer.AutoInfer(col);
+                return baseColumn;
+            }).ToArray();
+            TableBuilder tableBuilder = TableBuilder.CreateEmpty(other.Name, columns[0].RowCount);
+            for (int i = 0; i < columns.Length; i++)
+            {
+                tableBuilder.WithColumn(array2[i], array3[i]);
+            }
+            return tableBuilder.ToTableSource();
+        }
+
+        throw new NotImplementedException("can currently only infer types for single chunk tables");
     }
 }
