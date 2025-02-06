@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static PersonalDataWarehousePOCMAUI.Services.SettingsService;
 
 namespace PersonalDataWarehousePOCMAUI.Models
 {
     public class ConnectionSetting
     {
-        public string ConnectionType { get; set; }
+        public ConnectionType ConnectionType { get; set; }
         public string DatabaseName { get; set; }
         public string ServerName { get; set; }
         public bool IntegratedSecurity { get; set; }

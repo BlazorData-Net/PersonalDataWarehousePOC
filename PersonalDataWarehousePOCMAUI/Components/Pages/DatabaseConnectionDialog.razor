@@ -3,6 +3,7 @@
 @using PersonalDataWarehousePOCMAUI.Models
 @using System.Data
 @using PersonalDataWarehousePOCMAUI.Services
+@using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 @inject SettingsService SettingsService
 
 <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-labelledby="inlineDialogLabel" aria-hidden="true">
@@ -65,7 +66,7 @@
                                     <select @bind="ConnectionType" @bind:event="onchange" class="form-control" style="width: 300px;">
                                         @foreach (var option in OptionsConnectionType)
                                         {
-                                            @if (option == ConnectionType)
+                                            @if (option == ConnectionType.ToString())
                                             {
                                                 <option value="@option" selected>@option</option>
                                             }
@@ -200,7 +201,7 @@
 #nullable disable
     [Parameter] public string ServerName { get; set; }
     [Parameter] public string DatabaseName { get; set; }
-    [Parameter] public string ConnectionType { get; set; }
+    [Parameter] public ConnectionType ConnectionType { get; set; }
     [Parameter] public string IntegratedSecurityDisplay { get; set; }
     [Parameter] public string DatabaseUsername { get; set; } = "";
     [Parameter] public string DatabasePassword { get; set; } = "";
@@ -258,47 +259,74 @@
         ConnectionSetting.ServerName = ServerName;
         ConnectionSetting.Username = DatabaseUsername;
 
+        // Attempt to build/test the actual connection string
         DTOStatus result = SetConnectionSetting(ConnectionSetting);
 
         if (result.Success)
         {
-            // Set the connection string
+            // Store the resulting connection string
             ConnectionSetting.ConnectionString = result.ConnectionString;
 
-            // Change the mode to show the table dropdown
+            // Change mode to show table dropdown
             ConnectionMode = "ImportTable";
 
             // Update Settings
-            SettingsService settingsService = new SettingsService();
+            var settingsService = new SettingsService();
 
-            SettingsService.ApplicationSettings applicationSettings = settingsService.Settings.ApplicationSettings;
-            applicationSettings.ConnectionType = ConnectionType;
+            // Grab existing ApplicationSettings
+            var applicationSettings = settingsService.Settings.ApplicationSettings;
 
-            if (ConnectionType == "SQL Server")
+            // Grab the entire connection list from the settings
+            var connectionList = settingsService.Settings.ConnectionSettings;
+
+            // Find an existing connection or create one
+            var Connection = connectionList
+                .FirstOrDefault(
+                    c => c.ConnectionType == ConnectionType 
+                    && c.DatabaseServerSettings.DatabaseName == DatabaseName 
+                    && c.DatabaseServerSettings.DatabaseUsername == DatabaseUsername);
+
+            if (Connection == null)
             {
-                SettingsService.SQLServerSettings sqlServerSettings = new SettingsService.SQLServerSettings();
+                // Create a new connection entry
+                Connection = new SettingsService.ConnectionSettings
+                {
+                    ConnectionType = ConnectionType,
+                    DatabaseServerSettings = new SettingsService.DatabaseServerSettings()
+                };
 
-                sqlServerSettings.ServerName = ServerName;
-                sqlServerSettings.DatabaseName = DatabaseName;
-                sqlServerSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
-                sqlServerSettings.DatabaseUsername = DatabaseUsername;
+                connectionList.Add(Connection);
 
-                await settingsService.UpdateSettingsAsync(applicationSettings, sqlServerSettings);
-                await SecureStorage.Default.SetAsync("SQLServerDatabasePassword", DatabasePassword);
+                // Update its properties
+                Connection.DatabaseServerSettings.ServerName = ServerName;
+                Connection.DatabaseServerSettings.DatabaseName = DatabaseName;
+                Connection.DatabaseServerSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
+                Connection.DatabaseServerSettings.DatabaseUsername = DatabaseUsername;
             }
-            else if (ConnectionType == "Fabric Warehouse")
+            else
             {
-                SettingsService.FabricSettings fabricWarehouseSettings = new SettingsService.FabricSettings();
-
-                fabricWarehouseSettings.ServerName = ServerName;
-                fabricWarehouseSettings.DatabaseName = DatabaseName;
-                fabricWarehouseSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
-                fabricWarehouseSettings.DatabaseUsername = DatabaseUsername;
-
-                await settingsService.UpdateSettingsAsync(applicationSettings, null, fabricWarehouseSettings);
-                await SecureStorage.Default.SetAsync("FabricSettingsDatabasePassword", DatabasePassword);
+                // Update its properties
+                Connection.DatabaseServerSettings.ServerName = ServerName;
+                Connection.DatabaseServerSettings.DatabaseName = DatabaseName;
+                Connection.DatabaseServerSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
+                Connection.DatabaseServerSettings.DatabaseUsername = DatabaseUsername;
             }
 
+            // Save the settings
+            await settingsService.UpdateSettingsAsync(applicationSettings, connectionList);
+
+            // Save the password securely
+            await SecureStorage.Default.SetAsync($"DatabasePassword-{DatabaseName}-{DatabaseUsername}", DatabasePassword);
+
+            // Proceed to retrieve tables
+            GetTablesInDatabase();
+
+            strStatusMessage = result.StatusMessage;
+
+            boolProcessing = false;
+            StateHasChanged();
+
+            // Proceed to retrieve tables
             GetTablesInDatabase();
         }
         else
@@ -310,6 +338,7 @@
         StateHasChanged();
     }
     #endregion
+
 
     #region private void OnSelectedTableChanged(ChangeEventArgs e)
     private void OnSelectedTableChanged(ChangeEventArgs e)
@@ -377,11 +406,11 @@
         // Create a Database connection string
         string strConnectionString = "";
 
-        if (ConnectionType == "SQL Server")
+        if (ConnectionType == ConnectionType.SQLServer)
         {
             strConnectionString = SQLCreateDatabaseConnectionString(objConnectionSetting);
         }
-        else if (ConnectionType == "Fabric Warehouse")
+        else if (ConnectionType == ConnectionType.Fabric)
         {
             strConnectionString = FabricCreateDatabaseConnectionString(objConnectionSetting);
         }

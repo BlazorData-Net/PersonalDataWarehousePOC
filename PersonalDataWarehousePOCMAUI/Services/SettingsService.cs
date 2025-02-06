@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic; // Needed for List<T>
 using System.IO;
 using System.Threading.Tasks;
 
@@ -15,18 +16,25 @@ namespace PersonalDataWarehousePOCMAUI.Services
             public string Endpoint { get; set; }
             public string ApiVersion { get; set; }
             public string AIEmbeddingModel { get; set; }
-            public string ConnectionType { get; set; }
         }
 
-        public class SQLServerSettings
+        public enum ConnectionType
         {
-            public string DatabaseName { get; set; }
-            public string DatabaseUsername { get; set; }
-            public string IntegratedSecurityDisplay { get; set; }
-            public string ServerName { get; set; }
+            SQLServer,
+            Fabric,
+            AzureStorage
         }
 
-        public class FabricSettings
+        public class ConnectionSettings
+        {
+            public ConnectionType ConnectionType { get; set; }
+            public DatabaseServerSettings DatabaseServerSettings { get; set; }
+            public AzureStorageSettings AzureStorageSettings { get; set; }
+
+            public ConnectionSettings() { }
+        }
+
+        public class DatabaseServerSettings
         {
             public string DatabaseName { get; set; }
             public string DatabaseUsername { get; set; }
@@ -43,9 +51,8 @@ namespace PersonalDataWarehousePOCMAUI.Services
         public class Configuration
         {
             public ApplicationSettings ApplicationSettings { get; set; }
-            public SQLServerSettings SQLServerSettings { get; set; }
-            public FabricSettings FabricSettings { get; set; }
-            public AzureStorageSettings AzureStorageSettings { get; set; }
+
+            public List<ConnectionSettings> ConnectionSettings { get; set; }
         }
 
         // Configuration Property
@@ -78,7 +85,6 @@ namespace PersonalDataWarehousePOCMAUI.Services
 
                 // Read the content of the settings file
                 string settingsContent;
-
                 using (var streamReader = new StreamReader(_settingsPath))
                 {
                     settingsContent = streamReader.ReadToEnd();
@@ -98,13 +104,16 @@ namespace PersonalDataWarehousePOCMAUI.Services
                     Settings.ApplicationSettings.AIType = "OpenAI";
                 }
 
-                // You can add more default value assignments here if needed
+                // If ConnectionSettings was missing or null, initialize it
+                if (Settings.ConnectionSettings == null)
+                {
+                    Settings.ConnectionSettings = new List<ConnectionSettings>();
+                }
             }
             catch (Exception ex)
             {
-                // Handle exceptions as needed (e.g., logging)
                 Console.WriteLine($"Error loading settings: {ex.Message}");
-                throw; // Re-throw the exception if you want to handle it further up the call stack
+                throw; 
             }
         }
 
@@ -118,7 +127,6 @@ namespace PersonalDataWarehousePOCMAUI.Services
             {
                 // Ensure the directory exists
                 string folderPath = Path.GetDirectoryName(_settingsPath);
-
                 if (!Directory.Exists(folderPath))
                 {
                     Directory.CreateDirectory(folderPath);
@@ -135,25 +143,23 @@ namespace PersonalDataWarehousePOCMAUI.Services
             }
             catch (Exception ex)
             {
-                // Handle exceptions as needed (e.g., logging)
                 Console.WriteLine($"Error saving settings: {ex.Message}");
-                throw; // Re-throw the exception if you want to handle it further up the call stack
+                throw; 
             }
         }
 
         /// <summary>
         /// Updates specific sections of the configuration and saves the changes.
+        /// 
+        /// If you need more granular updates (e.g., only one type of connection),
+        /// you can add logic to find/modify the correct ConnectionSettings item.
         /// </summary>
         /// <param name="applicationSettings">New application settings.</param>
-        /// <param name="sqlServerSettings">New SQL Server settings.</param>
-        /// <param name="fabricSettings">New Fabric settings.</param>
-        /// <param name="azureStorageSettings">New Azure Storage settings.</param>
+        /// <param name="connectionSettings">List of connection settings to overwrite existing ones.</param>
         /// <returns>A task representing the asynchronous save operation.</returns>
         public async Task UpdateSettingsAsync(
             ApplicationSettings applicationSettings = null,
-            SQLServerSettings sqlServerSettings = null,
-            FabricSettings fabricSettings = null,
-            AzureStorageSettings azureStorageSettings = null)
+            List<ConnectionSettings> connectionSettings = null)
         {
             // Update the settings if new values are provided
             if (applicationSettings != null)
@@ -161,19 +167,11 @@ namespace PersonalDataWarehousePOCMAUI.Services
                 Settings.ApplicationSettings = applicationSettings;
             }
 
-            if (sqlServerSettings != null)
+            // Replace or merge connection settings if provided
+            if (connectionSettings != null)
             {
-                Settings.SQLServerSettings = sqlServerSettings;
-            }
-
-            if (fabricSettings != null)
-            {
-                Settings.FabricSettings = fabricSettings;
-            }
-
-            if (azureStorageSettings != null)
-            {
-                Settings.AzureStorageSettings = azureStorageSettings;
+                // Example: simply replace the entire collection
+                Settings.ConnectionSettings = connectionSettings;
             }
 
             // Save the updated settings to the file
@@ -198,28 +196,9 @@ namespace PersonalDataWarehousePOCMAUI.Services
                         AIType = "OpenAI",
                         Endpoint = "https://api.openai.com",
                         ApiVersion = "v1",
-                        AIEmbeddingModel = "DefaultEmbeddingModel",
-                        ConnectionType = "SQL Server"
+                        AIEmbeddingModel = "DefaultEmbeddingModel"
                     },
-                    SQLServerSettings = new SQLServerSettings
-                    {
-                        DatabaseName = "DefaultDB",
-                        DatabaseUsername = "sa",
-                        IntegratedSecurityDisplay = "False",
-                        ServerName = "localhost"
-                    },
-                    FabricSettings = new FabricSettings
-                    {
-                        DatabaseName = "FabricDB",
-                        DatabaseUsername = "fabricUser",
-                        IntegratedSecurityDisplay = "False",
-                        ServerName = "fabricServer"
-                    },
-                    AzureStorageSettings = new AzureStorageSettings
-                    {
-                        StorageAccountName = "DefaultStorageAccount",
-                        ContainerName = "default-container"
-                    }
+                    ConnectionSettings = new List<ConnectionSettings>()
                 };
 
                 // Save the default settings to the file
@@ -227,7 +206,6 @@ namespace PersonalDataWarehousePOCMAUI.Services
             }
             catch (Exception ex)
             {
-                // Handle exceptions as needed (e.g., logging)
                 Console.WriteLine($"Error initializing default settings: {ex.Message}");
                 throw;
             }
