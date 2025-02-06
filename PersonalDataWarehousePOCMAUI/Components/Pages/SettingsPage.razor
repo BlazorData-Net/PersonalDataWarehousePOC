@@ -19,8 +19,7 @@
         <RadzenTabsItem Text="AI">
             <div>
                 <div>
-                    <div>
-
+                    <div style="width:1000px">
                         <!-- AI Service Type -->
                         <div>
                             <label for="aiType"><b>AI Service Type:</b></label><br />
@@ -34,11 +33,17 @@
                         <br />
                         @if ((AIType == "OpenAI") || (AIType == "Azure OpenAI"))
                         {
-                            <div>
-                                <label for="apiKey"><b>Api Key:</b></label><br />
-                                <InputText id="apiKey" @bind-Value="ApiKey"
-                                           class="form-control input-width"
-                                           @oninput="HandleApiKeyChange" />
+                            <div class="position-relative">
+                                <label for="apiKey"><b>API Key:</b></label><br />
+                                <div class="input-group">
+                                    <button type="button" style="height:20px" @onclick="ToggleApiKeyVisibility">
+                                        <i class="material-icons">@(ShowApiKey ? "visibility_off" : "visibility")</i>
+                                    </button>&nbsp;
+                                    <InputText id="apiKey" @bind-Value="ApiKey"
+                                               class="form-control input-width"
+                                               type="@(ShowApiKey ? "text" : "password")"
+                                               @oninput="HandleApiKeyChange" />                                    
+                                </div>
                             </div>
                             <br />
                         }
@@ -122,6 +127,7 @@
 
     // Fields
     private bool IsSettingsEntered = false;
+    private bool ShowApiKey { get; set; } = false;
 
     // Default Values
     private string ApiKey = "";
@@ -175,6 +181,11 @@
         ApiKey = e.Value?.ToString() ?? string.Empty;
 
         IsSettingsEntered = !string.IsNullOrWhiteSpace(ApiKey);
+    }
+
+    private void ToggleApiKeyVisibility()
+    {
+        ShowApiKey = !ShowApiKey;
     }
 
     private void APIKeyDetection(KeyboardEventArgs args)
