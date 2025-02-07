@@ -263,6 +263,35 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (ShowLoadDataConfirmation)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Load All Data</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseShowLoadDataConfirmationPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+                        <p>Table has <span>@CurrentDataTable.Rows.Count</span> row! Do you want to display in the datagrid?</p>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="LoadTableDataIntoBlazorDataGrid">Yes</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="CloseShowLoadDataConfirmationPopup">No</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
     private Sheet sheet;
 
@@ -287,6 +316,9 @@ else
     bool IsLoadingSheet = false;
     bool IsSaveTablePopupVisible = false;
     bool IsExportVisible = false;
+
+    bool ShowLoadDataConfirmation = false;
+
 
     bool ShowDeleteConfirmation = false;
     bool ShowConnectionDialog { get; set; } = false;
@@ -477,6 +509,22 @@ else
 
     private async Task LoadTableData()
     {
+        // If CurrentDataTable has more than 1000 rows, show a message
+        if (CurrentDataTable.Rows.Count > 10)
+        {
+            ShowLoadDataConfirmation = true;
+        }
+        else
+        {
+            await LoadTableDataIntoBlazorDataGrid();
+        }
+    }
+
+    private async Task LoadTableDataIntoBlazorDataGrid()
+    {
+        ShowLoadDataConfirmation = false;
+        StateHasChanged();
+
         Message = "";
 
         // Get a list of the columns from the DataTable
@@ -700,6 +748,11 @@ else
     private void CloseDeleteConfirmationPopup()
     {
         ShowDeleteConfirmation = false;
+    }
+
+    private void CloseShowLoadDataConfirmationPopup()
+    {
+        ShowLoadDataConfirmation = false;
     }
 
     // Datasheet Operations
