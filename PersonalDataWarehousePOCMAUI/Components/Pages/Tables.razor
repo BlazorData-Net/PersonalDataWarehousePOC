@@ -277,12 +277,11 @@ else
                         </div>
                     </div>
                     <div class="window-body has-space" style="text-align: center;">
-                        <p>Table has <span>@CurrentDataTable.Rows.Count</span> row! Do you want to display in the datagrid?</p>
+                        <p>This table has <span>@CurrentDataTable.Rows.Count</span> rows. Do you want to display it in the datagrid?</p>
                         <span>&nbsp; &nbsp;</span>
                         <button @onclick="LoadTableDataIntoBlazorDataGrid">Yes</button>
                         <span>&nbsp; &nbsp;</span>
                         <button @onclick="CloseShowLoadDataConfirmationPopup">No</button>
-
                     </div>
                 </div>
 
@@ -318,7 +317,6 @@ else
     bool IsExportVisible = false;
 
     bool ShowLoadDataConfirmation = false;
-
 
     bool ShowDeleteConfirmation = false;
     bool ShowConnectionDialog { get; set; } = false;
@@ -509,8 +507,8 @@ else
 
     private async Task LoadTableData()
     {
-        // If CurrentDataTable has more than 1000 rows, show a message
-        if (CurrentDataTable.Rows.Count > 10)
+        // If CurrentDataTable has more than 10,000 rows, show a message
+        if (CurrentDataTable.Rows.Count > 10000)
         {
             ShowLoadDataConfirmation = true;
         }
@@ -752,6 +750,7 @@ else
 
     private void CloseShowLoadDataConfirmationPopup()
     {
+        sheet = new Sheet(0, 0);
         ShowLoadDataConfirmation = false;
     }
 
@@ -760,6 +759,15 @@ else
     #region private void ConvertSheetToDataTable
     private void ConvertSheetToDataTable()
     {
+        // If the sheet is empty, return
+        // This will happen when the user decides not to load the table in the grid
+        // because it has too many rows
+        // In this case, the DataTable will stay the one that was loaded
+        if (sheet.NumRows == 0)
+        {
+            return;
+        }
+
         colGeneralErrors = new List<string>();
         CurrentDataTable = new DataTable();
 
