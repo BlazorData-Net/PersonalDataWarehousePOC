@@ -222,7 +222,7 @@
     private string TSQLQuery = "";
 
     private List<string> OptionsTrueFalse = new List<string> { "True", "False" };
-    private List<string> OptionsConnectionType = new List<string> { "SQL Server", "Fabric Warehouse" };
+    private List<string> OptionsConnectionType = new List<string> { "SQLServer", "FabricWarehouse" };
 
     protected override void OnInitialized()
     {
@@ -410,7 +410,7 @@
         {
             strConnectionString = SQLCreateDatabaseConnectionString(objConnectionSetting);
         }
-        else if (ConnectionType == ConnectionType.Fabric)
+        else if (ConnectionType == ConnectionType.FabricWarehouse)
         {
             strConnectionString = FabricCreateDatabaseConnectionString(objConnectionSetting);
         }

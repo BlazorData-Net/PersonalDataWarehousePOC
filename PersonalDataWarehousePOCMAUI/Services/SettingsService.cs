@@ -21,7 +21,7 @@ namespace PersonalDataWarehousePOCMAUI.Services
         public enum ConnectionType
         {
             SQLServer,
-            Fabric,
+            FabricWarehouse,
             AzureStorage
         }
 
