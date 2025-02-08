@@ -313,8 +313,8 @@
 
     // Utility
 
-    #region private void LoadConnection(string ChooseConnection)
-    private void LoadConnection(string ChooseConnection)
+    #region private async Task LoadConnection(string ChooseConnection)
+    private async Task LoadConnection(string ChooseConnection)
     {
         if (ChooseConnection != "")
         {
@@ -327,7 +327,7 @@
                 DatabaseName = connection.DatabaseServerSettings.DatabaseName;
                 IntegratedSecurityDisplay = connection.DatabaseServerSettings.IntegratedSecurityDisplay;
                 DatabaseUsername = connection.DatabaseServerSettings.DatabaseUsername;
-                DatabasePassword = SecureStorage.Default.GetAsync($"DatabasePassword-{DatabaseName}-{DatabaseUsername}").Result;
+                DatabasePassword = await SecureStorage.Default.GetAsync($"DatabasePassword-{ServerName}-{DatabaseName}");
             }
         }
     }
@@ -371,7 +371,7 @@
                 .FirstOrDefault(
                     c => c.ConnectionType == ConnectionType 
                     && c.DatabaseServerSettings.DatabaseName == DatabaseName 
-                    && c.DatabaseServerSettings.DatabaseUsername == DatabaseUsername);
+                    && c.DatabaseServerSettings.ServerName == ServerName);
 
             if (Connection == null)
             {
@@ -402,8 +402,11 @@
             // Save the settings
             await settingsService.UpdateSettingsAsync(applicationSettings, connectionList);
 
-            // Save the password securely
-            await SecureStorage.Default.SetAsync($"DatabasePassword-{DatabaseName}-{DatabaseUsername}", DatabasePassword);
+            if (DatabasePassword != null)
+            {
+                // Save the password securely
+                await SecureStorage.Default.SetAsync($"DatabasePassword-{ServerName}-{DatabaseName}", DatabasePassword);
+            }
 
             // Proceed to retrieve tables
             GetTablesInDatabase();
