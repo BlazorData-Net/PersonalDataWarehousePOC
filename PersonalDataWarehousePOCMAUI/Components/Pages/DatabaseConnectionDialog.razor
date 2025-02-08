@@ -21,41 +21,44 @@
                 {
                     <table class="form-group" cellpadding="4" cellspacing="4">
                         <tbody>
-                            <tr>
-                                <td>
-                                    <label for="ExistingConnection" class="control-label" style="font-weight: bold">Saved Connections: </label>
-                                </td>
-                                <td>
-                                    <select class="form-control" style="width: 220px;" @onchange="@(async (args) =>
-                                        {
-                                            ChooseConnection = args.Value?.ToString();
-                                            await LoadConnection(ChooseConnection);
-                                        })">
-                                        @foreach (var option in Connections)
-                                        {
-                                            @if (option == ChooseConnection)
+                            @if (Connections.Count > 0)
+                            {
+                                <tr>
+                                    <td>
+                                        <label for="ExistingConnection" class="control-label" style="font-weight: bold">Saved Connections: </label>
+                                    </td>
+                                    <td>
+                                        <select class="form-control" style="width: 220px;" @onchange="@(async (args) =>
                                             {
-                                                <option value="@option" selected>@ShortenServerName(@option, 10)</option>
-                                            }
-                                            else
+                                                ChooseConnection = args.Value?.ToString();
+                                                await LoadConnection(ChooseConnection);
+                                            })">
+                                            @foreach (var option in Connections)
                                             {
-                                                <option value="@option">@ShortenServerName(@option, 10)</option>
+                                                @if (option == ChooseConnection)
+                                                {
+                                                    <option value="@option" selected>@ShortenServerName(@option, 10)</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@option">@ShortenServerName(@option, 10)</option>
+                                                }
                                             }
-                                        }
-                                    </select>
-                                </td>
-                                <td>
-                                    <button type="button" aria-label="delete" @onclick="() => ShowDeleteConfirmation = true">
-                                        <span class="material-icons" style="font-size: 20px; color: #000;">delete</span>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td colspan="2">
-                                    <hr />
-                                </td>
-                            </tr>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" aria-label="delete" @onclick="() => ShowDeleteConfirmation = true">
+                                            <span class="material-icons" style="font-size: 20px; color: #000;">delete</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td colspan="2">
+                                        <hr />
+                                    </td>
+                                </tr>
+                            }                            
                             <tr>
                                 <td>
                                     <label for="ServerName" class="control-label" style="font-weight: bold">Server: </label>
@@ -160,23 +163,23 @@
                 {
                     <div style="display: flex; flex-direction: row; align-items: center;">
                         <div style="display: flex; align-items: center; margin-right: 20px; cursor: pointer;"
-                             @onclick="() => SelectTable()">
+                        @onclick="() => SelectTable()">
                             <input type="radio"
-                                   id="radioTable"
-                                   name="ImportMode"
-                                   value="Table"
-                                   checked="@(ImportMode == "Table")"
-                                   style="margin-right: 5px;" />
+                            id="radioTable"
+                            name="ImportMode"
+                            value="Table"
+                            checked="@(ImportMode == "Table")"
+                            style="margin-right: 5px;" />
                             <label for="radioTable" style="cursor: pointer;">Table</label>
                         </div>
                         <div style="display: flex; align-items: center; cursor: pointer;"
-                             @onclick="() => SelectQuery()">
+                        @onclick="() => SelectQuery()">
                             <input type="radio"
-                                   id="radioQuery"
-                                   name="ImportMode"
-                                   value="Query"
-                                   checked="@(ImportMode == "Query")"
-                                   style="margin-right: 5px;" />
+                            id="radioQuery"
+                            name="ImportMode"
+                            value="Query"
+                            checked="@(ImportMode == "Query")"
+                            style="margin-right: 5px;" />
                             <label for="radioQuery" style="cursor: pointer;">Query</label>
                         </div>
                     </div>
@@ -198,9 +201,9 @@
                         <div style="width: 100%; height: 100px; overflow: auto">
                             <div class="window-body has-space">
                                 <textarea id="TSQLQuery"
-                                          rows="3"
-                                          @bind="TSQLQuery"
-                                          style="width: 100%; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
+                                rows="3"
+                                @bind="TSQLQuery"
+                                style="width: 100%; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
                             </div>
                         </div>
                     }
@@ -259,7 +262,7 @@
     <div class="modal-backdrop fade show"></div>
 }
 @code {
-#nullable disable
+    #nullable disable
     [Parameter] public string ServerName { get; set; }
     [Parameter] public string DatabaseName { get; set; }
     [Parameter] public ConnectionType ConnectionType { get; set; }
@@ -298,6 +301,8 @@
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
+
+        SettingsService.LoadSettings();
 
         Connections = new List<string>();
 
@@ -513,8 +518,11 @@
 
             if (DatabasePassword != null)
             {
-                // Save the password securely
-                await SecureStorage.Default.SetAsync($"DatabasePassword-{ServerName}-{DatabaseName}", DatabasePassword);
+                if (DatabasePassword.Trim() != "")
+                {
+                    // Save the password securely
+                    await SecureStorage.Default.SetAsync($"DatabasePassword-{ServerName}-{DatabaseName}", DatabasePassword.Trim());
+                }
             }
 
             // Proceed to retrieve tables
