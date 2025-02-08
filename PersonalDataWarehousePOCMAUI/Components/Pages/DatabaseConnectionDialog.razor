@@ -45,7 +45,7 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <button type="button" aria-label="delete" @onclick="() => Close.InvokeAsync()">
+                                    <button type="button" aria-label="delete" @onclick="() => ShowDeleteConfirmation = true">
                                         <span class="material-icons" style="font-size: 20px; color: #000;">delete</span>
                                     </button>
                                 </td>
@@ -230,7 +230,34 @@
         </div>
     </div>
 </div>
+@if (ShowDeleteConfirmation)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
 
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Confirm Delete</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseDeleteConfirmationPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="DeleteConnection">Yes</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="CloseDeleteConfirmationPopup">No</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 @code {
 #nullable disable
     [Parameter] public string ServerName { get; set; }
@@ -260,6 +287,8 @@
 
     private List<string> OptionsTrueFalse = new List<string> { "True", "False" };
     private List<string> OptionsConnectionType = new List<string> { "SQLServer", "FabricWarehouse" };
+
+    private bool ShowDeleteConfirmation { get; set; } = false;
 
     protected override void OnInitialized()
     {
@@ -316,6 +345,80 @@
         IntegratedSecurityDisplay = e.Value.ToString();
     }
 
+    // Popups
+
+    private void DeleteConfirmation()
+    {
+        ShowDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmationPopup()
+    {
+        ShowDeleteConfirmation = false;
+    }
+
+    private async Task DeleteConnection()
+    {
+        // Grab existing ApplicationSettings
+        var applicationSettings = SettingsService.Settings.ApplicationSettings;
+
+        // Grab the entire connection list from the settings
+        var connectionList = SettingsService.Settings.ConnectionSettings;
+
+        // Find an existing connection 
+        var Connection = connectionList
+            .FirstOrDefault(
+                c => c.DatabaseServerSettings.DatabaseName == DatabaseName
+                && c.DatabaseServerSettings.ServerName == ServerName);
+
+        if (Connection != null)
+        {
+            connectionList.Remove(Connection);
+
+            // Save the settings
+            await SettingsService.UpdateSettingsAsync(applicationSettings, connectionList);
+        }
+
+        // Close the popup
+        ShowDeleteConfirmation = false;
+
+        // Refresh the connections
+        Connections = new List<string>();
+
+        if (ConnectionType == ConnectionType.AzureStorage)
+        {
+            var TempConnections = SettingsService.Settings.ConnectionSettings
+                .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
+                .Select(c => c)
+                .OrderBy(c => c.DatabaseServerSettings.ServerName)
+                .ToList();
+
+            foreach (var connection in TempConnections)
+            {
+                Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
+            }
+        }
+        else
+        {
+            var TempConnections = SettingsService.Settings.ConnectionSettings
+                .Where(c => c.ConnectionType != ConnectionType.AzureStorage)
+                .Select(c => c)
+                .OrderBy(c => c.DatabaseServerSettings.ServerName)
+                .ToList();
+
+            foreach (var connection in TempConnections)
+            {
+                Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
+            }
+        }
+
+        if (Connections.Count > 0)
+        {
+            ChooseConnection = Connections[0];
+            await LoadConnection(ChooseConnection);
+        }
+    }
+
     // Utility
 
     #region private async Task LoadConnection(string ChooseConnection)
@@ -328,6 +431,7 @@
 
             if (connection != null)
             {
+                ConnectionType = connection.ConnectionType;
                 ServerName = connection.DatabaseServerSettings.ServerName;
                 DatabaseName = connection.DatabaseServerSettings.DatabaseName;
                 IntegratedSecurityDisplay = connection.DatabaseServerSettings.IntegratedSecurityDisplay;
@@ -374,8 +478,7 @@
             // Find an existing connection or create one
             var Connection = connectionList
                 .FirstOrDefault(
-                    c => c.ConnectionType == ConnectionType
-                    && c.DatabaseServerSettings.DatabaseName == DatabaseName
+                    c => c.DatabaseServerSettings.DatabaseName == DatabaseName
                     && c.DatabaseServerSettings.ServerName == ServerName);
 
             if (Connection == null)
@@ -398,6 +501,7 @@
             else
             {
                 // Update its properties
+                Connection.ConnectionType = ConnectionType;
                 Connection.DatabaseServerSettings.ServerName = ServerName;
                 Connection.DatabaseServerSettings.DatabaseName = DatabaseName;
                 Connection.DatabaseServerSettings.IntegratedSecurityDisplay = IntegratedSecurityDisplay;
