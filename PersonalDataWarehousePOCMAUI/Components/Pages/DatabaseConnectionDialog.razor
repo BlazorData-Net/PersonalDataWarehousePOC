@@ -26,7 +26,11 @@
                                     <label for="ExistingConnection" class="control-label" style="font-weight: bold">Existing Connection: </label>
                                 </td>
                                 <td>
-                                    <select @bind="ChooseConnection" @bind:event="onchange" class="form-control" style="width: 300px;">
+                                    <select class="form-control" style="width: 300px;" @onchange="@(async (args) =>
+                                        {
+                                            ChooseConnection = args.Value?.ToString();
+                                            LoadConnection(ChooseConnection);
+                                        })">
                                         @foreach (var option in Connections)
                                         {
                                             @if (option == ChooseConnection)
@@ -268,6 +272,7 @@
             var TempConnections = SettingsService.Settings.ConnectionSettings
                 .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
                 .Select(c => c)
+                .OrderBy(c => c.DatabaseServerSettings.ServerName)
                 .ToList();
 
             foreach (var connection in TempConnections)
@@ -280,12 +285,19 @@
             var TempConnections = SettingsService.Settings.ConnectionSettings
                 .Where(c => c.ConnectionType != ConnectionType.AzureStorage)
                 .Select(c => c)
+                .OrderBy(c => c.DatabaseServerSettings.ServerName)
                 .ToList();
 
             foreach (var connection in TempConnections)
             {
                 Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
             }
+        }
+
+        if (Connections.Count > 0)
+        {
+            ChooseConnection = Connections[0];
+            LoadConnection(ChooseConnection);
         }
     }
 
@@ -300,6 +312,26 @@
     }
 
     // Utility
+
+    #region private void LoadConnection(string ChooseConnection)
+    private void LoadConnection(string ChooseConnection)
+    {
+        if (ChooseConnection != "")
+        {
+            var connection = SettingsService.Settings.ConnectionSettings
+                .FirstOrDefault(c => $"{c.DatabaseServerSettings.ServerName}/{c.DatabaseServerSettings.DatabaseName}" == ChooseConnection);
+            
+            if (connection != null)
+            {
+                ServerName = connection.DatabaseServerSettings.ServerName;
+                DatabaseName = connection.DatabaseServerSettings.DatabaseName;
+                IntegratedSecurityDisplay = connection.DatabaseServerSettings.IntegratedSecurityDisplay;
+                DatabaseUsername = connection.DatabaseServerSettings.DatabaseUsername;
+                DatabasePassword = SecureStorage.Default.GetAsync($"DatabasePassword-{DatabaseName}-{DatabaseUsername}").Result;
+            }
+        }
+    }
+    #endregion
 
     #region private async Task SetConnection()
     private async Task SetConnection()
@@ -393,7 +425,6 @@
         StateHasChanged();
     }
     #endregion
-
 
     #region private void OnSelectedTableChanged(ChangeEventArgs e)
     private void OnSelectedTableChanged(ChangeEventArgs e)
