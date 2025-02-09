@@ -29,53 +29,26 @@
 <div>
     @if (TableList.Count > 0)
     {
-        @if (CurrentTableName != "")
-        {
-            <br />
-            <label>Select Table: </label>
-            <select @onchange="@(async (args) =>
+        <br />
+        <label>Select Table: </label>
+        <select @onchange="@(async (args) =>
                     {
                         CurrentTableName = args.Value?.ToString();
-                        await LoadTableData(CurrentTableName);
+                        CurrentDropdownTableName = args.Value?.ToString();
                     })">
-                @foreach (var table in TableList)
-                {
-                    <option value="@table"
-                    selected="@(table == CurrentTableName ? "selected" : null)">
-                        @table
-                    </option>
-                }
-            </select>
-        }
+            @foreach (var table in TableList)
+            {
+                <option value="@table"
+                        selected="@(table == CurrentTableName ? "selected" : null)">
+                    @table
+                </option>
+            }
+        </select>
+        <span>&nbsp;</span>
+        <button @onclick="LoadTableDataButton">Load</button>
     }
 </div>
 <br />
-<div style="display: flex; align-items: center; flex-wrap: nowrap;">
-    @if (!LoadedDataIsUnsaved)
-    {
-        <button style="@(IsShowFileUpload ? "" : "display:none;")" @onclick="OpenShowConnectionDialog">
-            Import Data
-        </button>
-    }
-    else
-    {
-        <button @onclick="()=> ResetPage()">
-            Cancel
-        </button>
-    }
-    <span style="margin: 0 5px;"></span>
-    <InputFile @key="resetInputFileFlag"
-    OnChange="HandleFileSelectedAsync"
-    accept=".csv,.xls,.xlsx,.parquet"
-    style="@UploadVisibility" />
-    @if (IsFileSelected)
-    {
-        <label style="margin: 0 0px;">Selected File: @CurrentFileName</label>
-        <button @onclick="ClearFileSeleted" style="margin-left: 10px;">
-            Clear File
-        </button>
-    }
-</div>
 @if (IsLoadingSheet)
 {
     <br />
@@ -89,6 +62,9 @@ else
         {
             <br />
             <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
+                <button @onclick="ImportData" title="New" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">note_add</i>
+                </button>
                 <button @onclick="Save" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">save</i>
                 </button>
@@ -122,13 +98,13 @@ else
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog ConnectionType="@ConnectionType"
-    DatabaseName="@DatabaseName"
-    DatabasePassword="@DatabasePassword"
-    DatabaseUsername="@DatabaseUsername"
-    ServerName="@ServerName"
-    Close="CloseShowConnectionDialog"
-    IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
-    OnSetConnection="SetDatabaseConnection" />
+                              DatabaseName="@DatabaseName"
+                              DatabasePassword="@DatabasePassword"
+                              DatabaseUsername="@DatabaseUsername"
+                              ServerName="@ServerName"
+                              Close="CloseShowConnectionDialog"
+                              IntegratedSecurityDisplay="@IntegratedSecurityDisplay"
+                              OnSetConnection="SetDatabaseConnection" />
 }
 
 @if (IsSaveTablePopupVisible)
@@ -155,7 +131,7 @@ else
                                     @foreach (var database in colAllDatabases)
                                     {
                                         <option value="@database"
-                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
                                             @database
                                         </option>
                                     }
@@ -199,6 +175,43 @@ else
                             <button @onclick="ExportExcel">Excel</button>
                             <span>&nbsp; &nbsp;</span>
                             <button @onclick="ExportParquet">Parquet</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (ShowImportData)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Import</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseImportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+
+                        <div role="progressbar" class="marquee" style="width: 100%; display: @(IsLoadingSheet ? "block" : "none");"></div>
+
+                        <div style="display: @(IsLoadingSheet ? "none" : "block");">
+                            <div style="display: flex; align-items: center; flex-wrap: nowrap;">
+                                <button @onclick="OpenShowConnectionDialog">
+                                    Import Data
+                                </button>
+                                <span style="margin: 0 10px;">Or</span>
+                                <InputFile @key="resetInputFileFlag"
+                                           OnChange="HandleFileSelectedAsync"
+                                           accept=".csv,.xls,.xlsx,.parquet" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -306,15 +319,16 @@ else
     string CurrentTableName = string.Empty;
     string CurrentFileName = string.Empty;
     string CurrentTableNameWithoutDatabase = string.Empty;
+    string CurrentDropdownTableName = string.Empty;
 
     string Message = "";
 
     bool resetInputFileFlag = false;
-    bool IsFileSelected = false;
     bool IsShowFileUpload = true;
     bool IsLoadingSheet = false;
     bool IsSaveTablePopupVisible = false;
     bool IsExportVisible = false;
+    bool ShowImportData = false;
 
     bool ShowLoadDataConfirmation = false;
 
@@ -361,9 +375,9 @@ else
         // Toggle the flag to force a re-render of InputFile
         resetInputFileFlag = !resetInputFileFlag;
 
+        ShowImportData = false;
         CurrentTableName = string.Empty;
         CurrentFileName = string.Empty;
-        IsFileSelected = false;
         IsShowFileUpload = true;
         IsLoadingSheet = false;
         IsSaveTablePopupVisible = false;
@@ -381,6 +395,7 @@ else
         if (TableList.Count > 0)
         {
             CurrentTableName = TableList[0];
+            CurrentDropdownTableName = TableList[0];
             await LoadTableData(CurrentTableName);
         }
     }
@@ -398,7 +413,7 @@ else
 
         IsShowFileUpload = false;
         IsLoadingSheet = true;
-        StateHasChanged();
+        ShowImportData = false;
 
         // Increase the max allowed size to a value larger than your file size
         using var fileStream = CurrentFile.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024); // 50 MB
@@ -455,16 +470,14 @@ else
             await LoadTableData();
         }
 
+        // Toggle the flag to force a re-render of InputFile
+        resetInputFileFlag = !resetInputFileFlag;
+        CurrentTableName = string.Empty;
+        CurrentFileName = string.Empty;
         CurrentFile = null;
         IsLoadingSheet = false;
         LoadedDataIsUnsaved = true;
-        IsFileSelected = true;
         StateHasChanged();
-    }
-
-    private async Task ClearFileSeleted()
-    {
-        await ResetPage();
     }
 
     // Table Dropdown
@@ -473,6 +486,11 @@ else
     {
         TableList = new List<string>();
         TableList = await databaseService.GetAllTablesAsync();
+    }
+
+    private async Task LoadTableDataButton()
+    {
+        await LoadTableData(CurrentDropdownTableName);
     }
 
     private async Task LoadTableData(string paramTable)
@@ -594,6 +612,18 @@ else
     }
     #endregion
 
+    // Import Data
+
+    private void ImportData()
+    {
+        ShowImportData = true;
+    }
+
+    private void CloseImportPopup()
+    {
+        ShowImportData = false;
+    }
+
     // Save
 
     private void Save()
@@ -607,7 +637,7 @@ else
             // Strip out Database from CurrentTableName and set to CurrentTableNameWithoutDatabase
             var (Database, Table) = DataService.ExtractDatabaseAndTable(CurrentTableName);
             CurrentTableNameWithoutDatabase = Table;
-        }    
+        }
 
         // Open the New Table popup
         IsSaveTablePopupVisible = true;
@@ -667,7 +697,6 @@ else
         IsLoadingSheet = false;
         IsSaveTablePopupVisible = false;
         LoadedDataIsUnsaved = false;
-        IsFileSelected = false;
         IsShowFileUpload = true;
         StateHasChanged();
 
@@ -889,7 +918,7 @@ else
             DictionaryMapping.AppendLine(
                 $"                        {propertyName} = dict.ContainsKey(\"{propertyName}\") "
                 + "? dict[\"{propertyName}\"]?.ToString() : null,");
-        }          
+        }
 
         // ** Open the Class.txt template from Templates\Class.txt and replace the content with the codeBuilder
         string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "class.txt");
@@ -1063,6 +1092,7 @@ else
     #region private void OpenShowConnectionDialog()
     private void OpenShowConnectionDialog()
     {
+        ShowImportData = false;
         ShowConnectionDialog = true;
     }
     #endregion
