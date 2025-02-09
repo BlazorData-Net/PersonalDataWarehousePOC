@@ -391,12 +391,11 @@ else
 
         await LoadTableListDropdownAsync();
 
-        // If TableList has items, load the first table
+        // If TableList has items, set the first table
         if (TableList.Count > 0)
         {
             CurrentTableName = TableList[0];
             CurrentDropdownTableName = TableList[0];
-            await LoadTableData(CurrentTableName);
         }
     }
 
@@ -525,8 +524,8 @@ else
 
     private async Task LoadTableData()
     {
-        // If CurrentDataTable has more than 10,000 rows, show a message
-        if (CurrentDataTable.Rows.Count > 10000)
+        // If CurrentDataTable has more than 100,000 rows, show a message
+        if (CurrentDataTable.Rows.Count > 100000)
         {
             ShowLoadDataConfirmation = true;
         }
