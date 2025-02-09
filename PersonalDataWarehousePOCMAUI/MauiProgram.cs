@@ -7,6 +7,8 @@ using PersonalDataWarehousePOCMAUI.Models;
 using Radzen;
 using PersonalDataWarehousePOCMAUI.Model;
 using PersonalDataWarehouse.AI;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using Blazored.LocalStorage;
 
 namespace PersonalDataWarehousePOCMAUI
 {
@@ -36,6 +38,9 @@ namespace PersonalDataWarehousePOCMAUI
 
             // Blazor Datasheet
             builder.Services.AddBlazorDatasheet();
+
+            // Blazored Local Storage
+            builder.Services.AddBlazoredLocalStorage();
 
             // Services
             builder.Services.AddSingleton<DataService>();

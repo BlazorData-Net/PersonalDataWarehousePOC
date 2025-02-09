@@ -5,239 +5,240 @@
 @using PersonalDataWarehousePOCMAUI.Services
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 @inject SettingsService SettingsService
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
-	<div class="modal fade show" style="display: block;" tabindex="-1">
-		<div class="modal-dialog">
-			<div class="modal-content">
+<div class="modal fade show" style="display: block;" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
 
-				<div class="window glass active">
-					<div class="title-bar">
-						<div class="title-bar-text">Database Connection</div>
-						<div class="title-bar-controls">
-							<button aria-label="Close" @onclick="() => Close.InvokeAsync()"></button>
-						</div>
-					</div>
-					<div class="window-body has-space" style="text-align: center;">
+            <div class="window glass active">
+                <div class="title-bar">
+                    <div class="title-bar-text">Database Connection</div>
+                    <div class="title-bar-controls">
+                        <button aria-label="Close" @onclick="() => Close.InvokeAsync()"></button>
+                    </div>
+                </div>
+                <div class="window-body has-space" style="text-align: center;">
 
-				<h4 style="color:red">@strStatusMessage</h4>
-				@if (ConnectionMode == "DatabaseConnection")
-				{
-					<table class="form-group" cellpadding="4" cellspacing="4">
-						<tbody>
-							@if (Connections.Count > 0)
-							{
-								<tr>
-									<td style="text-align: right">
-										<label for="ExistingConnection" class="control-label" style="font-weight: bold">Saved Connections: </label>
-									</td>
-									<td>
-										<select class="form-control" style="width: 220px;" @onchange="@(async (args) =>
+                    <h4 style="color:red">@strStatusMessage</h4>
+                    @if (ConnectionMode == "DatabaseConnection")
+                    {
+                        <table class="form-group" cellpadding="4" cellspacing="4">
+                            <tbody>
+                                @if (Connections.Count > 0)
+                                {
+                                    <tr>
+                                        <td style="text-align: right">
+                                            <label for="ExistingConnection" class="control-label" style="font-weight: bold">Saved Connections: </label>
+                                        </td>
+                                        <td>
+                                            <select class="form-control" style="width: 220px;" @onchange="@(async (args) =>
 											{
 												ChooseConnection = args.Value?.ToString();
 												await LoadConnection(ChooseConnection);
 											})">
-											@foreach (var option in Connections)
-											{
-												@if (option == ChooseConnection)
-												{
-													<option value="@option" selected>@ShortenServerName(@option, 10)</option>
-												}
-												else
-												{
-													<option value="@option">@ShortenServerName(@option, 10)</option>
-												}
-											}
-										</select>
-									</td>
-									<td>
-										<button type="button" aria-label="delete" @onclick="() => ShowDeleteConfirmation = true">
-											<span class="material-icons" style="font-size: 20px; color: #000;">delete</span>
-										</button>
-									</td>
-								</tr>
-								<tr>
-									<td></td>
-									<td colspan="2">
-										<hr />
-									</td>
-								</tr>
-							}                            
-							<tr>
-								<td style="text-align: right">
-									<label for="ServerName" class="control-label" style="font-weight: bold">Server: </label>
-								</td>
-								<td colspan="2">
-									<input type="text" id="ServerName" class="form-control" @bind="ServerName" />
-								</td>
-							</tr>
-							<tr>
-								<td style="text-align: right">
-									<label for="DatabaseName" class="control-label" style="font-weight: bold">Database: </label>
-								</td>
-								<td colspan="2">
-									<input type="text" id="DatabaseName" class="form-control" @bind="DatabaseName" />
-								</td>
-							</tr>
-							<tr>
-								<td style="text-align: right">
-									<label for="IntegratedSecurity" class="control-label" style="font-weight: bold">Integrated Security: </label>
-								</td>
-								<td colspan="2">
-									<select @bind="IntegratedSecurityDisplay" @bind:event="onchange" class="form-control" style="width: 300px;">
-										@foreach (var option in OptionsTrueFalse)
-										{
-											@if (option == IntegratedSecurityDisplay)
-											{
-												<option value="@option" selected>@option</option>
-											}
-											else
-											{
-												<option value="@option">@option</option>
-											}
-										}
-									</select>
-								</td>
-							</tr>
-							<tr>
-								<td style="text-align: right">
-									<label for="ConnectionType" class="control-label" style="font-weight: bold">Connection Type: </label>
-								</td>
-								<td colspan="2">
-									<select @bind="ConnectionType" @bind:event="onchange" class="form-control" style="width: 300px;">
-										@foreach (var option in OptionsConnectionType)
-										{
-											@if (option == ConnectionType.ToString())
-											{
-												<option value="@option" selected>@option</option>
-											}
-											else
-											{
-												<option value="@option">@option</option>
-											}
-										}
-									</select>
-								</td>
-							</tr>
-							@if (IntegratedSecurityDisplay == "False")
-							{
-								<tr>
-									<td style="text-align: right">
-										<label for="DatabaseUsername" class="control-label" style="font-weight: bold">Database Username: </label>
-									</td>
-									<td colspan="2">
-										<input type="text" id="DatabaseUsername" class="form-control" @bind="DatabaseUsername" />
-									</td>
-								</tr>
-								<tr>
-									<td style="text-align: right">
-										<label for="DatabasePassword" class="control-label" style="font-weight: bold">Database Password: </label>
-									</td>
-									<td colspan="2">
-										<input type="password" id="DatabasePassword" class="form-control" @bind="DatabasePassword" />
-									</td>
-								</tr>
-							}
-						</tbody>
-					</table>
-					<br />
-					<table class="form-group" cellpadding="4" cellspacing="4">
-						<tbody>
-							<tr>
-								<td>
-									@if (!boolProcessing)
-									{
-										<button type="button" @onclick="() => SetConnection()">
-											Set Database Connection
-										</button>
-									}
-									else
-									{
-										<div class="progress" style="margin-bottom: 20px;">
-											<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%;"></div>
-										</div>
-										<span>Processing...</span>
-									}
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				}
-				else
-				{
-					<div style="display: flex; flex-direction: row; align-items: center;">
-						<div style="display: flex; align-items: center; margin-right: 20px; cursor: pointer;"
-						@onclick="() => SelectTable()">
-							<input type="radio"
-							id="radioTable"
-							name="ImportMode"
-							value="Table"
-							checked="@(ImportMode == "Table")"
-							style="margin-right: 5px;" />
-							<label for="radioTable" style="cursor: pointer;">Table</label>
-						</div>
-						<div style="display: flex; align-items: center; cursor: pointer;"
-						@onclick="() => SelectQuery()">
-							<input type="radio"
-							id="radioQuery"
-							name="ImportMode"
-							value="Query"
-							checked="@(ImportMode == "Query")"
-							style="margin-right: 5px;" />
-							<label for="radioQuery" style="cursor: pointer;">Query</label>
-						</div>
-					</div>
-					<br />
-					@if (ImportMode == "Table")
-					{
-						<div style="width: 100%; height: 100px; overflow: auto">
-							<br />
-							<select @onchange="OnSelectedTableChanged" style="width: 100%">
-								@foreach (var tableName in tableNames)
-								{
-									<option value="@tableName">@tableName</option>
-								}
-							</select>
-						</div>
-					}
-					else
-					{
-						<div style="width: 100%; height: 100px; overflow: auto">
-							<div class="window-body has-space">
-								<textarea id="TSQLQuery"
-								rows="3"
-								@bind="TSQLQuery"
-								style="width: 100%; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
-							</div>
-						</div>
-					}
-					<table class="form-group" cellpadding="4" cellspacing="4">
-						<tbody>
-							<tr>
-								<td>
-									@if (!boolProcessing)
-									{
-										<button type="button" @onclick="() => ImportTable()">
-											Import Data
-										</button>
-									}
-									else
-									{
-										<div class="progress" style="margin-bottom: 20px;">
-											<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%;"></div>
-										</div>
-										<span>Processing...</span>
-									}
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				}
-			</div>
-		</div>
-	</div>
+                                                @foreach (var option in Connections)
+                                                {
+                                                    @if (option == ChooseConnection)
+                                                    {
+                                                        <option value="@option" selected>@ShortenServerName(@option, 10)</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@option">@ShortenServerName(@option, 10)</option>
+                                                    }
+                                                }
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button type="button" aria-label="delete" @onclick="() => ShowDeleteConfirmation = true">
+                                                <span class="material-icons" style="font-size: 20px; color: #000;">delete</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td></td>
+                                        <td colspan="2">
+                                            <hr />
+                                        </td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td style="text-align: right">
+                                        <label for="ServerName" class="control-label" style="font-weight: bold">Server: </label>
+                                    </td>
+                                    <td colspan="2">
+                                        <input type="text" id="ServerName" class="form-control" @bind="ServerName" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: right">
+                                        <label for="DatabaseName" class="control-label" style="font-weight: bold">Database: </label>
+                                    </td>
+                                    <td colspan="2">
+                                        <input type="text" id="DatabaseName" class="form-control" @bind="DatabaseName" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: right">
+                                        <label for="IntegratedSecurity" class="control-label" style="font-weight: bold">Integrated Security: </label>
+                                    </td>
+                                    <td colspan="2">
+                                        <select @bind="IntegratedSecurityDisplay" @bind:event="onchange" class="form-control" style="width: 300px;">
+                                            @foreach (var option in OptionsTrueFalse)
+                                            {
+                                                @if (option == IntegratedSecurityDisplay)
+                                                {
+                                                    <option value="@option" selected>@option</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@option">@option</option>
+                                                }
+                                            }
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: right">
+                                        <label for="ConnectionType" class="control-label" style="font-weight: bold">Connection Type: </label>
+                                    </td>
+                                    <td colspan="2">
+                                        <select @bind="ConnectionType" @bind:event="onchange" class="form-control" style="width: 300px;">
+                                            @foreach (var option in OptionsConnectionType)
+                                            {
+                                                @if (option == ConnectionType.ToString())
+                                                {
+                                                    <option value="@option" selected>@option</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@option">@option</option>
+                                                }
+                                            }
+                                        </select>
+                                    </td>
+                                </tr>
+                                @if (IntegratedSecurityDisplay == "False")
+                                {
+                                    <tr>
+                                        <td style="text-align: right">
+                                            <label for="DatabaseUsername" class="control-label" style="font-weight: bold">Database Username: </label>
+                                        </td>
+                                        <td colspan="2">
+                                            <input type="text" id="DatabaseUsername" class="form-control" @bind="DatabaseUsername" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align: right">
+                                            <label for="DatabasePassword" class="control-label" style="font-weight: bold">Database Password: </label>
+                                        </td>
+                                        <td colspan="2">
+                                            <input type="password" id="DatabasePassword" class="form-control" @bind="DatabasePassword" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <br />
+                        <table class="form-group" cellpadding="4" cellspacing="4">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        @if (!boolProcessing)
+                                        {
+                                            <button type="button" @onclick="() => SetConnection()">
+                                                Set Database Connection
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <div class="progress" style="margin-bottom: 20px;">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%;"></div>
+                                            </div>
+                                            <span>Processing...</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div style="display: flex; flex-direction: row; align-items: center;">
+                            <div style="display: flex; align-items: center; margin-right: 20px; cursor: pointer;"
+                                 @onclick="() => SelectTable()">
+                                <input type="radio"
+                                       id="radioTable"
+                                       name="ImportMode"
+                                       value="Table"
+                                       checked="@(ImportMode == "Table")"
+                                       style="margin-right: 5px;" />
+                                <label for="radioTable" style="cursor: pointer;">Table</label>
+                            </div>
+                            <div style="display: flex; align-items: center; cursor: pointer;"
+                                 @onclick="() => SelectQuery()">
+                                <input type="radio"
+                                       id="radioQuery"
+                                       name="ImportMode"
+                                       value="Query"
+                                       checked="@(ImportMode == "Query")"
+                                       style="margin-right: 5px;" />
+                                <label for="radioQuery" style="cursor: pointer;">Query</label>
+                            </div>
+                        </div>
+                        <br />
+                        @if (ImportMode == "Table")
+                        {
+                            <div style="width: 100%; height: 100px; overflow: auto">
+                                <br />
+                                <select @onchange="OnSelectedTableChanged" style="width: 100%">
+                                    @foreach (var tableName in tableNames)
+                                    {
+                                        <option value="@tableName">@tableName</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="width: 100%; height: 100px; overflow: auto">
+                                <div class="window-body has-space">
+                                    <textarea id="TSQLQuery"
+                                              rows="3"
+                                              @bind="TSQLQuery"
+                                              style="width: 100%; padding: 10px; font-family: monospace; font-size: 14px;"></textarea>
+                                </div>
+                            </div>
+                        }
+                        <table class="form-group" cellpadding="4" cellspacing="4">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        @if (!boolProcessing)
+                                        {
+                                            <button type="button" @onclick="() => ImportTable()">
+                                                Import Data
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <div class="progress" style="margin-bottom: 20px;">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%;"></div>
+                                            </div>
+                                            <span>Processing...</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-</div>
-    <div class="modal-backdrop fade show"></div>
+<div class="modal-backdrop fade show"></div>
 @if (ShowDeleteConfirmation)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -267,7 +268,7 @@
     <div class="modal-backdrop fade show"></div>
 }
 @code {
-    #nullable disable
+#nullable disable
     [Parameter] public string ServerName { get; set; }
     [Parameter] public string DatabaseName { get; set; }
     [Parameter] public ConnectionType ConnectionType { get; set; }
@@ -303,7 +304,7 @@
         base.OnInitialized();
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         base.OnParametersSet();
 
@@ -341,13 +342,59 @@
         if (Connections.Count > 0)
         {
             ChooseConnection = Connections[0];
-            LoadConnection(ChooseConnection);
+            await LoadConnection(ChooseConnection);
         }
     }
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        base.OnAfterRender(firstRender);
+        if (firstRender)
+        {
+            try
+            {
+                var LastConnectionServerName = await localStorage.GetItemAsync<string>("LastConnectionServerName");
+                var LastConnectionDatabaseName = await localStorage.GetItemAsync<string>("LastConnectionDatabaseName");
+
+                if (LastConnectionServerName != null && LastConnectionDatabaseName != null)
+                {
+
+                    // Grab the entire connection list from the settings
+                    var connectionList = SettingsService.Settings.ConnectionSettings;
+
+                    // Find an existing connection
+                    var Connection = connectionList
+                        .FirstOrDefault(
+                            c => c.DatabaseServerSettings.DatabaseName == LastConnectionDatabaseName
+                            && c.DatabaseServerSettings.ServerName == LastConnectionServerName);
+
+                    if (Connection != null)
+                    {
+                        var ConnectionString = "";
+
+                        if (Connection.ConnectionType == ConnectionType.AzureStorage)
+                        {
+                            ConnectionString = $"{Connection.DatabaseServerSettings.ServerName}/{Connection.DatabaseServerSettings.DatabaseName}";
+                        }
+                        else
+                        {
+                            ConnectionString = $"{Connection.DatabaseServerSettings.ServerName}/{Connection.DatabaseServerSettings.DatabaseName}";
+                        }
+
+                        if (Connections.Contains(ConnectionString))
+                        {
+                            ChooseConnection = ConnectionString;
+                            StateHasChanged();
+                            await LoadConnection(ChooseConnection);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                strStatusMessage = ex.GetBaseException().Message;
+                return;
+            }
+        }
     }
 
     private void UpdateDialog(ChangeEventArgs e)
@@ -375,7 +422,7 @@
         // Grab the entire connection list from the settings
         var connectionList = SettingsService.Settings.ConnectionSettings;
 
-        // Find an existing connection 
+        // Find an existing connection
         var Connection = connectionList
             .FirstOrDefault(
                 c => c.DatabaseServerSettings.DatabaseName == DatabaseName
@@ -520,6 +567,10 @@
 
             // Save the settings
             await settingsService.UpdateSettingsAsync(applicationSettings, connectionList);
+
+            // Save the last connection to LocalStorage
+            await localStorage.SetItemAsync("LastConnectionServerName", ServerName);
+            await localStorage.SetItemAsync("LastConnectionDatabaseName", DatabaseName);
 
             if (DatabasePassword != null)
             {

@@ -30,7 +30,6 @@ namespace PersonalDataWarehousePOCMAUI.Services
             public ConnectionType ConnectionType { get; set; }
             public DatabaseServerSettings DatabaseServerSettings { get; set; }
             public AzureStorageSettings AzureStorageSettings { get; set; }
-
             public ConnectionSettings() { }
         }
 

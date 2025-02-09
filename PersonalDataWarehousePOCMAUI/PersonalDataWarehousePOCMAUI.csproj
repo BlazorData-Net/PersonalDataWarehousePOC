@@ -87,6 +87,7 @@
     </ItemGroup>
 
     <ItemGroup>	
+        <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />	
         <PackageReference Include="Blazored.TextEditor" Version="1.1.2" />	
         <PackageReference Include="ClosedXML" Version="0.104.2" />
         <PackageReference Include="KustoLoco.Core" Version="1.1.1" />
