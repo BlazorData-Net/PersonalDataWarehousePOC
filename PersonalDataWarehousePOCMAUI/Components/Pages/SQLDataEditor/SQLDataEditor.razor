@@ -95,7 +95,6 @@ else
     bool SavingDisabled = false;
     string ErrorMessage = "";
     string selectedTable = "";
-    string strConnectionString = "";
 
     List<string> colGeneralErrors = new List<string>();
 
@@ -122,6 +121,10 @@ else
             MergeEnabled = false,
             SortRangeEnabled = false,
             FilterColumnEnabled = false,
+            AlignmentEnabled = false,
+            InsertRowsEnabled = true,
+            DeleteRowsEnabled = true,
+            HeaderMenuEnabled = false
         };
 
     protected override async Task OnInitializedAsync()
@@ -149,10 +152,21 @@ else
     {
         if (sheet.Selection.ActiveRegion == null)
         {
-            return;
+            if (sheet.NumRows == 0)
+            {
+                sheet.Rows.InsertAt(0);
+                return;
+            }
         }
 
-        sheet.Rows.InsertAt(sheet.Selection.ActiveRegion.TopLeft.row);
+        try
+        {
+            sheet.Rows.InsertAt(sheet.Selection.ActiveRegion.TopLeft.row);
+        }
+        catch 
+        {
+            // Do nothing
+        }
     }
 
     private void RemoveRow()
