@@ -75,9 +75,9 @@
 
 @if (isLoading)
 {
-    <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
-        <span>Processing...</span>
-    </div>
+    <br />
+    <div role="progressbar" class="marquee" 
+        style="width: 25%; margin: auto; display: flex; justify-content: center; align-items: center;"></div>
 }
 else
 {
@@ -127,15 +127,9 @@ else
     protected override async Task OnInitializedAsync()
     {
         // Create a new datasheet
-        sheet = new Sheet(numRows: 100000, numCols: 20000);
+        sheet = new Sheet(numRows: 0, numCols: 0);
 
         await base.OnInitializedAsync();
-
-        // Wait 1 second before loading the table data
-        // to join the UI thread
-        await Task.Delay(1000);
-
-        ShowConnectionDialog = true;
     }
 
     #region Datasheet Events
