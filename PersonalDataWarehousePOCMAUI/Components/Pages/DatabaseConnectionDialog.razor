@@ -275,6 +275,7 @@
     [Parameter] public string IntegratedSecurityDisplay { get; set; }
     [Parameter] public string DatabaseUsername { get; set; } = "";
     [Parameter] public string DatabasePassword { get; set; } = "";
+    [Parameter] public ConfigurationType ConfigurationType { get; set; }
 
     [Parameter] public EventCallback<DatabaseImport> OnSetConnection { get; set; }
     [Parameter] public EventCallback Close { get; set; }
@@ -581,16 +582,20 @@
                 }
             }
 
-            // Proceed to retrieve tables
-            GetTablesInDatabase();
+            if (ConfigurationType == ConfigurationType.DatabaseFull)
+            {
+                strStatusMessage = result.StatusMessage;
 
-            strStatusMessage = result.StatusMessage;
+                boolProcessing = false;
+                StateHasChanged();
 
-            boolProcessing = false;
-            StateHasChanged();
-
-            // Proceed to retrieve tables
-            GetTablesInDatabase();
+                // Proceed to retrieve tables
+                GetTablesInDatabase();
+            }
+            else
+            {
+                await OnSetConnection.InvokeAsync(new DatabaseImport { ConnectionSetting = ConnectionSetting });
+            }
         }
         else
         {

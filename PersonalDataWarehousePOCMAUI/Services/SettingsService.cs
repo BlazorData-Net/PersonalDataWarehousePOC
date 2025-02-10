@@ -25,6 +25,13 @@ namespace PersonalDataWarehousePOCMAUI.Services
             AzureStorage
         }
 
+        public enum ConfigurationType
+        {
+            DatabaseFull,
+            DatabaseConnectionOnly,
+            AzureStorage
+        }
+
         public class ConnectionSettings
         {
             public ConnectionType ConnectionType { get; set; }
