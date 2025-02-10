@@ -1,8 +1,15 @@
 ### Note: In progress. Expected completion 3/1/2025
 
-# PersonalDataWarehousePOC
+## Overview
+Scam artists make a lot of promises about AI, often claiming it can do things it cannot, such as predicting the future. What AI is truly good at is calculating. This application allows you to import your data, transform it using AI to perform calculations, and report and export the results.
 
-All data warehouses operate in the cloud. When you access your data—even just to view it—you incur compute costs (in other words, you pay). But you already have a computer with a CPU and memory capable of handling most tasks. Wouldn’t it be great to view, edit, and transform your data right on your own machine? Now you can! 
+## Features
+This application enables you to create your own Personal Data Warehouse by:
+  - Importing your data from Excel, SQL Server, and Microsoft Fabric Warehouse
+  - Feeding the structure of your data, as well as your data questions and transformations, to the AI of your choice, either in the cloud or running on your local computer
+    
+## Benefits
+Typically, a data warehouse operates in the cloud. When you access your data—even just to view it—you incur compute costs (in other words, you pay). But you already have a computer with a CPU and memory capable of handling most tasks. Wouldn’t it be great to view, edit, and transform your data right on your own machine? Now you can!
 
 ## Introducing Your Local Data Processing Tool
 This tool allows you to:
