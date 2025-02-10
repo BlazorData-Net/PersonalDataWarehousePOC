@@ -1,0 +1,35 @@
+@inherits BlazorDatasheet.Render.BaseRenderer
+
+<span>@CurrentTime</span>
+
+@code {
+
+    private string? CurrentTime
+    {
+        get
+        {
+            if (Cell.Value is DateTime dateTime)
+            {
+                return dateTime.ToLongTimeString();
+            }
+            else
+            {               
+                if (Cell.Value is TimeSpan timeSpan)
+                {
+                    // This gets the date part with time set to 00:00:00
+                    DateTime CurrentDateTime = DateTime.Now.Date; 
+
+                    // Combine DateTime and timeSpan to get a complete DateTime
+                    CurrentDateTime = CurrentDateTime
+                    .AddHours(timeSpan.Hours)
+                    .AddMinutes(timeSpan.Minutes)
+                    .AddSeconds(timeSpan.Seconds);
+
+                    return CurrentDateTime.ToLongTimeString();
+                }
+
+                return Cell.Value?.ToString();
+            }
+        }
+    }
+}
