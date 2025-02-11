@@ -76,8 +76,9 @@
 @if (isLoading)
 {
     <br />
-    <div role="progressbar" class="marquee" 
-        style="width: 25%; margin: auto; display: flex; justify-content: center; align-items: center;"></div>
+    <div style="width: 25%; margin: auto; display: flex; justify-content: center; align-items: center;">
+        <div role="progressbar" class="marquee"></div>
+    </div>
 }
 else
 {
@@ -138,6 +139,11 @@ else
     #region Datasheet Events
     private void btnSave()
     {
+        if (tableNames.Count == 0)
+        {
+            return;
+        }
+
         try
         {
             SaveData();
@@ -150,6 +156,11 @@ else
 
     private void InsertRowAfterSelection()
     {
+        if (tableNames.Count == 0)
+        {
+            return;
+        }
+
         if (sheet.Selection.ActiveRegion == null)
         {
             if (sheet.NumRows == 0)
@@ -163,7 +174,7 @@ else
         {
             sheet.Rows.InsertAt(sheet.Selection.ActiveRegion.TopLeft.row);
         }
-        catch 
+        catch
         {
             // Do nothing
         }
@@ -171,6 +182,11 @@ else
 
     private void RemoveRow()
     {
+        if (tableNames.Count == 0)
+        {
+            return;
+        }
+
         if (sheet.Selection.ActiveRegion == null)
         {
             return;
