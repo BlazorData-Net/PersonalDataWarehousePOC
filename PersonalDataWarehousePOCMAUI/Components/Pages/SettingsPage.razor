@@ -7,119 +7,119 @@
 @inject DialogService DialogService
 @inject SettingsService SettingsService
 @inject IJSRuntime JSRuntime
-<h3>Settings</h3>
-<!-- Include 7.css in your project if not already included -->
-<link rel="stylesheet" href="https://unpkg.com/7.css">
+<h4>Settings</h4>
+<br />
+<div class="tabs-container">
+    <div class="tab-item active" onclick="showTab(this, 'database-tab')">Database Management</div>
+    <div class="tab-item" onclick="showTab(this, 'ai-tab')">AI</div>
+    <div class="tab-item" onclick="showTab(this, 'logs-tab')">Logs</div>
+</div>
 
-<RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
-    <Tabs>
-        <RadzenTabsItem Text="Database Management">
-            <DatabaseManagementPage />
-        </RadzenTabsItem>
-        <RadzenTabsItem Text="AI">
-            <div>
+<div id="database-tab" class="tab-content active">
+    <DatabaseManagementPage />
+</div>
+<div id="ai-tab" class="tab-content">
+    <div>
+        <div>
+            <div style="width:1000px">
+                <!-- AI Service Type -->
                 <div>
-                    <div style="width:1000px">
-                        <!-- AI Service Type -->
-                        <div>
-                            <label for="aiType"><b>AI Service Type:</b></label><br />
-                            <InputSelect id="aiType" @bind-Value="AIType" class="form-control select-width">
-                                @foreach (var type in colAITypes)
-                                {
-                                    <option value="@type">@type</option>
-                                }
-                            </InputSelect>
-                        </div>
-                        <br />
-                        @if ((AIType == "OpenAI") || (AIType == "Azure OpenAI"))
+                    <label for="aiType"><b>AI Service Type:</b></label><br />
+                    <InputSelect id="aiType" @bind-Value="AIType" class="form-control select-width">
+                        @foreach (var type in colAITypes)
                         {
-                            <div class="position-relative">
-                                <label for="apiKey"><b>API Key:</b></label><br />
-                                <div class="input-group">
-                                    <button type="button" style="height:20px" @onclick="ToggleApiKeyVisibility">
-                                        <i class="material-icons">@(ShowApiKey ? "visibility_off" : "visibility")</i>
-                                    </button>&nbsp;
-                                    <InputText id="apiKey" @bind-Value="ApiKey"
-                                               class="form-control input-width"
-                                               type="@(ShowApiKey ? "text" : "password")"
-                                               @oninput="HandleApiKeyChange" />                                    
-                                </div>
-                            </div>
-                            <br />
+                            <option value="@type">@type</option>
                         }
-                        @if (AIType == "OpenAI")
-                        {
-                            <div>
-                                <label for="azureModel"><b>OpenAI Model:</b></label><br />
-                                <InputText id="azureModel" @bind-Value="AIModel"
-                                           class="form-control input-width" />
-                            </div>
-                        }
-                        else if (AIType == "Azure OpenAI")
-                        {
-                            <!-- Azure OpenAI Model Deployment Name -->
-                            <div>
-                                <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label><br />
-                                <InputText id="azureModel" @bind-Value="AIModel"
-                                           class="form-control input-width" />
-                            </div>
-                            <br />
-                            <!-- Azure OpenAI Endpoint -->
-                            <div>
-                                <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label><br />
-                                <InputText id="endpoint" @bind-Value="Endpoint"
-                                           class="form-control input-width" />
-                            </div>
-                        }
-                        else if ((AIType == "LM Studio") || (AIType == "Ollma"))
-                        {
-                            <!-- Local LLM Endpoint -->
-                            <div>
-                                <label for="endpoint"><b>Endpoint:</b></label><br />
-                                <InputText id="endpoint" @bind-Value="Endpoint"
-                                           class="form-control input-width" />
-                            </div>
-                            <br />
-                            <!-- Local LLM Model -->
-                            <div>
-                                <label for="localModel"><b>Model Name:</b></label><br />
-                                <InputText id="localModel" @bind-Value="AIModel"
-                                           class="form-control input-width" />
-                            </div>
-                        }
-                        <br />
-                        <div class="mt-md">
-                            @if (!IsSettingsEntered)
-                            {
-                                <!-- Show a 'Get Key' link only for OpenAI/Azure. -->
-                                @if (AIType == "OpenAI" || AIType == "Azure OpenAI")
-                                {
-                                    <button type="button"
-                                            @onclick="OpenAIKeyLink"
-                                            class="btn-wide">
-                                        Get @AIType API Key
-                                    </button>
-                                }
-                            }
-                            else
-                            {
-                                <button type="button"
-                                        @onclick="SettingsSave"
-                                        class="btn-wide">
-                                    Save
-                                </button>
-                            }
-                        </div>
-
-                    </div>
+                    </InputSelect>
                 </div>
+                <br />
+                @if ((AIType == "OpenAI") || (AIType == "Azure OpenAI"))
+                {
+                    <div class="position-relative">
+                        <label for="apiKey"><b>API Key:</b></label><br />
+                        <div class="input-group">
+                            <button type="button" style="height:20px" @onclick="ToggleApiKeyVisibility">
+                                <i class="material-icons">@(ShowApiKey ? "visibility_off" : "visibility")</i>
+                            </button>&nbsp;
+                            <InputText id="apiKey" @bind-Value="ApiKey"
+                                       class="form-control input-width"
+                                       type="@(ShowApiKey ? "text" : "password")"
+                                       @oninput="HandleApiKeyChange" />
+                        </div>
+                    </div>
+                    <br />
+                }
+                @if (AIType == "OpenAI")
+                {
+                    <div>
+                        <label for="azureModel"><b>OpenAI Model:</b></label><br />
+                        <InputText id="azureModel" @bind-Value="AIModel"
+                                   class="form-control input-width" />
+                    </div>
+                }
+                else if (AIType == "Azure OpenAI")
+                {
+                    <!-- Azure OpenAI Model Deployment Name -->
+                    <div>
+                        <label for="azureModel"><b>Azure OpenAI Model Deployment Name:</b></label><br />
+                        <InputText id="azureModel" @bind-Value="AIModel"
+                                   class="form-control input-width" />
+                    </div>
+                    <br />
+                    <!-- Azure OpenAI Endpoint -->
+                    <div>
+                        <label for="endpoint"><b>Azure OpenAI Endpoint:</b></label><br />
+                        <InputText id="endpoint" @bind-Value="Endpoint"
+                                   class="form-control input-width" />
+                    </div>
+                }
+                else if ((AIType == "LM Studio") || (AIType == "Ollma"))
+                {
+                    <!-- Local LLM Endpoint -->
+                    <div>
+                        <label for="endpoint"><b>Endpoint:</b></label><br />
+                        <InputText id="endpoint" @bind-Value="Endpoint"
+                                   class="form-control input-width" />
+                    </div>
+                    <br />
+                    <!-- Local LLM Model -->
+                    <div>
+                        <label for="localModel"><b>Model Name:</b></label><br />
+                        <InputText id="localModel" @bind-Value="AIModel"
+                                   class="form-control input-width" />
+                    </div>
+                }
+                <br />
+                <div class="mt-md">
+                    @if (!IsSettingsEntered)
+                    {
+                        <!-- Show a 'Get Key' link only for OpenAI/Azure. -->
+                        @if (AIType == "OpenAI" || AIType == "Azure OpenAI")
+                        {
+                            <button type="button"
+                                    @onclick="OpenAIKeyLink"
+                                    class="btn-wide">
+                                Get @AIType API Key
+                            </button>
+                        }
+                    }
+                    else
+                    {
+                        <button type="button"
+                                @onclick="SettingsSave"
+                                class="btn-wide">
+                            Save
+                        </button>
+                    }
+                </div>
+
             </div>
-        </RadzenTabsItem>
-        <RadzenTabsItem Text="Logs">
-            <Logs />
-        </RadzenTabsItem>
-    </Tabs>
-</RadzenTabs>
+        </div>
+    </div>
+</div>
+<div id="logs-tab" class="tab-content">
+    <Logs></Logs>
+</div>
 
 @code {
     // Services
