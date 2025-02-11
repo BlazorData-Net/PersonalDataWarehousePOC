@@ -52,13 +52,11 @@
 @if (IsLoadingSheet)
 {
     <br />
-
-    <div role="progressbar" class="marquee" style="width: 25%"></div>
+    <div role="progressbar" class="marquee"></div>
 }
 else
 {
     <div>
-        <br />
         <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
             <button @onclick="ImportData" title="New" style="background:none;border:none;">
                 <i class="material-icons" style="color:black;">note_add</i>

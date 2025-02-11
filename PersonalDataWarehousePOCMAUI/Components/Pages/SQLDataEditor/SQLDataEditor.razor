@@ -24,6 +24,9 @@
 }
 <br />
 <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
+    <button @onclick="OpenShowConnectionDialog" title="New" style="background:none;border:none;">
+        <i class="material-icons" style="color:black;">note_add</i>
+    </button>
     <button @onclick="btnSave" disabled="@SavingDisabled" style="background:none;border:none;">
         <i class="material-icons" style="color:black;">save</i>
     </button>
@@ -53,9 +56,6 @@
     <span style="border-right: 2px solid #D3D3D3;"></span>
     <input type="checkbox" @bind="UseValidation" id="CheckBoxValidation" />
     <label for="CheckBoxValidation" style="margin-left: 8px; vertical-align: middle;">Validators</label>
-    <button @onclick="OpenShowConnectionDialog" title="Settings" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">settings</i>
-    </button>
 </div>
 
 @if (ShowConnectionDialog)
@@ -76,9 +76,7 @@
 @if (isLoading)
 {
     <br />
-    <div style="width: 25%; margin: auto; display: flex; justify-content: center; align-items: center;">
-        <div role="progressbar" class="marquee"></div>
-    </div>
+    <div role="progressbar" class="marquee"></div>
 }
 else
 {
@@ -260,11 +258,7 @@ else
     {
         selectedTable = e.Value.ToString();
 
-        // Wait 1 second before loading the table data
-        // to join the UI thread
-        await Task.Delay(1000);
-
-        LoadTableData(selectedTable);
+        await LoadTableData(selectedTable);
     }
     #endregion
 
@@ -331,30 +325,24 @@ else
 
             if (selectedTable != "")
             {
-                isLoading = true;
-                StateHasChanged();
-
-                // Wait 1 second before loading the table data
-                // to join the UI thread
-                await Task.Delay(1000);
-
-                LoadTableData(selectedTable);
-
-                isLoading = false;
-                StateHasChanged();
+                await LoadTableData(selectedTable);
             }
         }
     }
     #endregion
 
-    #region private void LoadTableData(string paramSelectedTable)
-    private void LoadTableData(string paramSelectedTable)
+    #region private async Task LoadTableData(string paramSelectedTable)
+    private async Task LoadTableData(string paramSelectedTable)
     {
         ErrorMessage = "";
         selectedTable = paramSelectedTable;
 
         isLoading = true;
         StateHasChanged();
+
+        // Wait 1 second before loading the table data
+        // to join the UI thread
+        await Task.Delay(1000);
 
         // Use the DatabaseConnectionString to get the data from the selected table
         using (SqlConnection connection = new SqlConnection(DatabaseConnectionString))
