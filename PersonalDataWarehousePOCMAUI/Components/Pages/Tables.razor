@@ -84,9 +84,16 @@ else
             </button>
         </div>
     </div>
-    <div style="@((CurrentDataTable.Rows.Count > 0) ? "" : "display:none;")">
+    <div style="@(GridVisibility())">
         <Datasheet Sheet="@sheet" MenuOptions=_sheetMenuOpt />
     </div>
+    @if(isDontShowDataSheet)
+    {
+        <div style="text-align:center;">
+            <h5>Table display was cancelled.</h5>
+            <h5>Click the Load button to view the table in the grid.</h5>
+        </div>
+    }
 }
 
 <!-- POPUPS -->
@@ -341,6 +348,7 @@ else
     private string DatabaseUsername = "";
     private string IntegratedSecurityDisplay = "False";
 
+    private bool isDontShowDataSheet = false;
     string UploadVisibility => IsShowFileUpload ? "display:block;" : "display:none;";
 
     SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
@@ -365,6 +373,18 @@ else
     }
 
     // Events
+
+    private string GridVisibility()
+    {
+        if(sheet != null)
+        {
+            return sheet.NumRows > 0 ? "display:block;" : "display:none;";
+        }
+        else
+        {
+            return "display:none;";
+        }
+    }
 
     private async Task ResetPage()
     {
@@ -533,6 +553,7 @@ else
 
     private async Task LoadTableDataIntoBlazorDataGrid()
     {
+        isDontShowDataSheet = false;
         ShowLoadDataConfirmation = false;
         StateHasChanged();
 
@@ -775,6 +796,7 @@ else
     private void CloseShowLoadDataConfirmationPopup()
     {
         sheet = new Sheet(0, 0);
+        isDontShowDataSheet = true;
         ShowLoadDataConfirmation = false;
     }
 
