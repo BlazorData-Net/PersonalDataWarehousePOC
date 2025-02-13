@@ -702,11 +702,11 @@ else
         // Create C# class from DataTable
         GenerateClassFromDataTable(CurrentDataTable, CurrentTableName);
 
-        // Re-Load the TableList dropdown
-        await LoadTableListDropdownAsync();
-
         // Set the CurrentDropdownTableName
         CurrentDropdownTableName = CurrentTableName;
+
+        // Re-Load the TableList dropdown
+        await LoadTableListDropdownAsync();
 
         // Toggle the flag to force a re-render of InputFile
         // Clearing it if needed
