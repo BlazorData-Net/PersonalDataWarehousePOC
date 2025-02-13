@@ -400,6 +400,7 @@ else
         Message = "";
 
         // Initialize the sheet
+        sheet = new Sheet(0, 0);
         CurrentDataTable = new DataTable();
 
         colAllDatabases = await databaseService.GetAllDatabasesAsync();
