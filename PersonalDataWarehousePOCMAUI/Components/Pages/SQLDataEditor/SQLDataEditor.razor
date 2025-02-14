@@ -79,9 +79,43 @@
 }
 else
 {
-    <Datasheet Sheet="sheet" @ref=_datasheet MenuOptions=_sheetMenuOpt />
+    <div style="@(GridVisibility())">
+        <Datasheet Sheet="@sheet" MenuOptions=_sheetMenuOpt />
+    </div>
+    @if (isDontShowDataSheet)
+    {
+        <div style="text-align:center;">
+            <h4>Table display was cancelled.</h4>
+        </div>
+    }
 }
-<br />
+@if (ShowLoadDataConfirmation)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Load All Data</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseShowLoadDataConfirmationPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+                        <p>This table has <span>@rowCount</span> rows. Do you want to display it in the datagrid?</p>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="LoadTableDataIntoBlazorDataGrid">Yes</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="CloseShowLoadDataConfirmationPopup">No</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 @code {
 #nullable disable
 
@@ -103,12 +137,15 @@ else
 
     DataTable OriginalDataTable;
     DataTable CurrentDataTable;
+    int rowCount = 0;
 
     string DatabaseConnectionString = "";
 
     private bool ShowConnectionDialog { get; set; } = false;
     private bool showPrimaryKeyWarningDialog { get; set; } = false;
     private bool showStatusDialog { get; set; } = false;
+    private bool isDontShowDataSheet { get; set; } = false;
+    private bool ShowLoadDataConfirmation { get; set; } = false;
 
     SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
         {
@@ -192,6 +229,18 @@ else
         sheet.Rows.RemoveAt(sheet.Selection.ActiveRegion.Top);
     }
     #endregion
+
+    private string GridVisibility()
+    {
+        if (sheet != null)
+        {
+            return sheet.NumRows > 0 ? "display:block;" : "display:none;";
+        }
+        else
+        {
+            return "display:none;";
+        }
+    }
 
     #region private void CellChaged(object sender, CellDataChangedEventArgs args)
     private void CellChanged(object sender, CellDataChangedEventArgs args)
@@ -333,8 +382,51 @@ else
     #region private async Task LoadTableData(string paramSelectedTable)
     private async Task LoadTableData(string paramSelectedTable)
     {
-        ErrorMessage = "";
         selectedTable = paramSelectedTable;
+
+        DataTable dt = new DataTable();
+
+        // Use the DatabaseConnectionString to get the data from the selected table
+        using (SqlConnection connection = new SqlConnection(DatabaseConnectionString))
+        {
+            try
+            {
+                connection.Open();
+
+                string sql = $"SELECT COUNT(*) as CountOfRows FROM {selectedTable}";
+
+                using (SqlCommand command = new SqlCommand(sql, connection))
+                {
+                    rowCount = (int)await command.ExecuteScalarAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.GetBaseException().Message;
+                isLoading = false;
+                StateHasChanged();
+                return;
+            }
+        }
+
+        // If the table has more than 100,000 rows, show a confirmation message
+        if (rowCount > 100000)
+        {
+            ShowLoadDataConfirmation = true;
+        }
+        else
+        {
+            await LoadTableDataIntoBlazorDataGrid();
+        }
+    }
+    #endregion
+
+    #region private async Task LoadTableDataIntoBlazorDataGrid()
+    private async Task LoadTableDataIntoBlazorDataGrid()
+    {
+        ErrorMessage = "";        
+        isDontShowDataSheet = false;
+        ShowLoadDataConfirmation = false;
 
         isLoading = true;
         StateHasChanged();
@@ -976,6 +1068,13 @@ else
         }
     }
     #endregion
+
+    private void CloseShowLoadDataConfirmationPopup()
+    {
+        sheet = new Sheet(0, 0);
+        isDontShowDataSheet = true;
+        ShowLoadDataConfirmation = false;
+    }
 
     // ********************************************************************************************************************
     // Utility
