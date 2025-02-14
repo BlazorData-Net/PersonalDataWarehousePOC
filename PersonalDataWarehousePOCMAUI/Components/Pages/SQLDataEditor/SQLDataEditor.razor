@@ -55,7 +55,7 @@
     <button @onclick="LoadTableDataButton">Load</button>
     <span>&nbsp;</span>
     <span style="border-right: 2px solid #D3D3D3;"></span>
-    <input type="checkbox" @bind="UseValidation" id="CheckBoxValidation" />
+    <input type="checkbox" @onclick="() => onValidationChange()" @bind="UseValidation" id="CheckBoxValidation" />
     <label for="CheckBoxValidation" style="margin-left: 8px; vertical-align: middle;">Validators</label>
 </div>
 
@@ -376,6 +376,11 @@ else
         }
     }
     #endregion
+
+    private async Task onValidationChange()
+    {
+        await LoadTableData(selectedTable);
+    }
 
     private async Task LoadTableDataButton()
     {
