@@ -52,6 +52,8 @@
         }
     </select>
     <span>&nbsp;</span>
+    <button @onclick="LoadTableDataButton">Load</button>
+    <span>&nbsp;</span>
     <span style="border-right: 2px solid #D3D3D3;"></span>
     <input type="checkbox" @bind="UseValidation" id="CheckBoxValidation" />
     <label for="CheckBoxValidation" style="margin-left: 8px; vertical-align: middle;">Validators</label>
@@ -304,9 +306,7 @@ else
     #region private async Task OnSelectedTableChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
     private async Task OnSelectedTableChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
     {
-        selectedTable = e.Value.ToString();
-
-        await LoadTableData(selectedTable);
+        await Task.Run(() => { selectedTable = e.Value.ToString(); });        
     }
     #endregion
 
@@ -325,7 +325,7 @@ else
         // to join the UI thread
         await Task.Delay(1000);
 
-        await GetTablesInDatabase();
+        GetTablesInDatabase();
 
         isLoading = false;
         StateHasChanged();
@@ -337,7 +337,7 @@ else
     // ********************************************************************************************************************
 
     #region private void GetTablesInDatabase()
-    private async Task GetTablesInDatabase()
+    private void GetTablesInDatabase()
     {
         tableNames = new List<string>();
 
@@ -370,14 +370,14 @@ else
             {
                 selectedTable = tableNames[0];
             }
-
-            if (selectedTable != "")
-            {
-                await LoadTableData(selectedTable);
-            }
         }
     }
     #endregion
+
+    private async Task LoadTableDataButton()
+    {
+        await LoadTableData(selectedTable);
+    }
 
     #region private async Task LoadTableData(string paramSelectedTable)
     private async Task LoadTableData(string paramSelectedTable)
