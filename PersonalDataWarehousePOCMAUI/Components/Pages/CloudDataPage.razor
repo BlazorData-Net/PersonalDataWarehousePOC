@@ -24,17 +24,7 @@
 <PageTitle>Cloud Data</PageTitle>
 <h4>Cloud Data</h4>
 <br />
-<div class="tabs-container">
-    <div class="tab-item active" onclick="showTab(this, 'sql-tab')">SQL Server</div>
-    <div class="tab-item" onclick="showTab(this, 'fabric-tab')">Fabric Warehouse</div>
-</div>
-
-<div id="sql-tab" class="tab-content active">
-    <SQLDataEditor></SQLDataEditor>
-</div>
-<div id="fabric-tab" class="tab-content">
-    <Logs></Logs>
-</div>
+<SQLDataEditor></SQLDataEditor>
 
 @code {
 

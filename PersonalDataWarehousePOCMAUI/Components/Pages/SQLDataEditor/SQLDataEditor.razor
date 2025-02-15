@@ -264,7 +264,10 @@ else
 
         try
         {
-            sheet.Rows.InsertAt(sheet.Selection.ActiveRegion.TopLeft.row);
+            if (sheet.Selection.ActiveRegion != null)
+            {
+                sheet.Rows.InsertAt(sheet.Selection.ActiveRegion.TopLeft.row);
+            }
         }
         catch
         {
