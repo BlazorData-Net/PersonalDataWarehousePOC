@@ -15,18 +15,20 @@
 @using Microsoft.Data.SqlClient
 @using System.Text;
 @using System.Data
+@using PersonalDataWarehousePOC.Services
 @using PersonalDataWarehousePOCMAUI.Models
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
+@inject DatabaseService databaseService
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
 {
     <div>@ErrorMessage</div>
 }
 <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
-    <button @onclick="OpenShowConnectionDialog" title="New" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">note_add</i>
+    <button @onclick="OpenShowConnectionDialog" title="Connect to Server" style="background:none;border:none;">
+        <i class="material-icons" style="color:black;">cast_connected</i>
     </button>
-    <button @onclick="btnSave" disabled="@SavingDisabled" style="background:none;border:none;">
+    <button @onclick="btnSave" title="Save" disabled="@SavingDisabled" style="background:none;border:none;">
         <i class="material-icons" style="color:black;">save</i>
     </button>
     <span style="border-right: 2px solid #D3D3D3;"></span>
@@ -42,6 +44,10 @@
     </button>
     <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
         <i class="material-icons" style="color:black;">remove</i>
+    </button>
+    <span style="border-right: 2px solid #D3D3D3;"></span>
+    <button @onclick="Export" title="Export" style="background:none;border:none;">
+        <i class="material-icons" style="color:black;">file_upload</i>
     </button>
     <span style="border-right: 2px solid #D3D3D3;"></span>
     <span>&nbsp; Table: </span>
@@ -91,6 +97,7 @@ else
         </div>
     }
 }
+
 @if (ShowLoadDataConfirmation)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -118,6 +125,52 @@ else
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+
+@if (IsExportWizardVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Table Wizard</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseExportTableWizardPopup"></button>
+                        </div>
+                    </div>
+                    @if (DatabaseConnectionString != "")
+                    {
+                        <div class="window-body has-space">
+                            <label>Select Source: </label>
+                            <select @onchange="@(async (args) =>
+                            {
+                                CurrentSelectedTableWizard = args.Value?.ToString();
+                            })">
+                                @foreach (var table in TableList)
+                                {
+                                    <option value="@table" selected="@(table == CurrentSelectedTableWizard ? "selected" : null)">
+                                        @table
+                                    </option>
+                                }
+                            </select>
+                            &nbsp;&nbsp;
+                            <button @onclick="onExportTableWizardAsync">Select</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="window-body has-space">
+                            <p>Database connection is required to export data.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
 #nullable disable
 
@@ -149,6 +202,11 @@ else
     private bool isDontShowDataSheet { get; set; } = false;
     private bool ShowLoadDataConfirmation { get; set; } = false;
 
+    private List<string> TableList = new List<string>();
+    private List<string> ViewList = new List<string>();
+    private bool IsExportWizardVisible { get; set; } = false;
+    private string CurrentSelectedTableWizard { get; set; } = "";
+
     SheetMenuOptions _sheetMenuOpt = new SheetMenuOptions()
         {
             InsertColsEnabled = false,
@@ -169,7 +227,7 @@ else
         // Create a new datasheet
         sheet = new Sheet(numRows: 0, numCols: 0);
 
-        await base.OnInitializedAsync();
+        await LoadTableListDropdownAsync();
     }
 
     #region Datasheet Events
@@ -374,6 +432,50 @@ else
                 selectedTable = tableNames[0];
             }
         }
+    }
+    #endregion
+
+    #region private async Task LoadTableListDropdownAsync()
+    private async Task LoadTableListDropdownAsync()
+    {
+        TableList = new List<string>();
+
+        var colTables = await databaseService.GetAllTablesAsync();
+
+        if (colTables.Count > 0)
+        {
+            // Add each table to the list prepended with "Table: "
+            foreach (var table in colTables)
+            {
+                TableList.Add($"Table: {table}");
+            }
+        }
+
+        // Get all Views
+        var colViews = await databaseService.GetAllViewsAsync();
+
+        if (colViews.Count > 0)
+        {
+            // Add each view to the list prepended with "View: "
+            foreach (var view in colViews)
+            {
+                TableList.Add($"View: {view}");
+            }
+        }
+
+        // Sort the list
+        TableList.Sort();
+
+        // sort so that entries that begin with "default/" are listed first
+        TableList.Sort(
+            (x, y) => x.StartsWith("Default/") == y.StartsWith("Default/")
+            ? 0
+            : x.StartsWith("Default/") ? -1 : 1);
+
+        // Add: * Select DataSource* at the end of the list
+        TableList.Add("*Select DataSource*");
+
+        CurrentSelectedTableWizard = TableList.Last();
     }
     #endregion
 
@@ -1083,6 +1185,27 @@ else
         isDontShowDataSheet = true;
         ShowLoadDataConfirmation = false;
     }
+
+    // *************
+    // Export
+    // *************
+
+    #region Export
+    private void Export()
+    {
+        IsExportWizardVisible = true;
+    }
+
+    private void CloseExportTableWizardPopup()
+    {
+        IsExportWizardVisible = false;
+    }
+
+    private async Task onExportTableWizardAsync()
+    {
+
+    }
+    #endregion
 
     // ********************************************************************************************************************
     // Utility
