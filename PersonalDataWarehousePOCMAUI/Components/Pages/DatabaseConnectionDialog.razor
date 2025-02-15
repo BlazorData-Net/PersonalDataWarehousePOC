@@ -739,11 +739,10 @@
         StringBuilder SB = new StringBuilder();
         string strConnectionString = "";
 
-        string strUserInfo = (!objConnectionSetting.IntegratedSecurity) ?
+        string strUserInfo = 
             String.Format("Authentication=Active Directory Service Principal;uid={0};pwd={1}",
             objConnectionSetting.Username,
-            objConnectionSetting.Password) :
-            "integrated security=True";
+            objConnectionSetting.Password);
 
         strConnectionString = String.Format("{0}data source={1};initial catalog={2};{3};TrustServerCertificate=True",
             SB.ToString(),
