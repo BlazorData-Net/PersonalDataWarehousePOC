@@ -1,6 +1,8 @@
 ﻿@using Azure.Storage.Blobs
 @using System.Text
 @using Azure.Storage.Blobs.Models
+@using PersonalDataWarehousePOCMAUI.Services
+@using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 
 <div>
     <h5 style="color:red">@strStatusMessage</h5>
@@ -91,7 +93,52 @@
             BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(ContainerName);
 
             // Attempt to retrieve properties to check if connection is valid
+            // This will throw an exception if the connection is invalid
             BlobContainerProperties properties = await containerClient.GetPropertiesAsync();
+
+            // Update Settings
+            var settingsService = new SettingsService();
+
+            // Grab existing ApplicationSettings
+            var applicationSettings = settingsService.Settings.ApplicationSettings;
+
+            // Grab the entire connection list from the settings
+            var connectionList = settingsService.Settings.ConnectionSettings;
+
+            var AzureStorageConnection = connectionList
+            .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
+            .Select(c => c)
+            .OrderBy(c => c.DatabaseServerSettings.ServerName)
+            .FirstOrDefault();
+
+            if (AzureStorageConnection == null)
+            {
+                // Create a new connection entry
+                AzureStorageConnection = new SettingsService.ConnectionSettings
+                    {
+                        ConnectionType = ConnectionType.AzureStorage,
+                        DatabaseServerSettings = new SettingsService.DatabaseServerSettings()
+                    };
+
+                connectionList.Add(AzureStorageConnection);
+
+                // Update its properties
+                AzureStorageConnection.AzureStorageSettings = new SettingsService.AzureStorageSettings();
+                AzureStorageConnection.AzureStorageSettings.StorageAccountName = StorageAccountName;
+                AzureStorageConnection.AzureStorageSettings.ContainerName = ContainerName;
+            }
+            else
+            {
+                // Update its properties
+                AzureStorageConnection.AzureStorageSettings.StorageAccountName = StorageAccountName;
+                AzureStorageConnection.AzureStorageSettings.ContainerName = ContainerName;
+            }
+
+            // Save the settings
+            await settingsService.UpdateSettingsAsync(applicationSettings, connectionList);
+
+            // Save the Azure Storage AccountKey securely
+            await SecureStorage.Default.SetAsync($"AzureStorageAccountKey", AccountKey.Trim());
 
             StorageConnectionString = storageConnectionString;
             strStatusMessage = "Connection successful!";

@@ -361,14 +361,13 @@
         var AzureStorageConnection = SettingsService.Settings.ConnectionSettings
         .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
         .Select(c => c)
-        .OrderBy(c => c.DatabaseServerSettings.ServerName)
         .FirstOrDefault();
 
         if (AzureStorageConnection != null)
         {
             StorageAccountName = AzureStorageConnection.AzureStorageSettings.StorageAccountName;
             ContainerName = AzureStorageConnection.AzureStorageSettings.ContainerName;
-            AccountKey = await SecureStorage.Default.GetAsync($"AzureStorageAccountKey-{ServerName}-{DatabaseName}");
+            AccountKey = await SecureStorage.Default.GetAsync($"AzureStorageAccountKey");
         }
     }
 
