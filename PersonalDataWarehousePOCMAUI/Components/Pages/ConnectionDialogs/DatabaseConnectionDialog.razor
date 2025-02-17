@@ -355,6 +355,21 @@
             ChooseConnection = Connections[0];
             await LoadConnection(ChooseConnection);
         }
+
+        // Get Azure Storage Connection
+
+        var AzureStorageConnection = SettingsService.Settings.ConnectionSettings
+        .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
+        .Select(c => c)
+        .OrderBy(c => c.DatabaseServerSettings.ServerName)
+        .FirstOrDefault();
+
+        if (AzureStorageConnection != null)
+        {
+            StorageAccountName = AzureStorageConnection.AzureStorageSettings.StorageAccountName;
+            ContainerName = AzureStorageConnection.AzureStorageSettings.ContainerName;
+            AccountKey = await SecureStorage.Default.GetAsync($"AzureStorageAccountKey-{ServerName}-{DatabaseName}");
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
