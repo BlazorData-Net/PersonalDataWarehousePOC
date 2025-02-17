@@ -68,9 +68,9 @@
 
 @if (ShowConnectionDialog)
 {
-    <DatabaseConnectionDialog Close="CloseShowConnectionDialog" 
-        ConfigurationType="ConfigurationType.DatabaseConnectionOnly" 
-        OnSetConnection="SetConnectionString" />
+    <DatabaseConnectionDialog Close="CloseShowConnectionDialog"
+                              ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
+                              OnSetConnection="SetConnectionString" />
 }
 
 @if (showPrimaryKeyWarningDialog)
@@ -315,11 +315,11 @@ else
             // Get the row number
             int row = Convert.ToInt32(args.Positions.FirstOrDefault().row);
 
-            // Use that row number to get the hidden _Id value
-            int _Id = Convert.ToInt32(sheet.Cells[row, 0].Value);
+            // Use that row number to get the hidden __Id value
+            int __Id = Convert.ToInt32(sheet.Cells[row, 0].Value);
 
             // Add the row to the list of changed rows
-            ColChangedRows.Add(_Id);
+            ColChangedRows.Add(__Id);
         }
     }
     #endregion
@@ -368,7 +368,7 @@ else
     #region private async Task OnSelectedTableChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
     private async Task OnSelectedTableChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
     {
-        await Task.Run(() => { selectedTable = e.Value.ToString(); });        
+        await Task.Run(() => { selectedTable = e.Value.ToString(); });
     }
     #endregion
 
@@ -538,7 +538,7 @@ else
     #region private async Task LoadTableDataIntoBlazorDataGrid()
     private async Task LoadTableDataIntoBlazorDataGrid()
     {
-        ErrorMessage = "";        
+        ErrorMessage = "";
         isDontShowDataSheet = false;
         ShowLoadDataConfirmation = false;
 
@@ -617,8 +617,8 @@ else
                 // remove colums conatined in the ComputedColumns list
                 TableColumns = TableColumns.Where(x => !ComputedColumns.Contains(x.ColumnName)).ToList();
 
-                // Get Table names from TableColumns as comma seperated values
-                string strTableNames = string.Join(",", TableColumns.Select(x => $"[{x.ColumnName}]").ToArray());
+                // Get Table columns from TableColumns as comma seperated values
+                string strTableColumns = string.Join(",", TableColumns.Select(x => $"[{x.ColumnName}]").ToArray());
 
                 string sql = "";
 
@@ -630,7 +630,7 @@ else
                     ShowPrimaryKeyWarningDialog();
 
                     // Get the data from the selected table
-                    sql = $"SELECT 0 AS _Id, {strTableNames} FROM {selectedTable}";
+                    sql = $"SELECT 0 AS __Id, {strTableColumns} FROM {selectedTable}";
                 }
                 else
                 {
@@ -640,7 +640,7 @@ else
                     string strPrimaryKeys = string.Join(",", PrimaryKeys.Select(x => $"[{x}]").ToArray());
 
                     // Get the data from the selected table
-                    sql = $"SELECT ROW_NUMBER() OVER (ORDER BY {strPrimaryKeys}) AS _Id, {strTableNames} FROM {selectedTable}";
+                    sql = $"SELECT ROW_NUMBER() OVER (ORDER BY {strPrimaryKeys}) AS __Id, {strTableColumns} FROM {selectedTable}";
                 }
 
                 SqlDataAdapter adapter = new SqlDataAdapter(sql, connection);
@@ -652,8 +652,8 @@ else
                 // Save the original data
                 OriginalDataTable = dt.Copy();
 
-                // Make the first column _Id
-                TableColumns.Insert(0, new DTODatabaseColumn { ColumnName = "_Id", ColumnType = "int", ColumnLength = 0, IsPrimaryKey = true });
+                // Make the first column __Id
+                TableColumns.Insert(0, new DTODatabaseColumn { ColumnName = "__Id", ColumnType = "int", ColumnLength = 0, IsPrimaryKey = true });
 
                 // Load Data into the Datasheet
                 LoadTableHeadersAndData(TableColumns, dt);
@@ -687,7 +687,7 @@ else
         sheet.BatchUpdates();
         sheet.Commands.PauseHistory();
 
-        // Hide the _Id column
+        // Hide the __Id column
         sheet.Columns.Hide(0, 1);
 
         int i = 0;
@@ -920,12 +920,12 @@ else
         // Process each changed row
         foreach (int row in ColChangedRows)
         {
-            // Skip rows where _Id column is 0 or null
+            // Skip rows where __Id column is 0 or null
             if (row == 0)
                 continue;
 
-            // Get row from CurrentDataTable where _Id matches
-            DataRow rowCur = CurrentDataTable.Select($"_Id = {row}").FirstOrDefault();
+            // Get row from CurrentDataTable where __Id matches
+            DataRow rowCur = CurrentDataTable.Select($"__Id = {row}").FirstOrDefault();
 
             var colSQLUpdateColumns = new List<string>();
             var colSQLWhereColumns = new List<string>();
@@ -1007,7 +1007,7 @@ else
     {
         // Find Added Rows
         var addedRows = CurrentDataTable.AsEnumerable()
-            .Where(row => row.Field<object>("_Id") == null)
+            .Where(row => row.Field<object>("__Id") == null)
             .ToList();
 
         // Get the identity columns
@@ -1099,13 +1099,8 @@ else
     private void ProcessDeletedRows()
     {
         // Get all the _Id values from CurrentDataTable that are not null
-        var NotNullTableCollection = CurrentDataTable.AsEnumerable()
-            .Where(row => row.Field<object>("_Id") != null)
-            .ToList();
-
-        // Get the _Id values from the CurrentDataTable
-        var currentIds = NotNullTableCollection.AsEnumerable()
-            .Select(r => r.Field<int>("_Id"))
+        var currentIds = CurrentDataTable.AsEnumerable()
+            .Select(r => r.Field<int>("__Id"))
             .ToList();
 
         // Convert currentIds to long
@@ -1114,7 +1109,7 @@ else
         // Filter OriginalDataTable to get the rows
         // that are not present in CurrentDataTable
         var deletedRows = OriginalDataTable.AsEnumerable()
-            .Where(row => !longCurrentIds.Contains(row.Field<long>("_Id")));
+            .Where(row => !longCurrentIds.Contains(row.Field<long>("__Id")));
 
         // Loop through the deleted rows
         foreach (var rowCur in deletedRows)
