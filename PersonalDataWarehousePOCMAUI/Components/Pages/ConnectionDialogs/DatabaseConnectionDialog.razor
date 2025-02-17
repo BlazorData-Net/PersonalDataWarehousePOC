@@ -18,12 +18,15 @@
                         <button aria-label="Close" @onclick="() => Close.InvokeAsync()"></button>
                     </div>
                 </div>
-                <div class="window-body has-space" style="text-align: center;">                    
+                <div class="window-body has-space" style="text-align: center;">
                     @if (ConnectionMode == "DatabaseConnection")
                     {
                         <div class="tabs-container">
                             <div class="tab-item active" onclick="showTab(this, 'database-tab')">Database</div>
-                            <div class="tab-item" onclick="showTab(this, 'azurestorage-tab')">Azure Storage</div>
+                            @if (ConfigurationType != ConfigurationType.DatabaseFull)
+                            {
+                                <div class="tab-item" onclick="showTab(this, 'azurestorage-tab')">Azure Storage</div>
+                            }
                         </div>
 
                         <div id="database-tab" class="tab-content active">
@@ -171,14 +174,16 @@
                                 </tbody>
                             </table>
                         </div>
-
-                        <div id="azurestorage-tab" class="tab-content">
-                            <div class="has-space">
-                                <AzureStorageConnectionDialog StorageAccountName="@StorageAccountName"
-                                                              ContainerName="@ContainerName"
-                                                              AccountKey="@AccountKey" />
+                        @if (ConfigurationType != ConfigurationType.DatabaseFull)
+                        {
+                            <div id="azurestorage-tab" class="tab-content">
+                                <div class="has-space">
+                                    <AzureStorageConnectionDialog StorageAccountName="@StorageAccountName"
+                                    ContainerName="@ContainerName"
+                                    AccountKey="@AccountKey" />
+                                </div>
                             </div>
-                        </div>
+                        }
                     }
                     else
                     {
@@ -334,31 +339,15 @@
 
         Connections = new List<string>();
 
-        if (ConnectionType == ConnectionType.AzureStorage)
-        {
-            var TempConnections = SettingsService.Settings.ConnectionSettings
-                .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
-                .Select(c => c)
-                .OrderBy(c => c.DatabaseServerSettings.ServerName)
-                .ToList();
+        var TempConnections = SettingsService.Settings.ConnectionSettings
+            .Where(c => c.ConnectionType != ConnectionType.AzureStorage)
+            .Select(c => c)
+            .OrderBy(c => c.DatabaseServerSettings.ServerName)
+            .ToList();
 
-            foreach (var connection in TempConnections)
-            {
-                Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
-            }
-        }
-        else
+        foreach (var connection in TempConnections)
         {
-            var TempConnections = SettingsService.Settings.ConnectionSettings
-                .Where(c => c.ConnectionType != ConnectionType.AzureStorage)
-                .Select(c => c)
-                .OrderBy(c => c.DatabaseServerSettings.ServerName)
-                .ToList();
-
-            foreach (var connection in TempConnections)
-            {
-                Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
-            }
+            Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
         }
 
         if (Connections.Count > 0)

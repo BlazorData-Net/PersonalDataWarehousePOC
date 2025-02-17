@@ -68,7 +68,9 @@
 
 @if (ShowConnectionDialog)
 {
-    <DatabaseConnectionDialog Close="CloseShowConnectionDialog" ConfigurationType="ConfigurationType.DatabaseConnectionOnly" OnSetConnection="SetConnectionString" />
+    <DatabaseConnectionDialog Close="CloseShowConnectionDialog" 
+        ConfigurationType="ConfigurationType.DatabaseConnectionOnly" 
+        OnSetConnection="SetConnectionString" />
 }
 
 @if (showPrimaryKeyWarningDialog)
