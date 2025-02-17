@@ -87,6 +87,8 @@
     </ItemGroup>
 
     <ItemGroup>	
+        <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />	
+        <PackageReference Include="Azure.Storage.Queues" Version="12.21.0" />	
         <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />	
         <PackageReference Include="Blazored.TextEditor" Version="1.1.2" />	
         <PackageReference Include="ClosedXML" Version="0.104.2" />
@@ -96,7 +98,7 @@
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.40" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.40" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.2" />
-		<PackageReference Include="BlazorDatasheet" Version="0.5.2.7" />
+		<PackageReference Include="BlazorDatasheet" Version="0.5.3" />
 		<PackageReference Include="CS-Script" Version="4.8.27" />
 		<PackageReference Include="ExcelDataReader" Version="3.7.0" />
 		<PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />

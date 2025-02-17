@@ -1,0 +1,107 @@
+﻿@using Azure.Storage.Blobs
+@using System.Text
+@using Azure.Storage.Blobs.Models
+
+<div>
+    <h5 style="color:red">@strStatusMessage</h5>
+    <table class="form-group" cellpadding="4" cellspacing="4">
+        <tbody>
+            <tr>
+                <td>
+                    <label for="StorageAccountName" class="control-label" style="font-weight: bold">Storage Account: </label>
+                </td>
+                <td>
+                    <input type="text" id="StorageAccountName" class="form-control" @bind="StorageAccountName" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="ContainerName" class="control-label" style="font-weight: bold">Container: </label>
+                </td>
+                <td>
+                    <input type="text" id="ContainerName" class="form-control" @bind="ContainerName" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="AccountKey" class="control-label" style="font-weight: bold">Account Key: </label>
+                </td>
+                <td>
+                    <input type="password" id="AccountKey" class="form-control" @bind="AccountKey" />
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <br />
+    <table class="form-group" cellpadding="4" cellspacing="4">
+        <tbody>
+            <tr>
+                <td>
+                    @if (!boolProcessing)
+                    {
+                        <button @onclick="() => SetConnection()">
+                            Set Storage Connection
+                        </button>
+                    }
+                    else
+                    {
+                        <br />
+                        <div role="progressbar" class="marquee"></div>
+                    }
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+@code {
+#nullable disable
+    [Parameter] public string StorageAccountName { get; set; }
+    [Parameter] public string ContainerName { get; set; }
+    [Parameter] public string AccountKey { get; set; } = "";
+
+    private bool boolProcessing { get; set; } = false;
+    private string strStatusMessage { get; set; } = "";
+    private string StorageConnectionString { get; set; } = "";
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    private async Task SetConnection()
+    {
+        boolProcessing = true;
+        strStatusMessage = "";
+
+        try
+        {
+            string storageConnectionString = $"DefaultEndpointsProtocol=https;AccountName={StorageAccountName};AccountKey={AccountKey};EndpointSuffix=core.windows.net";
+            var blobServiceClient = new BlobServiceClient(storageConnectionString);
+            BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(ContainerName);
+
+            // Attempt to retrieve properties to check if connection is valid
+            BlobContainerProperties properties = await containerClient.GetPropertiesAsync();
+
+            StorageConnectionString = storageConnectionString;
+            strStatusMessage = "Connection successful!";
+        }
+        catch (Exception ex)
+        {
+            strStatusMessage = $"Connection failed: {ex.Message}";
+        }
+
+        boolProcessing = false;
+        StateHasChanged();
+    }
+}

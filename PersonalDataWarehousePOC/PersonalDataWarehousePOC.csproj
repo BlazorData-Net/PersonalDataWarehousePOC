@@ -9,7 +9,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Blazor.Monaco" Version="0.2.0" />
-		<PackageReference Include="BlazorDatasheet" Version="0.5.2.7" />
+		<PackageReference Include="BlazorDatasheet" Version="0.5.3" />
 		<PackageReference Include="CS-Script" Version="4.8.27" />
 		<PackageReference Include="ExcelDataReader" Version="3.7.0" />
 		<PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />

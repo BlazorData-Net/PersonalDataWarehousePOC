@@ -173,8 +173,10 @@
                         </div>
 
                         <div id="azurestorage-tab" class="tab-content">
-                            <div class="window-body has-space">
-                                <h4>Coming Soon</h4>
+                            <div class="has-space">
+                                <AzureStorageConnectionDialog StorageAccountName="@StorageAccountName"
+                                                              ContainerName="@ContainerName"
+                                                              AccountKey="@AccountKey" />
                             </div>
                         </div>
                     }
@@ -302,6 +304,10 @@
     private bool boolProcessing { get; set; } = false;
     private string strStatusMessage { get; set; } = "";
     private string DatabaseConnectionString { get; set; } = "";
+
+    private string StorageAccountName { get; set; } = "";
+    private string ContainerName { get; set; } = "";
+    private string AccountKey { get; set; } = "";
 
     private string ConnectionMode { get; set; } = "DatabaseConnection";
     private string ImportMode = "Table";
