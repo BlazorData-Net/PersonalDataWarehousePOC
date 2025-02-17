@@ -382,14 +382,7 @@
                     {
                         var ConnectionString = "";
 
-                        if (Connection.ConnectionType == ConnectionType.AzureStorage)
-                        {
-                            ConnectionString = $"{Connection.DatabaseServerSettings.ServerName}/{Connection.DatabaseServerSettings.DatabaseName}";
-                        }
-                        else
-                        {
-                            ConnectionString = $"{Connection.DatabaseServerSettings.ServerName}/{Connection.DatabaseServerSettings.DatabaseName}";
-                        }
+                        ConnectionString = $"{Connection.DatabaseServerSettings.ServerName}/{Connection.DatabaseServerSettings.DatabaseName}";
 
                         if (Connections.Contains(ConnectionString))
                         {
@@ -453,31 +446,15 @@
         // Refresh the connections
         Connections = new List<string>();
 
-        if (ConnectionType == ConnectionType.AzureStorage)
-        {
-            var TempConnections = SettingsService.Settings.ConnectionSettings
-                .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
-                .Select(c => c)
-                .OrderBy(c => c.DatabaseServerSettings.ServerName)
-                .ToList();
+        var TempConnections = SettingsService.Settings.ConnectionSettings
+            .Where(c => c.ConnectionType != ConnectionType.AzureStorage)
+            .Select(c => c)
+            .OrderBy(c => c.DatabaseServerSettings.ServerName)
+            .ToList();
 
-            foreach (var connection in TempConnections)
-            {
-                Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
-            }
-        }
-        else
+        foreach (var connection in TempConnections)
         {
-            var TempConnections = SettingsService.Settings.ConnectionSettings
-                .Where(c => c.ConnectionType != ConnectionType.AzureStorage)
-                .Select(c => c)
-                .OrderBy(c => c.DatabaseServerSettings.ServerName)
-                .ToList();
-
-            foreach (var connection in TempConnections)
-            {
-                Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
-            }
+            Connections.Add($"{connection.DatabaseServerSettings.ServerName}/{connection.DatabaseServerSettings.DatabaseName}");
         }
 
         if (Connections.Count > 0)
@@ -845,7 +822,7 @@
 
         if (serverName.Length > maxServerNameLength)
         {
-            serverName = serverName.Substring(0, maxServerNameLength) + "...)";
+            serverName = serverName.Substring(0, maxServerNameLength) + "...";
         }
 
         return $"{serverName}/{databaseName}";
