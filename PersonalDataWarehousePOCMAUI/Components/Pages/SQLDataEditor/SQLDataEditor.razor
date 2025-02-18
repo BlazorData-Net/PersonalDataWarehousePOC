@@ -21,10 +21,6 @@
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 @inject DatabaseService databaseService
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div>@ErrorMessage</div>
-}
 <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
     <button @onclick="OpenShowConnectionDialog" title="Connect to Server" style="background:none;border:none;">
         <i class="material-icons" style="color:black;">cast_connected</i>
@@ -101,6 +97,31 @@ else
     }
 }
 
+@if (ErrorMessage != "")
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Alert!</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 100%; height: 100px; overflow: auto">
+                            @ErrorMessage
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @if (ShowLoadDataConfirmation)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -128,6 +149,7 @@ else
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+
 
 @if (IsExportWizardVisible)
 {
@@ -173,6 +195,7 @@ else
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+
 
 @code {
 #nullable disable
@@ -619,6 +642,16 @@ else
 
                 // Get Table columns from TableColumns as comma seperated values
                 string strTableColumns = string.Join(",", TableColumns.Select(x => $"[{x.ColumnName}]").ToArray());
+
+                // If strTableColumns contains a column name of __Id, then show error message
+                if (strTableColumns.Contains("__Id"))
+                {
+                    ErrorMessage = "Cannot load. The table contains a column named __Id. This column name is reserved.";
+                    isDontShowDataSheet = true;
+                    isLoading = false;
+                    StateHasChanged();
+                    return;
+                }
 
                 string sql = "";
 
@@ -1205,6 +1238,11 @@ else
 
     }
     #endregion
+
+    private void CloseMessagePopup()
+    {
+        ErrorMessage = "";
+    }
 
     // ********************************************************************************************************************
     // Utility
