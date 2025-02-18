@@ -20,7 +20,10 @@
 @using PersonalDataWarehousePOCMAUI.Models
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 @inject DatabaseService databaseService
-
+@if (CurrentDatabaseName != "")
+{
+  <div><b>Current Database: </b>  @CurrentDatabaseName</div>
+}
 <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
     <button @onclick="OpenShowConnectionDialog" title="Connect to Server" style="background:none;border:none;">
         <i class="material-icons" style="color:black;">cast_connected</i>
@@ -65,8 +68,8 @@
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog Close="CloseShowConnectionDialog"
-                              ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
-                              OnSetConnection="SetConnectionString" />
+    ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
+    OnSetConnection="SetConnectionString" />
 }
 
 @if (showPrimaryKeyWarningDialog)
@@ -198,7 +201,7 @@ else
 
 
 @code {
-#nullable disable
+    #nullable disable
     private Sheet sheet;
 
     bool isLoading = false;
@@ -208,6 +211,8 @@ else
     string selectedTable = "";
 
     List<string> colGeneralErrors = new List<string>();
+
+    string CurrentDatabaseName = "";
 
     List<string> tableNames = new List<string> { };
     List<DTODatabaseColumn> TableColumns = new List<DTODatabaseColumn>();
@@ -427,12 +432,16 @@ else
     #region private void GetTablesInDatabase()
     private void GetTablesInDatabase()
     {
+        CurrentDatabaseName = "";
         tableNames = new List<string>();
 
         // Use the DatabaseConnectionString to get the tables in the database
         using (SqlConnection connection = new SqlConnection(DatabaseConnectionString))
         {
             connection.Open();
+
+            // Set Current Databse Name
+            CurrentDatabaseName = connection.Database;
 
             // Get the tables in the database
             DataTable dt = connection.GetSchema("Tables");
