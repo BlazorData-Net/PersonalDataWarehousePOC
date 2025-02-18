@@ -22,7 +22,7 @@
 @inject DatabaseService databaseService
 @if (CurrentDatabaseName != "")
 {
-  <div><b>Current Database: </b>  @CurrentDatabaseName</div>
+    <div><b>Current Database: </b>  @CurrentDatabaseName</div>
 }
 <div class="rz-p-sm-1" style="background-color:whitesmoke;border-block:thin;border-block-color:lightgray;text-align:left">
     <button @onclick="OpenShowConnectionDialog" title="Connect to Server" style="background:none;border:none;">
@@ -68,8 +68,8 @@
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog Close="CloseShowConnectionDialog"
-    ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
-    OnSetConnection="SetConnectionString" />
+                              ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
+                              OnSetConnection="SetConnectionString" />
 }
 
 @if (showPrimaryKeyWarningDialog)
@@ -153,7 +153,6 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
-
 @if (IsExportWizardVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -201,7 +200,7 @@ else
 
 
 @code {
-    #nullable disable
+#nullable disable
     private Sheet sheet;
 
     bool isLoading = false;
@@ -213,6 +212,7 @@ else
     List<string> colGeneralErrors = new List<string>();
 
     string CurrentDatabaseName = "";
+    ConnectionType connectionType = ConnectionType.SQLServer;
 
     List<string> tableNames = new List<string> { };
     List<DTODatabaseColumn> TableColumns = new List<DTODatabaseColumn>();
@@ -298,6 +298,9 @@ else
             if (sheet.Selection.ActiveRegion != null)
             {
                 sheet.Rows.InsertAt(sheet.Selection.ActiveRegion.TopLeft.row);
+
+                // Set the first column to null
+                sheet.Cells[sheet.Selection.ActiveRegion.TopLeft.row, 0].Value = DBNull.Value;
             }
         }
         catch
@@ -343,11 +346,16 @@ else
             // Get the row number
             int row = Convert.ToInt32(args.Positions.FirstOrDefault().row);
 
-            // Use that row number to get the hidden __Id value
-            int __Id = Convert.ToInt32(sheet.Cells[row, 0].Value);
-
-            // Add the row to the list of changed rows
-            ColChangedRows.Add(__Id);
+            if (sheet.Cells[row, 0].Value is int __Id)
+            {
+                // Add the row to the list of changed rows
+                ColChangedRows.Add(__Id);
+            }
+            else if (int.TryParse(sheet.Cells[row, 0].Value?.ToString(), out __Id))
+            {
+                // Add the row to the list of changed rows
+                ColChangedRows.Add(__Id);
+            }
         }
     }
     #endregion
@@ -403,6 +411,8 @@ else
     #region private async Task SetConnectionString(DatabaseImport paramDatabaseImport)
     private async Task SetConnectionString(DatabaseImport paramDatabaseImport)
     {
+        connectionType = paramDatabaseImport.ConnectionSetting.ConnectionType;
+
         // Set the connection string to the gloabl variable
         DatabaseConnectionString = paramDatabaseImport.ConnectionSetting.ConnectionString;
 
@@ -775,7 +785,7 @@ else
                 if (objDatabaseColumn.IsPrimaryKey)
                 {
                     // Set the cell to read only if it is a primary key
-                    sheet.Cells[ii, i].Format = new CellFormat() { IsReadOnly = true, BackgroundColor = "lightgrey" };
+                    sheet.Cells[ii, i].Format = new CellFormat() { IsReadOnly = false, BackgroundColor = "lightgrey" };
                 }
 
                 i++;
@@ -1142,6 +1152,7 @@ else
     {
         // Get all the _Id values from CurrentDataTable that are not null
         var currentIds = CurrentDataTable.AsEnumerable()
+            .Where(row => row.Field<object>("__Id") != null)
             .Select(r => r.Field<int>("__Id"))
             .ToList();
 
