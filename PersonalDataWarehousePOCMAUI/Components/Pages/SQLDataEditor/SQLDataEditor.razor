@@ -102,31 +102,6 @@ else
     }
 }
 
-@if (ErrorMessage != "")
-{
-    <div class="modal fade show" style="display: block;" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-                <div class="window glass active">
-                    <div class="title-bar">
-                        <div class="title-bar-text">Alert!</div>
-                        <div class="title-bar-controls">
-                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
-                        </div>
-                    </div>
-                    <div class="window-body has-space">
-                        <div class="has-scrollbar" style="width: 100%; height: 100px; overflow: auto">
-                            @ErrorMessage
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
-}
-
 @if (ShowLoadDataConfirmation)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -171,20 +146,41 @@ else
                     @if (DatabaseConnectionString != "")
                     {
                         <div class="window-body has-space">
-                            <label>Select Source: </label>
-                            <select @onchange="@(async (args) =>
-                            {
-                                CurrentSelectedTableWizard = args.Value?.ToString();
-                            })">
-                                @foreach (var table in TableList)
-                                {
-                                    <option value="@table" selected="@(table == CurrentSelectedTableWizard ? "selected" : null)">
-                                        @table
-                                    </option>
-                                }
-                            </select>
-                            &nbsp;&nbsp;
-                            <button @onclick="onExportTableWizardAsync">Select</button>
+                            <table class="form-group" cellpadding="4" cellspacing="4">
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <label>Select Source: </label>
+                                        </td>
+                                        <td>
+                                            <select @onchange="@(async (args) =>
+                                            {
+                                                CurrentSelectedTableWizard = args.Value?.ToString();
+                                            })">
+                                                @foreach (var table in TableList)
+                                                {
+                                                    <option value="@table" selected="@(table == CurrentSelectedTableWizard ? "selected" : null)">
+                                                        @table
+                                                    </option>
+                                                }
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <label>Table Name: </label>
+                                        </td>
+                                        <td>
+                                            <input type="text" id="txtTableName" @bind="@ImportTableName" placeholder="Enter Table Name" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <button @onclick="onExportTableWizardAsync">Select</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     }
                     else
@@ -200,6 +196,30 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (ErrorMessage != "")
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Alert!</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseMessagePopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <div class="has-scrollbar" style="width: 100%; height: 100px; overflow: auto">
+                            @ErrorMessage
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
 #nullable disable
@@ -223,6 +243,7 @@ else
 
     DataTable OriginalDataTable;
     DataTable CurrentDataTable;
+    private string ImportTableName { get; set; } = "";
     private string StorageAccountName { get; set; } = "";
     private string ContainerName { get; set; } = "";
     private string AccountKey { get; set; } = "";
@@ -1254,7 +1275,6 @@ else
         if (connectionType == ConnectionType.FabricWarehouse)
         {
             // Get Azure Storage Connection
-
             var AzureStorageConnection = SettingsService.Settings.ConnectionSettings
             .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
             .Select(c => c)
@@ -1283,7 +1303,72 @@ else
 
     private async Task onExportTableWizardAsync()
     {
+        // Must select a data source 
+        if (CurrentSelectedTableWizard == "*Select DataSource*")
+        {
+            ErrorMessage = "Please select a data source.";
+            return;
+        }
 
+        if (ImportTableName.Trim() == "")
+        {
+            ErrorMessage = "Please enter a table name.";
+            return;
+        }
+
+        bool TableExists = false;
+
+        using (SqlConnection connection = new SqlConnection(DatabaseConnectionString))
+        {
+            try
+            {
+                connection.Open();
+
+                // Determine if the table exists
+                string query = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{ImportTableName}'";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    int count = (int)await command.ExecuteScalarAsync();
+
+                    if (count > 0)
+                    {
+                        TableExists = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.GetBaseException().Message;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        if (TableExists)
+        {
+            ErrorMessage = $"The table {ImportTableName} already exists. If you continue it will be overwritten";
+            return;
+        }
+        else
+        {
+            // Call the Export method
+        }
+
+        if (connectionType == ConnectionType.FabricWarehouse)
+        {
+
+        }
+
+        if (connectionType == ConnectionType.SQLServer)
+        {
+
+        }
     }
     #endregion
 
