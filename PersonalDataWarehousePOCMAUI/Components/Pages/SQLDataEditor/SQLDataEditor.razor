@@ -18,8 +18,10 @@
 @using PersonalDataWarehousePOC.Services
 @using PersonalDataWarehousePOCMAUI.Components.Pages.ConnectionDialogs
 @using PersonalDataWarehousePOCMAUI.Models
+@using PersonalDataWarehousePOCMAUI.Services
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 @inject DatabaseService databaseService
+@inject SettingsService SettingsService
 @if (CurrentDatabaseName != "")
 {
     <div><b>Current Database: </b>  @CurrentDatabaseName</div>
@@ -221,6 +223,9 @@ else
 
     DataTable OriginalDataTable;
     DataTable CurrentDataTable;
+    private string StorageAccountName { get; set; } = "";
+    private string ContainerName { get; set; } = "";
+    private string AccountKey { get; set; } = "";
     int rowCount = 0;
 
     string DatabaseConnectionString = "";
@@ -1243,8 +1248,31 @@ else
     // *************
 
     #region Export
-    private void Export()
+    private async Task Export()
     {
+        // If connectiontype is Fabric AzureStorage must be configured
+        if (connectionType == ConnectionType.FabricWarehouse)
+        {
+            // Get Azure Storage Connection
+
+            var AzureStorageConnection = SettingsService.Settings.ConnectionSettings
+            .Where(c => c.ConnectionType == ConnectionType.AzureStorage)
+            .Select(c => c)
+            .FirstOrDefault();
+
+            if (AzureStorageConnection != null)
+            {
+                StorageAccountName = AzureStorageConnection.AzureStorageSettings.StorageAccountName;
+                ContainerName = AzureStorageConnection.AzureStorageSettings.ContainerName;
+                AccountKey = await SecureStorage.Default.GetAsync($"AzureStorageAccountKey");
+            }
+            else
+            {
+                ErrorMessage = "Azure Storage must be configured to export data for Fabric.";
+                return;
+            }
+        }
+
         IsExportWizardVisible = true;
     }
 
