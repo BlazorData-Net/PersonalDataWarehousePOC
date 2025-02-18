@@ -221,6 +221,35 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+@if (ShowTableDeleteConfirmation)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Confirm Table Delete</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseTableDeleteConfirmationPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+                        <span>This table exists. If you continue all existing content will be deleted.</span>
+                        <span><br /><br /></span>
+                        <button @onclick="() => doExportTableWizardAsync()">Yes</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="CloseTableDeleteConfirmationPopup">No</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
 #nullable disable
     private Sheet sheet;
@@ -256,6 +285,8 @@ else
     private bool showStatusDialog { get; set; } = false;
     private bool isDontShowDataSheet { get; set; } = false;
     private bool ShowLoadDataConfirmation { get; set; } = false;
+    private bool ShowTableDeleteConfirmation { get; set; } = false;
+
 
     private List<string> TableList = new List<string>();
     private List<string> ViewList = new List<string>();
@@ -1301,6 +1332,11 @@ else
         IsExportWizardVisible = false;
     }
 
+    private void CloseTableDeleteConfirmationPopup()
+    {
+        ShowTableDeleteConfirmation = false;
+    }
+
     private async Task onExportTableWizardAsync()
     {
         // Must select a data source 
@@ -1352,13 +1388,21 @@ else
 
         if (TableExists)
         {
-            ErrorMessage = $"The table {ImportTableName} already exists. If you continue it will be overwritten";
+            ShowTableDeleteConfirmation = true;
             return;
         }
         else
         {
             // Call the Export method
+            await doExportTableWizardAsync();
         }
+    }
+
+    private async Task doExportTableWizardAsync()
+    {
+        // Close any popups
+        ShowTableDeleteConfirmation = false;
+        IsExportWizardVisible = false;
 
         if (connectionType == ConnectionType.FabricWarehouse)
         {
