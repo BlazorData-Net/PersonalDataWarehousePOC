@@ -130,6 +130,7 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+
 @if (IsExportWizardVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -196,6 +197,7 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+
 @if (ErrorMessage != "")
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -221,6 +223,7 @@ else
     <div class="modal-backdrop fade show"></div>
 }
 
+
 @if (ShowTableDeleteConfirmation)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -244,6 +247,35 @@ else
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+
+@if (IsExportProgressVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Export Data Progress</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseExportProgressPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space">
+                        <p>Exporting Data...</p>
+                        <br />
+                        @if (IsExportLoading)
+                        {
+                            <div role="progressbar" class="marquee"></div>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -287,6 +319,8 @@ else
     private bool ShowLoadDataConfirmation { get; set; } = false;
     private bool ShowTableDeleteConfirmation { get; set; } = false;
 
+    private bool IsExportProgressVisible { get; set; } = false;
+    private bool IsExportLoading { get; set; } = false;
 
     private List<string> TableList = new List<string>();
     private List<string> ViewList = new List<string>();
@@ -1339,7 +1373,7 @@ else
 
     private async Task onExportTableWizardAsync()
     {
-        // Must select a data source 
+        // Must select a data source
         if (CurrentSelectedTableWizard == "*Select DataSource*")
         {
             ErrorMessage = "Please select a data source.";
@@ -1404,17 +1438,43 @@ else
         ShowTableDeleteConfirmation = false;
         IsExportWizardVisible = false;
 
-        if (connectionType == ConnectionType.FabricWarehouse)
-        {
+        // Reset the error message
+        ErrorMessage = "";
 
+        // Open ExportProgress
+        IsExportLoading = true;
+        IsExportProgressVisible = true;
+
+        try
+        {
+            if (connectionType == ConnectionType.FabricWarehouse)
+            {
+
+            }
+
+            if (connectionType == ConnectionType.SQLServer)
+            {
+
+            }
         }
-
-        if (connectionType == ConnectionType.SQLServer)
+        catch (Exception ex)
         {
-
+            // This will cause the Error dialog to show
+            ErrorMessage = ex.GetBaseException().Message;
+        }
+        finally
+        {
+            // IsExportLoading = false;
+            // IsExportProgressVisible = false;
+            // IsExportWizardVisible = true;
         }
     }
     #endregion
+
+    private void CloseExportProgressPopup()
+    {
+        IsExportProgressVisible = false;
+    }
 
     private void CloseMessagePopup()
     {
