@@ -20,8 +20,9 @@
 @using PersonalDataWarehousePOCMAUI.Models
 @using PersonalDataWarehousePOCMAUI.Services
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
-@inject DatabaseService databaseService
 @inject SettingsService SettingsService
+@inject DatabaseService databaseService
+@inject DataService DataService
 @if (CurrentDatabaseName != "")
 {
     <div><b>Current Database: </b>  @CurrentDatabaseName</div>
@@ -1447,6 +1448,34 @@ else
 
         try
         {
+            IEnumerable<IDictionary<string, object>> DataSourceData = new List<IDictionary<string, object>>();
+            Dataloader dataloader = new Dataloader();
+            string DataName = "";
+
+            // Load the data based on the CurrentSelectedTableWizard type
+            if (CurrentSelectedTableWizard.StartsWith("Table:"))
+            {
+                string TableWizardName = CurrentSelectedTableWizard.Substring(7);
+
+                // Separate the table name from the database
+                var (Database, TableName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+
+                // Get the data from the Parquet file
+                DataSourceData = await dataloader.LoadParquet(Database, TableName);
+                DataName = TableName;
+            }
+            else if (CurrentSelectedTableWizard.StartsWith("View:"))
+            {
+                string TableWizardName = CurrentSelectedTableWizard.Substring(6);
+
+                // Separate the view name from the database
+                var (Database, ViewName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+
+                // Get the data from the View file
+                DataSourceData = await dataloader.LoadView(Database, ViewName);
+                DataName = ViewName;
+            }
+
             if (connectionType == ConnectionType.FabricWarehouse)
             {
 

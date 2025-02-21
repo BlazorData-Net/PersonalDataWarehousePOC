@@ -702,7 +702,7 @@ else
                 var (Database, ViewName) = DataService.ExtractDatabaseAndTable(TableWizardName);
 
                 // Get the data from the View file
-                DataSourceData = await dataloader.LoadView(CurrentDatabaseName, ViewName);
+                DataSourceData = await dataloader.LoadView(Database, ViewName);
                 DataName = ViewName;
             }
             //transform to ordered dictionaries to make import easier
