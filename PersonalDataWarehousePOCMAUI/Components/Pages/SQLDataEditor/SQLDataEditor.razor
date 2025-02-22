@@ -71,8 +71,8 @@
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog Close="CloseShowConnectionDialog"
-                              ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
-                              OnSetConnection="SetConnectionString" />
+    ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
+    OnSetConnection="SetConnectionString" />
 }
 
 @if (showPrimaryKeyWarningDialog)
@@ -284,7 +284,7 @@ else
 }
 
 @code {
-#nullable disable
+    #nullable disable
     private Sheet sheet;
 
     bool isLoading = false;
@@ -1475,6 +1475,13 @@ else
                 DataSourceData = await dataloader.LoadView(Database, ViewName);
                 DataName = ViewName;
             }
+
+            // Parse objDataParametersResult.data to a list of dictionaries
+            var columns = DataSourceData.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
+            var FinalColumns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"));
+
+            // Turn data into a DataTable
+            DataTable dt = DataService.ConvertToDataTable(DataSourceData, FinalColumns);
 
             if (connectionType == ConnectionType.FabricWarehouse)
             {
