@@ -269,7 +269,7 @@ else
                         </div>
                     </div>
                     <div class="window-body has-space">
-                        <p>Exporting Data...</p>
+                        <p>@ExportDataMesssage</p>
                         <br />
                         @if (IsExportLoading)
                         {
@@ -322,6 +322,7 @@ else
 
     private bool IsExportProgressVisible { get; set; } = false;
     private bool IsExportLoading { get; set; } = false;
+    private string ExportDataMesssage { get; set; } = "";
 
     private List<string> TableList = new List<string>();
     private List<string> ViewList = new List<string>();
@@ -1445,6 +1446,7 @@ else
         // Open ExportProgress
         IsExportLoading = true;
         IsExportProgressVisible = true;
+        ExportDataMesssage = "Exporting Data...";
 
         try
         {
@@ -1481,7 +1483,19 @@ else
             var FinalColumns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"));
 
             // Turn data into a DataTable
-            DataTable dt = DataService.ConvertToDataTable(DataSourceData, FinalColumns);
+            DataTable ExportDataTable = DataService.ConvertToDataTable(DataSourceData, FinalColumns);
+
+            var TotalRows = ExportDataTable.Rows.Count;
+
+            // Loop through dt and display progress in ExportDataMesssage with a 1 second delay for each row
+            int i = 0;
+            foreach (DataRow row in ExportDataTable.Rows)
+            {
+                i++;
+                ExportDataMesssage = $"Exporting Data... {i} of {TotalRows}";
+                await Task.Delay(1);
+                StateHasChanged();
+            }
 
             if (connectionType == ConnectionType.FabricWarehouse)
             {
