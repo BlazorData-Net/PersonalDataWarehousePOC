@@ -1436,6 +1436,8 @@ else
 
     private async Task doExportTableWizardAsync()
     {
+        int i = 0;
+
         // Close any popups
         ShowTableDeleteConfirmation = false;
         IsExportWizardVisible = false;
@@ -1478,6 +1480,13 @@ else
                 DataName = ViewName;
             }
 
+            // If DataSourceData is empty, show an error message
+            if (DataSourceData.Count() == 0)
+            {
+                ErrorMessage = "No data found in the selected data source.";
+                return;
+            }
+
             // Parse objDataParametersResult.data to a list of dictionaries
             var columns = DataSourceData.Select(x => x.ToDictionary(y => y.Key, y => y.Value)).FirstOrDefault();
             var FinalColumns = columns.ToDictionary(x => x.Key, x => Type.GetType("System.String"));
@@ -1487,24 +1496,36 @@ else
 
             var TotalRows = ExportDataTable.Rows.Count;
 
-            // Loop through dt and display progress in ExportDataMesssage with a 1 second delay for each row
-            int i = 0;
-            foreach (DataRow row in ExportDataTable.Rows)
+            List<string> ColumnNames = new List<string>();
+
+            foreach (var column in FinalColumns)
             {
-                i++;
-                ExportDataMesssage = $"Exporting Data... {i} of {TotalRows}";
-                await Task.Delay(1);
-                StateHasChanged();
+                ColumnNames.Add(column.Key);
             }
+
+            // Create a SQL script to create the table using ColumnNames as the columns with all columns as nvarchar(max)
+            string CreateTableSQL = DataService.GenerateCreateTableScript(ImportTableName, ColumnNames);
 
             if (connectionType == ConnectionType.FabricWarehouse)
             {
-
+                foreach (DataRow row in ExportDataTable.Rows)
+                {
+                    i++;
+                    ExportDataMesssage = $"Exporting Data... {i} of {TotalRows}";
+                    await Task.Delay(1);
+                    StateHasChanged();
+                }
             }
 
             if (connectionType == ConnectionType.SQLServer)
             {
-
+                foreach (DataRow row in ExportDataTable.Rows)
+                {
+                    i++;
+                    ExportDataMesssage = $"Exporting Data... {i} of {TotalRows}";
+                    await Task.Delay(1);
+                    StateHasChanged();
+                }
             }
         }
         catch (Exception ex)

@@ -10,6 +10,7 @@
     using System.Threading.Tasks;
     using DataColumn = Parquet.Data.DataColumn;
     using ClosedXML.Excel;
+    using System.Text;
 
     public class DataService
     {
@@ -281,16 +282,26 @@
         {
             var dt = new DataTable();
 
-            // 1. Add columns to the DataTable
+            // Remove a _Id column from columnsDefinition if it exists
+            if (columnsDefinition.ContainsKey("_Id"))
+            {
+                columnsDefinition.Remove("_Id");
+            }
+
+            //  Add a new _Id column as the first column in the DataTable
+            dt.Columns.Add("_Id", typeof(int));
+
+            // Add columns to the DataTable
             foreach (var column in columnsDefinition)
             {
                 dt.Columns.Add(column.Key, column.Value);
             }
 
-            // 2. For each record in sourceData, create a row in the DataTable
+            //  For each record in sourceData, create a row in the DataTable
             foreach (var record in sourceData)
             {
                 var row = dt.NewRow();
+
                 foreach (var column in columnsDefinition)
                 {
                     // Make sure the record actually contains this key
@@ -300,11 +311,45 @@
                     else
                         row[column.Key] = DBNull.Value;
                 }
+
                 dt.Rows.Add(row);
             }
 
+            //  Set the _Id column values to increment from 1
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                dt.Rows[i]["_Id"] = i + 1;
+            }
+
             return dt;
-        } 
+        }
+        #endregion
+
+        // Create a SQL script to create the table using FinalColumns as the columns with all coumns as nvarchar(max)
+        #region public string GenerateCreateTableScript(string tableName, IEnumerable<string> tableColumns)
+        public string GenerateCreateTableScript(string tableName, IEnumerable<string> tableColumns)
+        {
+            // Create the SQL script
+            var script = new StringBuilder();
+
+            script.AppendLine($"CREATE TABLE [{tableName}] (");
+
+            // Make the first column the primary key named Id
+            script.AppendLine("    [Id] INT PRIMARY KEY IDENTITY(1,1),");
+
+            // Make tableColumns without the first column
+            tableColumns = tableColumns.Skip(1);
+
+            foreach (var column in tableColumns.Select(c => c.Trim()))
+            {
+                script.AppendLine($"    [{column}] NVARCHAR(MAX],");
+            }
+
+            // Remove the trailing comma from the last column
+            script.Remove(script.Length - 3, 1);
+            script.AppendLine(");");
+            return script.ToString();
+        }
         #endregion
 
         // Utility
