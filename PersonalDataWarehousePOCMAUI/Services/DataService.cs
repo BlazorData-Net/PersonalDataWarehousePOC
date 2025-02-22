@@ -11,6 +11,7 @@
     using DataColumn = Parquet.Data.DataColumn;
     using ClosedXML.Excel;
     using System.Text;
+    using static PersonalDataWarehousePOCMAUI.Services.SettingsService;
 
     public class DataService
     {
@@ -326,8 +327,10 @@
         #endregion
 
         // Create a SQL script to create the table using FinalColumns as the columns with all coumns as nvarchar(max)
-        #region public string GenerateCreateTableScript(string tableName, IEnumerable<string> tableColumns)
-        public string GenerateCreateTableScript(string tableName, IEnumerable<string> tableColumns)
+        #region public string GenerateCreateTableScript(string tableName, IEnumerable<string> tableColumns, ConnectionType paramConnectionType)
+        public string GenerateCreateTableScript(string tableName, 
+            IEnumerable<string> tableColumns,
+            ConnectionType paramConnectionType)
         {
             // Create the SQL script
             var script = new StringBuilder();
@@ -335,7 +338,10 @@
             script.AppendLine($"CREATE TABLE [{tableName}] (");
 
             // Make the first column the primary key named Id
-            script.AppendLine("    [Id] INT PRIMARY KEY IDENTITY(1,1),");
+            if(paramConnectionType == ConnectionType.SQLServer)
+                script.AppendLine("    [Id] INT PRIMARY KEY IDENTITY(1,1),");
+            else // Fabric Warehouse
+                script.AppendLine("    [Id] INT PRIMARY KEY,");
 
             // Make tableColumns without the first column
             tableColumns = tableColumns.Skip(1);

@@ -1504,7 +1504,7 @@ else
             }
 
             // Create a SQL script to create the table using ColumnNames as the columns with all columns as nvarchar(max)
-            string CreateTableSQL = DataService.GenerateCreateTableScript(ImportTableName, ColumnNames);
+            string CreateTableSQL = DataService.GenerateCreateTableScript(ImportTableName, ColumnNames, connectionType);
 
             if (connectionType == ConnectionType.FabricWarehouse)
             {
