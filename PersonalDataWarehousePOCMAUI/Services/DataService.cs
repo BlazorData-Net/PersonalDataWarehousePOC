@@ -326,7 +326,6 @@
         }
         #endregion
 
-        // Create a SQL script to create the table using FinalColumns as the columns with all coumns as nvarchar(max)
         #region public string GenerateCreateTableScript(string tableName, IEnumerable<string> tableColumns, ConnectionType paramConnectionType)
         public string GenerateCreateTableScript(string tableName, 
             IEnumerable<string> tableColumns,
@@ -348,7 +347,7 @@
 
             foreach (var column in tableColumns.Select(c => c.Trim()))
             {
-                script.AppendLine($"    [{column}] NVARCHAR(MAX],");
+                script.AppendLine($"    [{column}] NVARCHAR(MAX),");
             }
 
             // Remove the trailing comma from the last column
