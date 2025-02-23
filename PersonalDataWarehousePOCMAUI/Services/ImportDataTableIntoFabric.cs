@@ -48,6 +48,7 @@ public class ImportDataTableIntoFabric
                 var row = new Row(
                     databaseFields.Select(f => CleanValue(dataRow[f]?.ToString())).ToArray()
                 );
+
                 parquetTable.Add(row);
             }
 

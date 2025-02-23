@@ -340,17 +340,23 @@
             if(paramConnectionType == ConnectionType.SQLServer)
                 script.AppendLine("    [Id] INT PRIMARY KEY IDENTITY(1,1),");
             else // Fabric Warehouse
-                script.AppendLine("    [Id] INT PRIMARY KEY,");
-
+                script.AppendLine("    [_Id] VARCHAR(8000) NOT NULL,");
 
             foreach (var column in tableColumns.Select(c => c.Trim()))
-            {
-                script.AppendLine($"    [{column}] NVARCHAR(MAX),");
+            {              
+                if (paramConnectionType == ConnectionType.SQLServer)
+                    script.AppendLine($"    [{column}] NVARCHAR(MAX),");
+                else // Fabric Warehouse
+                    script.AppendLine($"    [{column}] VARCHAR(MAX),");
             }
 
             // Remove the trailing comma from the last column
             script.Remove(script.Length - 3, 1);
             script.AppendLine(");");
+
+            if (paramConnectionType == ConnectionType.FabricWarehouse)
+                script.AppendLine($" ALTER TABLE [{tableName}] ADD CONSTRAINT PK_{tableName} PRIMARY KEY NONCLUSTERED (_Id) NOT ENFORCED;");
+
             return script.ToString();
         }
         #endregion
