@@ -1708,6 +1708,9 @@ else
             IsExportProgressVisible = false;
             IsExportWizardVisible = false;
 
+            // Refresh the list of tables
+            GetTablesInDatabase();
+
             if (ErrorMessage == "")
             {
                 ErrorMessage = "Export Complete";
