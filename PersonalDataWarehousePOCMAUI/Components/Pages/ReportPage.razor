@@ -99,6 +99,7 @@
     <div class="modal-backdrop fade show"></div>
 }
 
+
 @if (IsWizardVisible)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -120,7 +121,7 @@
                             })">
                             @foreach (var table in TableList)
                             {
-                                <option value="@table">
+                                <option value="@table" selected="@(table == CurrentSelectedTableWizard ? "selected" : null)">
                                     @table
                                 </option>
                             }
@@ -134,6 +135,7 @@
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+
 
 @if (IsSaveReportPopupVisible)
 {
@@ -179,6 +181,7 @@
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+
 
 @if (Message != "")
 {
@@ -241,15 +244,43 @@
     private async Task LoadTableAndViewListDropdownAsync()
     {
         TableList = new List<string>();
-        TableList = await databaseService.GetAllTablesAsync();
 
-        var ViewList = await databaseService.GetAllViewsAsync();
-        TableList.AddRange(ViewList);
+        var colTables = await databaseService.GetAllTablesAsync();
 
-        if (TableList.Count > 0)
+        if (colTables.Count > 0)
         {
-            CurrentSelectedTableWizard = TableList.First();
+            // Add each table to the list prepended with "Table: "
+            foreach (var table in colTables)
+            {
+                TableList.Add($"Table: {table}");
+            }
         }
+
+        // Get all Views
+        var colViews = await databaseService.GetAllViewsAsync();
+
+        if (colViews.Count > 0)
+        {
+            // Add each view to the list prepended with "View: "
+            foreach (var view in colViews)
+            {
+                TableList.Add($"View: {view}");
+            }
+        }
+
+        // Sort the list
+        TableList.Sort();
+
+        // sort so that entries that begin with "default/" are listed first
+        TableList.Sort(
+            (x, y) => x.StartsWith("Default/") == y.StartsWith("Default/")
+            ? 0
+            : x.StartsWith("Default/") ? -1 : 1);
+
+        // Add: * Select DataSource* at the end of the list
+        TableList.Add("*Select DataSource*");
+
+        CurrentSelectedTableWizard = TableList.Last();
     }
 
     // Report Dropdown
@@ -320,9 +351,9 @@
 
     private void onReportWizard()
     {
-        if (string.IsNullOrEmpty(CurrentSelectedTableWizard))
+        if (string.IsNullOrEmpty(CurrentSelectedTableWizard) || (CurrentSelectedTableWizard == "*Select DataSource*"))
         {
-            Message = "Please select a table.";
+            Message = "Please select a table or a view.";
             return;
         }
 
