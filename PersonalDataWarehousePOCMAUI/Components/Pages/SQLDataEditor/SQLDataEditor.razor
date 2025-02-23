@@ -1507,12 +1507,70 @@ else
 
             if (connectionType == ConnectionType.FabricWarehouse)
             {
-                foreach (DataRow row in ExportDataTable.Rows)
+                ExportDataMesssage = $"Exporting {TotalRows} rows of data...";
+                await Task.Delay(1000);
+                StateHasChanged();
+
+                // Connect to the database and delete ImportTableName if it exists
+                using (SqlConnection connection = new SqlConnection(DatabaseConnectionString))
                 {
-                    i++;
-                    ExportDataMesssage = $"Exporting Data... {i} of {TotalRows}";
-                    await Task.Delay(1);
-                    StateHasChanged();
+                    try
+                    {
+                        connection.Open();
+
+                        // Drop the table if it exists
+                        ExportDataMesssage = $"Drop the table if it exists...";
+                        await Task.Delay(1000);
+                        StateHasChanged();
+
+                        string query = $"IF OBJECT_ID('{ImportTableName}', 'U') IS NOT NULL DROP TABLE {ImportTableName}";
+
+                        using (SqlCommand command = new SqlCommand(query, connection))
+                        {
+                            command.ExecuteNonQuery();
+                        }
+
+                        // Create the table
+                        ExportDataMesssage = $"Create the table... Bulk insert the data...";
+                        await Task.Delay(1000);
+                        StateHasChanged();
+
+                        using (SqlCommand command = new SqlCommand(CreateTableSQL, connection))
+                        {
+                            command.ExecuteNonQuery();
+                        }
+
+                        // Insert the data
+                        ExportDataMesssage = $"Processing...";
+                        await Task.Delay(1000);
+                        StateHasChanged();
+
+                        // i = 0;
+                        // using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection))
+                        // {
+                        //     bulkCopy.DestinationTableName = ImportTableName;
+
+                        //     foreach (DataColumn column in ExportDataTable.Columns)
+                        //     {
+                        //         bulkCopy.ColumnMappings.Add(i, i);
+                        //         i++;
+                        //     }
+
+                        //     bulkCopy.WriteToServer(ExportDataTable);
+                        // }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorMessage = ex.GetBaseException().Message;
+                    }
+                    finally
+                    {
+                        if (connection.State == ConnectionState.Open)
+                        {
+                            connection.Close();
+                        }
+                    }
                 }
             }
 
