@@ -1518,7 +1518,7 @@ else
 
             if (connectionType == ConnectionType.SQLServer)
             {
-                ExportDataMesssage = $"Exporting {TotalRows} rown of data...";
+                ExportDataMesssage = $"Exporting {TotalRows} rows of data...";
                 await Task.Delay(1000);
                 StateHasChanged();
 
@@ -1535,14 +1535,14 @@ else
                         StateHasChanged();
 
                         string query = $"IF OBJECT_ID('{ImportTableName}', 'U') IS NOT NULL DROP TABLE {ImportTableName}";
-                        
+
                         using (SqlCommand command = new SqlCommand(query, connection))
                         {
                             command.ExecuteNonQuery();
                         }
 
                         // Create the table
-                        ExportDataMesssage = $"Create the table...";
+                        ExportDataMesssage = $"Create the table... Bulk insert the data...";
                         await Task.Delay(1000);
                         StateHasChanged();
 
@@ -1552,17 +1552,19 @@ else
                         }
 
                         // Bulk insert the data
-                        ExportDataMesssage = $"Bulk insert the data...";
+                        ExportDataMesssage = $"Processing...";
                         await Task.Delay(1000);
                         StateHasChanged();
 
+                        i = 0;
                         using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection))
                         {
                             bulkCopy.DestinationTableName = ImportTableName;
 
                             foreach (DataColumn column in ExportDataTable.Columns)
                             {
-                                bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
+                                bulkCopy.ColumnMappings.Add(i, i);
+                                i++;
                             }
 
                             bulkCopy.WriteToServer(ExportDataTable);
@@ -1594,10 +1596,12 @@ else
         }
         finally
         {
-            // IsExportLoading = false;
-            // IsExportProgressVisible = false;
-            // IsExportWizardVisible = true;
+            IsExportLoading = false;
+            IsExportProgressVisible = false;
+            IsExportWizardVisible = false;
         }
+
+        ErrorMessage = "Import Complete";
     }
     #endregion
 

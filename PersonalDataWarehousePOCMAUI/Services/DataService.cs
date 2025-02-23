@@ -295,7 +295,7 @@
             // Add columns to the DataTable
             foreach (var column in columnsDefinition)
             {
-                dt.Columns.Add(column.Key, column.Value);
+                dt.Columns.Add($"{column.Key}", typeof(string));
             }
 
             //  For each record in sourceData, create a row in the DataTable
@@ -342,8 +342,6 @@
             else // Fabric Warehouse
                 script.AppendLine("    [Id] INT PRIMARY KEY,");
 
-            // Make tableColumns without the first column
-            tableColumns = tableColumns.Skip(1);
 
             foreach (var column in tableColumns.Select(c => c.Trim()))
             {
