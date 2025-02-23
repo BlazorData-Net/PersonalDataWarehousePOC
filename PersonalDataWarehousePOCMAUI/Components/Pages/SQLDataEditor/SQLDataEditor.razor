@@ -1531,7 +1531,7 @@ else
                         }
 
                         // Create the table
-                        ExportDataMesssage = $"Create the table... Bulk insert the data...";
+                        ExportDataMesssage = $"Create the table... Insert the data...";
                         await Task.Delay(1000);
                         StateHasChanged();
 
@@ -1545,20 +1545,62 @@ else
                         await Task.Delay(1000);
                         StateHasChanged();
 
-                        // i = 0;
-                        // using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection))
-                        // {
-                        //     bulkCopy.DestinationTableName = ImportTableName;
+                        // Split DataTable into 1000 row chunks
+                        var dtChunks = ExportDataTable.AsEnumerable().Select((row, index) => new { row, index })
+                            .GroupBy(x => x.index / 1000)
+                            .Select(g => g.Select(x => x.row));
 
-                        //     foreach (DataColumn column in ExportDataTable.Columns)
-                        //     {
-                        //         bulkCopy.ColumnMappings.Add(i, i);
-                        //         i++;
-                        //     }
+                        i = 0;
+                        // Convert each chunk to a DataTable
+                        foreach (var dtChunk in dtChunks)
+                        {
+                            ExportDataMesssage = $"Processing {ImportTableName}-{i}...";
+                            await Task.Delay(1000);
+                            StateHasChanged();
 
-                        //     bulkCopy.WriteToServer(ExportDataTable);
-                        // }
+                            DataTable dt = dtChunk.CopyToDataTable();
 
+                            // Export the DataTable to Parquet
+                            //byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(dt, $"{ImportTableName}-{i}");
+
+                            // *****************************************
+                            // Import data from UpdateDataTable into Fabric
+                            // *****************************************
+
+                            if (dt.Rows.Count > 0)
+                            {
+                                ImportDataTableIntoFabric objImportDataTableIntoFabric = new ImportDataTableIntoFabric();
+                                objImportDataTableIntoFabric.InputDataTable = dt;
+                                objImportDataTableIntoFabric.TableName = ImportTableName;
+                                objImportDataTableIntoFabric.DataWarehouseConnectionString = DatabaseConnectionString;
+                                objImportDataTableIntoFabric.StorageAccountName = StorageAccountName;
+                                objImportDataTableIntoFabric.StorageAccountKey = AccountKey;
+                                objImportDataTableIntoFabric.StorageContainer = ContainerName;
+
+                                var result = await objImportDataTableIntoFabric.ImportDataAsync();
+
+                                if (result != "")
+                                {
+                                    colGeneralErrors.Add(result);
+                                }
+                            }
+
+                            i++;
+                        }
+
+                        // If colGeneralErrors has any errors, show the error message
+                        if (colGeneralErrors.Count > 0)
+                        {
+                            string FinalErrorMessage = "";
+
+                            // Show the error messages in the colGeneralErrors collection
+                            foreach (var error in colGeneralErrors)
+                            {
+                                FinalErrorMessage = FinalErrorMessage + " - " + error;
+                            }
+
+                            ErrorMessage = FinalErrorMessage;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -1657,9 +1699,12 @@ else
             IsExportLoading = false;
             IsExportProgressVisible = false;
             IsExportWizardVisible = false;
-        }
 
-        ErrorMessage = "Import Complete";
+            if (ErrorMessage == "")
+            {
+                ErrorMessage = "Export Complete";
+            }
+        }        
     }
     #endregion
 
