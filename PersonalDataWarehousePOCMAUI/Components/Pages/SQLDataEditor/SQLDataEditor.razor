@@ -1545,23 +1545,31 @@ else
                         await Task.Delay(1000);
                         StateHasChanged();
 
-                        // Split DataTable into 1000 row chunks
+                        // Split DataTable into chunks
                         var dtChunks = ExportDataTable.AsEnumerable().Select((row, index) => new { row, index })
-                            .GroupBy(x => x.index / 1000)
+                            .GroupBy(x => x.index / 200000)
                             .Select(g => g.Select(x => x.row));
 
-                        i = 0;
+                        // Set TotalChunks to how many chunks we will have based on the total row count
+                        int TotalChunks = dtChunks.Count();
+
+                        i = 1;
                         // Convert each chunk to a DataTable
                         foreach (var dtChunk in dtChunks)
                         {
-                            ExportDataMesssage = $"Processing {ImportTableName}-{i}...";
+                            if (TotalChunks > 1)
+                            {
+                                ExportDataMesssage = $"Processing {ImportTableName} - {i} of {TotalChunks} batches...";
+                            }
+                            else
+                            {
+                                ExportDataMesssage = $"Processing {ImportTableName}...";
+                            }
+
                             await Task.Delay(1000);
                             StateHasChanged();
 
                             DataTable dt = dtChunk.CopyToDataTable();
-
-                            // Export the DataTable to Parquet
-                            //byte[] ParquetContents = await DataService.ExportDataTableToParquetAsync(dt, $"{ImportTableName}-{i}");
 
                             // *****************************************
                             // Import data from UpdateDataTable into Fabric
