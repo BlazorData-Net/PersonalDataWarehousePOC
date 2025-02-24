@@ -152,19 +152,7 @@
                     <div class="window-body has-space">
                         <form @onsubmit="SaveReport">
                             <div>
-                                <label>Select Database: </label>
-                                <select @onchange="@(async (args) =>
-                                {
-                                    CurrentDatabaseName = args.Value?.ToString();
-                                })">
-                                    @foreach (var database in colAllDatabases)
-                                    {
-                                        <option value="@database"
-                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
-                                            @database
-                                        </option>
-                                    }
-                                </select>
+                                <label><b>Current Database:</b> @CurrentDatabaseName</label>
                             </div>
                             <br />
                             <div>
@@ -357,15 +345,25 @@
             return;
         }
 
-        if (CurrentReportName.Trim().Length == 0)
+        if (CurrentSelectedTableWizard.StartsWith("Table:"))
         {
-            CurrentReportNameWithoutDatabase = "";
+            string TableWizardName = CurrentSelectedTableWizard.Substring(7);
+
+            // Separate the table name from the database
+            var (Database, TableName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+
+            CurrentDatabaseName = Database;
+            CurrentReportNameWithoutDatabase = $"Report{TableName}";
         }
-        else
+        else if (CurrentSelectedTableWizard.StartsWith("View:"))
         {
-            // Strip out Database from CurrentReportName and set to CurrentReportNameWithoutDatabase
-            var (Database, Table) = DataService.ExtractDatabaseAndTable(CurrentReportName);
-            CurrentReportNameWithoutDatabase = Table;
+            string TableWizardName = CurrentSelectedTableWizard.Substring(6);
+
+            // Separate the view name from the database
+            var (Database, ViewName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+
+            CurrentDatabaseName = Database;
+            CurrentReportNameWithoutDatabase =  $"Report{ViewName}";
         }
 
         // Open the New Table popup
