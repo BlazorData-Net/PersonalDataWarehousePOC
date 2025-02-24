@@ -141,19 +141,7 @@ else
                     <div class="window-body has-space">
                         <form @onsubmit="SaveQueryAsync">
                             <div>
-                                <label>Select Database: </label>
-                                <select @onchange="@(async (args) =>
-                                {
-                                    CurrentDatabaseName = args.Value?.ToString();
-                                })">
-                                    @foreach (var database in AllDatabases)
-                                    {
-                                        <option value="@database"
-                                                selected="@(database == CurrentDatabaseName ? "selected" : null)">
-                                            @database
-                                        </option>
-                                    }
-                                </select>
+                                <label><b>Current Database:</b> @CurrentDatabaseName</label>
                             </div>
                             <br />
                             <div>
@@ -196,7 +184,7 @@ else
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
                                           style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                        </textarea>
+                                                </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -505,11 +493,28 @@ else
         if (!string.IsNullOrEmpty(CurrentQueryName))
         {
             var (db, qName) = DataService.ExtractDatabaseAndTable(CurrentQueryName);
+            CurrentDatabaseName = db;
             CurrentQueryNameWithoutDatabase = qName;
         }
         else
         {
-            CurrentQueryNameWithoutDatabase = "";
+            // Get CurrentDatabaseName from the CurrentSelectedTableWizard
+            if (CurrentSelectedTableWizard.StartsWith("Table:"))
+            {
+                string TableWizardName = CurrentSelectedTableWizard.Substring(7);
+                // Separate the table name from the database
+                var (Database, TableName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+                CurrentDatabaseName = Database;
+                CurrentQueryNameWithoutDatabase = $"KQL{TableName}";
+            }
+            else if (CurrentSelectedTableWizard.StartsWith("View:"))
+            {
+                string TableWizardName = CurrentSelectedTableWizard.Substring(6);
+                // Separate the view name from the database
+                var (Database, ViewName) = DataService.ExtractDatabaseAndTable(TableWizardName);
+                CurrentDatabaseName = Database;
+                CurrentQueryNameWithoutDatabase = $"KQL{ViewName}";
+            }
         }
 
         IsSaveQueryPopupVisible = true;
@@ -708,14 +713,14 @@ else
             }
             //transform to ordered dictionaries to make import easier
             var orderedData = DataSourceData.Select(ToOrdered).ToArray();
-            var tableSource=TableBuilder.FromOrderedDictionarySet(DataName, orderedData)
+            var tableSource = TableBuilder.FromOrderedDictionarySet(DataName, orderedData)
                 .ToTableSource();
             //auto infer any string columns (columns which are already typed will be skipped)
-            //this is generally safe to do but can lead to unwanted inference, for example in 
+            //this is generally safe to do but can lead to unwanted inference, for example in
             //a column where you have strings that look like numbers but you actually want to keep them as strings
             //for some reason so you might want a more sophisticated policy in future.
-            tableSource = TableBuilder.AutoInferColumnTypes(tableSource, new NullConsole()); 
-            
+            tableSource = TableBuilder.AutoInferColumnTypes(tableSource, new NullConsole());
+
             kustoContext.AddTable(tableSource);
 
             var result = await kustoContext.RunQuery(CurrentScript);
