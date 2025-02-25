@@ -503,15 +503,18 @@
 
     private async Task PrepareReportAsync()
     {
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
         // Create the report
         using var report = new LocalReport();
 
         // Define the report parameters
-        var parameters = new[] { new ReportParameter("Title", CurrentReportName) };
+        var parameters = new[] { new ReportParameter("Title", ReportName) };
 
         // Load the report definition
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
-        var reportPath = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        var reportPath = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
 
         if (!System.IO.File.Exists(reportPath))
         {
@@ -534,7 +537,7 @@
         // Open the .rdlc file and get the SchemaPath to get the ClassName
         String ClassType = "Table";
         var ClassName = XsdGenerator.GetTableName(reportPath);
-        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Views";
+        String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
         var fileName = Path.Combine(viewsFolder, $"{ClassName}.view");
         if (System.IO.File.Exists(fileName))
         {
@@ -550,12 +553,12 @@
         if (ClassType == "Table")
         {
             // Get the data from the Parquet file            
-            result = await dataloader.LoadParquet(CurrentDatabaseName, ClassName);
+            result = await dataloader.LoadParquet(Database, ClassName);
         }
         else // View
         {
             // Get the data from the View file
-            result = await dataloader.LoadView(CurrentDatabaseName, ClassName);           
+            result = await dataloader.LoadView(Database, ClassName);
         }
 
         // Get the fields from the first record (ensure result is not empty)
@@ -602,7 +605,7 @@
         byte[] pdfBytes = report.Render("PDF");
 
         // To display properly we need to save the PDF as a file and re-load it
-        ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
+        ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
         var pdfPath = System.IO.Path.Combine(ReportsFolder, $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
 
         // Save the pdf to the temp file
