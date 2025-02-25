@@ -293,9 +293,12 @@
 
     private void LoadReport(string paramReport)
     {
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(paramReport);
+
         // Load the DataReport
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
-        var fileName = Path.Combine(ReportsFolder, $"{paramReport}.rdlc");
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
 
         if (System.IO.File.Exists(fileName))
         {
@@ -418,19 +421,15 @@
             return;
         }
 
-        // Check for duplicates
-        if (DetectDuplicates(CurrentDatabaseName, CurrentReportNameWithoutDatabase))
-        {
-            Message = "A Table or View with this name already exists.";
-            return;
-        }
+        // CurrentObjectName is everything after the "/" in CurrentSelectedTableWizard
+        string CurrentObjectDataName = CurrentSelectedTableWizard.Substring(CurrentSelectedTableWizard.IndexOf("/") + 1);
 
         String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
         var fileName = Path.Combine(ReportsFolder, $"{CurrentReportNameWithoutDatabase}.rdlc");
 
         // Load the code for the class we want to generate the RDL for
         String ClassesFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Classes";
-        var codeFile = Path.Combine(ClassesFolder, $"{CurrentSelectedTableWizard}.cs");
+        var codeFile = Path.Combine(ClassesFolder, $"{CurrentObjectDataName}.cs");
 
         if (!System.IO.File.Exists(codeFile))
         {
@@ -442,13 +441,13 @@
         var code = System.IO.File.ReadAllText(codeFile);
 
         // Get the Type for the class we want to generate the RDL for
-        var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(CurrentSelectedTableWizard));
+        var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(CurrentObjectDataName));
 
         // Generate an RDL string dynamically:
         string rdlXml = DynamicRdlBuilder.GenerateDynamicRdl(
             ClassType,
             reportTitle: $"{CurrentReportNameWithoutDatabase} Report",
-            schemaPath: @$"{ReportsFolder}\Data\{CurrentSelectedTableWizard}.xsd"
+            schemaPath: @$"{ReportsFolder}\Data\{CurrentObjectDataName}.xsd"
         );
 
         // You can then save the string to a .rdl file:

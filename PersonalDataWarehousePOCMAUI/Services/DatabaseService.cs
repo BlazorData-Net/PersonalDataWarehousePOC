@@ -507,20 +507,20 @@
             // Find all subdirectories named "Reports" (recursively)
             var ReportsDirs = Directory.EnumerateDirectories(RootFolder, "Reports", SearchOption.AllDirectories);
 
-            foreach (var viewDir in ReportsDirs)
+            foreach (var reportDir in ReportsDirs)
             {
                 // Get the parent folder name of the "Reports" directory
-                string parentFolder = Path.GetFileName(Path.GetDirectoryName(viewDir));
+                string parentFolder = Path.GetFileName(Path.GetDirectoryName(reportDir));
 
-                // Find all .view files in this "Reports" directory (no further recursion)
-                var viewFiles = Directory.EnumerateFiles(viewDir, "*.view", SearchOption.TopDirectoryOnly);
+                // Find all .rdlc files in this "Reports" directory (no further recursion)
+                var viewFiles = Directory.EnumerateFiles(reportDir, "*.rdlc", SearchOption.TopDirectoryOnly);
 
                 foreach (var file in viewFiles)
                 {
                     // Extract just the filename
                     string fileName = Path.GetFileNameWithoutExtension(file);
 
-                    // Format: "ParentFolder/ViewFileName"
+                    // Format: "Database Name/Report Name"
                     result.Add($"{parentFolder}/{fileName}");
                 }
             }
