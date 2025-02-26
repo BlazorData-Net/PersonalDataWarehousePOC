@@ -51,7 +51,7 @@
     @if (CurrentReportName != "")
     {
         <span>&nbsp; &nbsp;</span>
-        <button @onclick="DeleteConfirmationAsync">Delete Report</button>
+        <button @onclick="onDeleteConfirmation">Delete Report</button>
         <span>&nbsp; &nbsp;</span>
         <button @onclick="Execute">Display Report</button>
     }
@@ -333,6 +333,7 @@
         if (System.IO.File.Exists(fileName))
         {
             // Set CurrentReportName
+            //"CurrentReportName " needs to have the database prepended in front of the name
             CurrentReportName = paramReport;
         }
         else
@@ -344,7 +345,7 @@
 
     // Delete
 
-    private async Task DeleteConfirmationAsync()
+    private void onDeleteConfirmation()
     {
         if (CurrentReportName.Trim().Length == 0)
         {
