@@ -30,7 +30,7 @@
             @foreach (var Report in ReportList)
             {
                 <option value="@Report"
-                selected="@(Report == CurrentReportName ? "selected" : null)">
+                        selected="@(Report == CurrentReportName ? "selected" : null)">
                     @Report
                 </option>
             }
@@ -51,7 +51,7 @@
     @if (CurrentReportName != "")
     {
         <span>&nbsp; &nbsp;</span>
-        <button @onclick="DeleteAsync">Delete Report</button>
+        <button @onclick="DeleteConfirmationAsync">Delete Report</button>
         <span>&nbsp; &nbsp;</span>
         <button @onclick="Execute">Display Report</button>
     }
@@ -88,7 +88,7 @@
                             <button @onclick="ZoomOut">Zoom Out</button>
                             <button @onclick="PrintPdf">Print</button>
                             <div @ref="pdfContainer" id="pdf-container"
-                            style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
+                                 style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
                         </div>
 
                     </div>
@@ -130,6 +130,35 @@
                         <button @onclick="onReportWizard">Select</button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@if (ShowDeleteConfirmation)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Confirm Delete</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseDeleteConfirmationPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="DeleteAsync">Yes</button>
+                        <span>&nbsp; &nbsp;</span>
+                        <button @onclick="CloseDeleteConfirmationPopup">No</button>
+
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -211,6 +240,7 @@
     List<string> colAllDatabases = new List<string>();
     string CurrentDatabaseName = "Default";
     string CurrentReportNameWithoutDatabase = string.Empty;
+    bool ShowDeleteConfirmation = false;
 
     private bool IsWizardVisible { get; set; } = false;
     private bool IsSaveReportPopupVisible { get; set; } = false;
@@ -308,12 +338,13 @@
         else
         {
             Message = "Report not found.";
-        };
+        }
+        ;
     }
 
     // Delete
 
-    private async Task DeleteAsync()
+    private async Task DeleteConfirmationAsync()
     {
         if (CurrentReportName.Trim().Length == 0)
         {
@@ -321,24 +352,41 @@
         }
         else
         {
-            // Separate the report name from the database
-            var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
-
-            // Delete the file
-            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
-            var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
-
-            if (System.IO.File.Exists(fileName))
-            {
-                System.IO.File.Delete(fileName);
-            }
-
-            CurrentReportName = string.Empty;
-
-            Message = $"{ReportName} deleted!";
-
-            await LoadReportsListDropdownSelectDefaultReportAsync();
+            ShowDeleteConfirmation = true;
         }
+    }
+
+    private async Task DeleteAsync()
+    {
+        ShowDeleteConfirmation = false;
+
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+        // Delete the file
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            System.IO.File.Delete(fileName);
+        }
+
+        CurrentReportName = string.Empty;
+
+        Message = $"{ReportName} deleted!";
+
+        await LoadReportsListDropdownSelectDefaultReportAsync();
+    }
+
+    private void DeleteConfirmation()
+    {
+        ShowDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmationPopup()
+    {
+        ShowDeleteConfirmation = false;
     }
 
     // Report Wizard
@@ -369,7 +417,7 @@
             var (Database, ViewName) = DataService.ExtractDatabaseAndTable(TableWizardName);
 
             CurrentDatabaseName = Database;
-            CurrentReportNameWithoutDatabase =  $"Report{ViewName}";
+            CurrentReportNameWithoutDatabase = $"Report{ViewName}";
         }
 
         // Open the New Table popup
@@ -562,7 +610,7 @@
 
         if (ClassType == "Table")
         {
-            // Get the data from the Parquet file            
+            // Get the data from the Parquet file
             result = await dataloader.LoadParquet(Database, ClassName);
         }
         else // View
