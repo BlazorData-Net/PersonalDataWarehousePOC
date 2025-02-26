@@ -1,4 +1,4 @@
-### Note: In progress. Expected completion 3/1/2025
+### Note: In progress. Expected completion 4/1/2025
 
 ## Overview
 Scam artists make a lot of promises about AI, often claiming it can do things it cannot, such as predicting the future. What AI is truly good at is calculating. This application allows you to import your data, transform it using AI to perform calculations, and report and export the results.
