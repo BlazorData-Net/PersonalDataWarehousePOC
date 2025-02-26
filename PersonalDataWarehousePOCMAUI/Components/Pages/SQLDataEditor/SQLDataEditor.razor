@@ -31,48 +31,54 @@
     <button @onclick="OpenShowConnectionDialog" title="Connect to Server" style="background:none;border:none;">
         <i class="material-icons" style="color:black;">cast_connected</i>
     </button>
-    <button @onclick="btnSave" title="Save" disabled="@SavingDisabled" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">save</i>
-    </button>
-    <span style="border-right: 2px solid #D3D3D3;"></span>
-    <button @onclick="() => sheet.Commands.Undo()" title="Undo" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">undo</i>
-    </button>
-    <button @onclick="() => sheet.Commands.Redo()" title="Redo" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">redo</i>
-    </button>
-    <span style="border-right: 2px solid #D3D3D3;"></span>
-    <button @onclick="InsertRowAfterSelection" title="Insert Row" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">add</i>
-    </button>
-    <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">remove</i>
-    </button>
-    <span style="border-right: 2px solid #D3D3D3;"></span>
-    <button @onclick="Export" title="Export" style="background:none;border:none;">
-        <i class="material-icons" style="color:black;">file_upload</i>
-    </button>
-    <span style="border-right: 2px solid #D3D3D3;"></span>
-    <span>&nbsp; Table: </span>
-    <select @onchange="OnSelectedTableChanged" style="width: 300px; border-block:hidden">
-        @foreach (var tableName in tableNames)
-        {
-            <option value="@tableName">@tableName</option>
-        }
-    </select>
-    <span>&nbsp;</span>
-    <button @onclick="LoadTableDataButton">Load</button>
-    <span>&nbsp;</span>
-    <span style="border-right: 2px solid #D3D3D3;"></span>
-    <input type="checkbox" @onclick="() => onValidationChange()" @bind="UseValidation" id="CheckBoxValidation" />
-    <label for="CheckBoxValidation" style="margin-left: 8px; vertical-align: middle;">Validators</label>
+
+    @if (tableNames.Count > 0)
+    {
+
+        <button @onclick="btnSave" title="Save" disabled="@SavingDisabled" style="background:none;border:none;">
+            <i class="material-icons" style="color:black;">save</i>
+        </button>
+        <span style="border-right: 2px solid #D3D3D3;"></span>
+        <button @onclick="() => sheet.Commands.Undo()" title="Undo" style="background:none;border:none;">
+            <i class="material-icons" style="color:black;">undo</i>
+        </button>
+        <button @onclick="() => sheet.Commands.Redo()" title="Redo" style="background:none;border:none;">
+            <i class="material-icons" style="color:black;">redo</i>
+        </button>
+        <span style="border-right: 2px solid #D3D3D3;"></span>
+        <button @onclick="InsertRowAfterSelection" title="Insert Row" style="background:none;border:none;">
+            <i class="material-icons" style="color:black;">add</i>
+        </button>
+        <button @onclick="RemoveRow" title="Delete Row" style="background:none;border:none;">
+            <i class="material-icons" style="color:black;">remove</i>
+        </button>
+        <span style="border-right: 2px solid #D3D3D3;"></span>
+        <button @onclick="Export" title="Export" style="background:none;border:none;">
+            <i class="material-icons" style="color:black;">file_upload</i>
+        </button>
+        <span style="border-right: 2px solid #D3D3D3;"></span>
+        <span>&nbsp; Table: </span>
+        <select @onchange="OnSelectedTableChanged" style="width: 300px; border-block:hidden">
+            @foreach (var tableName in tableNames)
+            {
+                <option value="@tableName">@tableName</option>
+            }
+        </select>
+        <span>&nbsp;</span>
+        <button @onclick="LoadTableDataButton">Load</button>
+        <span>&nbsp;</span>
+        <span style="border-right: 2px solid #D3D3D3;"></span>
+        <input type="checkbox" @onclick="() => onValidationChange()" @bind="UseValidation" id="CheckBoxValidation" />
+        <label for="CheckBoxValidation" style="margin-left: 8px; vertical-align: middle;">Validators</label>
+
+    }
 </div>
 
 @if (ShowConnectionDialog)
 {
     <DatabaseConnectionDialog Close="CloseShowConnectionDialog"
-    ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
-    OnSetConnection="SetConnectionString" />
+                              ConfigurationType="ConfigurationType.DatabaseConnectionOnly"
+                              OnSetConnection="SetConnectionString" />
 }
 
 @if (showPrimaryKeyWarningDialog)
@@ -283,7 +289,7 @@ else
 }
 
 @code {
-    #nullable disable
+#nullable disable
     private Sheet sheet;
 
     bool isLoading = false;
@@ -1715,7 +1721,7 @@ else
             {
                 ErrorMessage = "Export Complete";
             }
-        }        
+        }
     }
     #endregion
 
