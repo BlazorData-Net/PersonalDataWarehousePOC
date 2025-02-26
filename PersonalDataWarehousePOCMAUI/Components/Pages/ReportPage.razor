@@ -61,10 +61,6 @@
                     <i class="material-icons" style="color:black;">file_download</i>
                 </button>
 
-                <button title="AI" style="background:none;border:none;">
-                    <i class="material-icons" style="color:black;">psychology</i>
-                </button>
-
                 @if (ContentChanged)
                 {
                     <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
@@ -108,6 +104,9 @@
                                 </button>
                                 <button @onclick="ZoomOut" title="Zoom Out" style="background:none; border:none;">
                                     <i class="material-icons" style="color:black;">zoom_out</i>
+                                </button>
+                                <button title="AI" style="background:none;border:none;">
+                                    <i class="material-icons" style="color:black;">psychology</i>
                                 </button>
                                 <button @onclick="PrintPdf" title="Print" style="background:none; border:none;">
                                     <i class="material-icons" style="color:black;">print</i>
