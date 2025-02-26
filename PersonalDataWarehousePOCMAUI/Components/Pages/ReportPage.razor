@@ -86,7 +86,7 @@
             <div class="modal-content">
                 <div class="window glass active">
                     <div class="title-bar">
-                        <div class="title-bar-text">Output</div>
+                        <div class="title-bar-text">View Report</div>
                         <div class="title-bar-controls">
                             <button aria-label="Close" @onclick="CloseOutputReportPopup"></button>
                         </div>
@@ -96,11 +96,23 @@
 
                         <div style="display: @(IsLoading ? "none" : "block");">
                             Page: <span>@CurrentPage</span> / <span id="page_count">0</span> &nbsp;&nbsp;
-                            <button @onclick="PreviousPage">Previous</button>
-                            <button @onclick="NextPage">Next</button>
-                            <button @onclick="ZoomIn">Zoom In</button>
-                            <button @onclick="ZoomOut">Zoom Out</button>
-                            <button @onclick="PrintPdf">Print</button>
+                            <div style="background-color:whitesmoke; padding:8px; border:1px solid lightgray; text-align:left;">
+                                <button @onclick="PreviousPage" title="Previous" style="background:none; border:none;">
+                                    <i class="material-icons" style="color:black;">arrow_back</i>
+                                </button>
+                                <button @onclick="NextPage" title="Next" style="background:none; border:none;">
+                                    <i class="material-icons" style="color:black;">arrow_forward</i>
+                                </button>
+                                <button @onclick="ZoomIn" title="Zoom In" style="background:none; border:none;">
+                                    <i class="material-icons" style="color:black;">zoom_in</i>
+                                </button>
+                                <button @onclick="ZoomOut" title="Zoom Out" style="background:none; border:none;">
+                                    <i class="material-icons" style="color:black;">zoom_out</i>
+                                </button>
+                                <button @onclick="PrintPdf" title="Print" style="background:none; border:none;">
+                                    <i class="material-icons" style="color:black;">print</i>
+                                </button>
+                            </div>
                             <div @ref="pdfContainer" id="pdf-container"
                                  style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
                         </div>
