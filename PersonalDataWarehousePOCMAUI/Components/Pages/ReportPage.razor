@@ -38,32 +38,46 @@
     }
 </div>
 <br />
+
 <div>
-    @if (TableList.Count > 0)
-    {
-        <button @onclick="OpenWizard">Report Wizard</button>
-        <span>&nbsp;</span>
-    }
-    else
-    {
-        <span style="color:red">No tables found. At least one table is required to create a report.</span>
-    }
-    @if (CurrentReportName != "")
-    {
-        <span>&nbsp; &nbsp;</span>
-        <button @onclick="onDeleteConfirmation">Delete Report</button>
-        <span>&nbsp; &nbsp;</span>
-        <button @onclick="Execute">Display Report</button>
-    }
-    @if (ContentChanged)
-    {
-        <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
-    }
+    <div>
+        <div class="rz-p-sm-1" style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
+
+            <button @onclick="OpenWizard" title="Report Wizard" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">flash_on</i>
+            </button>
+
+            @if (ReportList.Count > 0)
+            {
+                <button @onclick="Execute" title="Execute" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">play_arrow</i>
+                </button>
+
+                <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">delete</i>
+                </button>
+
+                <button title="Export" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">file_download</i>
+                </button>
+
+                <button title="AI" style="background:none;border:none;">
+                    <i class="material-icons" style="color:black;">psychology</i>
+                </button>
+
+                @if (ContentChanged)
+                {
+                    <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
+                }
+            }
+        </div>
+    </div>
+
     <br />
     <br />
 </div>
-<br />
 
+<br />
 <!-- POPUPS -->
 @if (IsNewOutputPopupVisible)
 {
