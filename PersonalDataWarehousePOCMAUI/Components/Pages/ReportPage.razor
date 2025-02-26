@@ -321,18 +321,21 @@
         }
         else
         {
+            // Separate the report name from the database
+            var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
             // Delete the file
-            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
-            var fileName = Path.Combine(ReportsFolder, $"{CurrentReportName}.rdlc");
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+            var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+
             if (System.IO.File.Exists(fileName))
             {
                 System.IO.File.Delete(fileName);
             }
 
-            string deletedReportName = CurrentReportName;
             CurrentReportName = string.Empty;
 
-            Message = $"{deletedReportName} deleted!";
+            Message = $"{ReportName} deleted!";
 
             await LoadReportsListDropdownSelectDefaultReportAsync();
         }
@@ -418,6 +421,13 @@
         {
             CurrentReportNameWithoutDatabase = CleanedName;
             Message = $"Report Name will be {CurrentReportNameWithoutDatabase}";
+            return;
+        }
+
+        // Check for duplicates
+        if (DetectDuplicates(CurrentDatabaseName, CurrentReportNameWithoutDatabase))
+        {
+            Message = "A Table or View with this name already exists.";
             return;
         }
 
