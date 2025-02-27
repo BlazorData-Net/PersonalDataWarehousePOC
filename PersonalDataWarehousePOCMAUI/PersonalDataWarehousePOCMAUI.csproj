@@ -67,11 +67,15 @@
 
     <ItemGroup>
       <None Remove="Templates\AITemplate.txt" />
+      <None Remove="Templates\AITemplateReportPage.txt" />
       <None Remove="Templates\Class.txt" />
       <None Remove="Templates\View.txt" />
     </ItemGroup>
 
     <ItemGroup>
+      <Content Include="Templates\AITemplateReportPage.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Include="Templates\KqlAITemplate.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
