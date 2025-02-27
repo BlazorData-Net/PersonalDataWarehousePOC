@@ -8,12 +8,14 @@
 @using PersonalDataWarehousePOC.Services
 @using System.Dynamic
 @using System.Data
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Services
 @inject IJSRuntime jsRuntime
 @inject DatabaseService databaseService
 @inject DataService DataService
 @inject SettingsService SettingsService
 @inject OrchestratorMethods OrchestratorMethods
+@inject LogService _LogService
 
 <PageTitle>Reports</PageTitle>
 
@@ -408,10 +410,12 @@
         {
             // Set CurrentReportName
             CurrentReportName = paramReport;
+            _LogService.WriteToLog($"Report loaded ({CurrentReportName})");
         }
         else
         {
             Message = "Report not found.";
+            _LogService.WriteToLog($"Report not found ({fileName})");
         }        
     }
 
@@ -448,6 +452,7 @@
         CurrentReportName = string.Empty;
 
         Message = $"{ReportName} deleted!";
+        _LogService.WriteToLog(Message);
 
         await LoadReportsListDropdownSelectDefaultReportAsync();
     }
@@ -493,9 +498,11 @@
             CurrentReportNameWithoutDatabase = $"Report{ViewName}";
         }
 
+        _LogService.WriteToLog($"Open the New Table popup ({CurrentReportNameWithoutDatabase})");
+
         // Open the New Table popup
         IsWizardVisible = false;
-        IsSaveReportPopupVisible = true;
+        IsSaveReportPopupVisible = true;        
     }
 
     // Popups
@@ -565,6 +572,7 @@
         if (!System.IO.File.Exists(codeFile))
         {
             Message = $"{codeFile} Code file not found.";
+            _LogService.WriteToLog(Message);
             return;
         }
 
@@ -585,6 +593,7 @@
         System.IO.File.WriteAllText(fileName, rdlXml);
 
         Message = $"{CurrentReportNameWithoutDatabase} saved!";
+        _LogService.WriteToLog(Message);
 
         // Add the database name to the CurrentReportName
         CurrentReportName = $"{CurrentDatabaseName}/{CurrentReportNameWithoutDatabase}";
@@ -626,6 +635,7 @@
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
+            _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
         }
     }
     #endregion
@@ -650,6 +660,7 @@
         if (!System.IO.File.Exists(reportPath))
         {
             Message = "Report file not found.";
+            _LogService.WriteToLog(Message);
             return;
         }
 
@@ -760,6 +771,8 @@
 
         // Delete the temp pdf file
         System.IO.File.Delete(pdfPath);
+
+        _LogService.WriteToLog($"Render Report ({CurrentReportName})");
     }
 
     private async Task PreviousPage()
@@ -805,6 +818,8 @@
         {
             dynamic script = CSScript.Evaluator.LoadMethod(paramCode);
 
+            _LogService.WriteToLog($"RunDynamicCode ({paramCode})");
+
             var result = await script.ReturnResult();
 
             return result as IEnumerable<IDictionary<string, object>>;
@@ -812,6 +827,7 @@
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
+            _LogService.WriteToLog(ex.Message);
             return null;
         }
     }
@@ -888,6 +904,9 @@
                 Message = $"Report file '{fileName}' not found.";
                 return;
             }
+
+            _LogService.WriteToLog($"Report CallOpenAIAsync fileName ({fileName})");
+
             // Open fileName and get the content into CurrentScript
             CurrentScript = System.IO.File.ReadAllText(fileName);
 
@@ -901,6 +920,8 @@
                 Message = $"Report file '{fileName}' is  found.";
                 return;
             }
+
+            _LogService.WriteToLog($"Report CallOpenAIAsync CurrentScript ({CurrentScript})");
 
             IsAILoading = true;
             StateHasChanged();
@@ -917,6 +938,8 @@
             AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
             AIRequest = AIRequest.Replace("## CURRENT REQUEST ##", AIMessage);
 
+            _LogService.WriteToLog($"Report CallOpenAIAsync ({AIRequest})");
+
             var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
 
             IsAILoading = false;
@@ -925,8 +948,11 @@
             if (AIResponse.Error != "")
             {
                 Message = AIResponse.Error;
+                _LogService.WriteToLog($"Report CallOpenAIAsync Response Error ({AIResponse.Error})");
                 return;
             }
+
+            _LogService.WriteToLog($"Report CallOpenAIAsync Response ({AIResponse.Response})");
 
             // Save AIResponse.Response to the filename
             System.IO.File.WriteAllText(fileName, AIResponse.Response);
@@ -937,6 +963,7 @@
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
+            _LogService.WriteToLog(ex.Message);
         }
     }
 
