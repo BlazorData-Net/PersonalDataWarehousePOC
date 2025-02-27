@@ -4,6 +4,7 @@
 @using CSScriptLib
 @using System.Reflection
 @using Microsoft.Reporting.NETCore
+@using PersonalDataWarehouse.AI
 @using PersonalDataWarehousePOC.Services
 @using System.Dynamic
 @using System.Data
@@ -12,6 +13,7 @@
 @inject DatabaseService databaseService
 @inject DataService DataService
 @inject SettingsService SettingsService
+@inject OrchestratorMethods OrchestratorMethods
 
 <PageTitle>Reports</PageTitle>
 
@@ -105,7 +107,7 @@
                                 <button @onclick="ZoomOut" title="Zoom Out" style="background:none; border:none;">
                                     <i class="material-icons" style="color:black;">zoom_out</i>
                                 </button>
-                                <button title="AI" style="background:none;border:none;">
+                                <button @onclick="OpenAIPopup" title="AI" style="background:none;border:none;">
                                     <i class="material-icons" style="color:black;">psychology</i>
                                 </button>
                                 <button @onclick="PrintPdf" title="Print" style="background:none; border:none;">
@@ -160,6 +162,7 @@
     </div>
     <div class="modal-backdrop fade show"></div>
 }
+
 
 @if (ShowDeleteConfirmation)
 {
@@ -225,6 +228,42 @@
 }
 
 
+@if (ShowAI)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">AI Prompt</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseAIPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+                        @if (IsAILoading)
+                        {
+                            <div role="progressbar" class="marquee" style="width: 100%"></div>
+                        }
+                        else
+                        {
+                            <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
+                                <textarea @bind="AIMessage" maxlength="1000"
+                                          style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
+                                                        </textarea>
+                            </div>
+                            <br />
+                            <button @onclick="AIbtn">Submit</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @if (Message != "")
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -270,6 +309,15 @@
     private bool IsWizardVisible { get; set; } = false;
     private bool IsSaveReportPopupVisible { get; set; } = false;
     private bool IsNewOutputPopupVisible { get; set; } = false;
+
+    private Stack<string> undoStack = new();
+    private Stack<string> redoStack = new();
+    private bool CanUndo => undoStack.Count > 0;
+    private bool CanRedo => redoStack.Count > 0;
+    private bool IsAILoading { get; set; } = false;
+    private bool ShowAI { get; set; } = false;
+    private string CurrentScript = "";
+    private string AIMessage = "";
 
     private int CurrentPage = 1;
 
@@ -770,7 +818,6 @@
     }
     #endregion
 
-
     // Duplicates
 
     #region public static bool DetectDuplicates(string paramDatabaseName, string paramParquetName)
@@ -797,4 +844,130 @@
         return result;
     }
     #endregion
+
+    // AI
+
+    #region AI
+    private async Task AIbtn()
+    {
+        try
+        {
+            // Determine if AI is set-up
+
+            // Get APIKey from secure settings
+            string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
+
+            if (string.IsNullOrEmpty(ApiKey))
+            {
+                if ((SettingsService.Settings.ApplicationSettings.AIType == "OpenAI") || (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI"))
+                {
+                    Message = "Please set up AI in Setings";
+                    return;
+                }
+            }
+
+            if ((SettingsService.Settings.ApplicationSettings.AIType == "LM Studio") || (SettingsService.Settings.ApplicationSettings.AIType == "Ollma"))
+            {
+                if ((SettingsService.Settings.ApplicationSettings.Endpoint.Trim() == ""))
+                {
+                    Message = "Please set up AI in Setings";
+                    return;
+                }
+            }
+
+            // Get the current script
+            //CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            if (CurrentScript != "")
+            {
+                // Update the Undo/Redo stacks
+                undoStack.Push(CurrentScript);
+            }
+
+            IsAILoading = true;
+            StateHasChanged();
+
+            // ** Open the View.txt template from Templates\View.txt and replace the content with the codeBuilder
+            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPage.txt");
+
+            // Read the content of the template file
+            string templateContent = File.ReadAllText(templatePath);
+
+            // Replace the placeholders
+            string AIRequest = "";
+
+            AIRequest = templateContent.Replace("## CURRENT SCHEMA ##", "");
+            AIRequest = AIRequest.Replace("## CURRENT CODE ##", CurrentScript);
+            AIRequest = AIRequest.Replace("## CURRENT REQUEST ##", AIMessage);
+
+            var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
+
+            IsAILoading = false;
+            ShowAI = false;
+
+            if (AIResponse.Error != "")
+            {
+                Message = AIResponse.Error;
+                return;
+            }
+
+            // Update the code in the editor
+            //await MonacoCodeEditor.UpdateCodeAsync(AIResponse.Response);
+        }
+        catch (Exception ex)
+        {
+            Message = ex.GetBaseException().Message;
+        }
+    }
+
+    private void OpenAIPopup()
+    {
+        AIMessage = "";
+        ShowAI = true;
+    }
+
+    private void CloseAIPopup()
+    {
+        ShowAI = false;
+        Message = "";
+    }
+    #endregion
+
+    // Undo/Redo
+
+    // Called when the user clicks the Undo button.
+    private async Task Undo()
+    {
+        if (CanUndo)
+        {
+            // Get the current script
+            //CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            // Push the current text onto the redo stack.
+            redoStack.Push(CurrentScript);
+
+            // Pop the last state from the undo stack and set it as the current text.
+            CurrentScript = undoStack.Pop();
+
+            //await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+        }
+    }
+
+    // Called when the user clicks the Redo button.
+    private async Task Redo()
+    {
+        if (CanRedo)
+        {
+            // Get the current script
+            //CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+
+            // Push the current state onto the undo stack.
+            undoStack.Push(CurrentScript);
+
+            // Pop the last undone state from the redo stack and set it as the current text.
+            CurrentScript = redoStack.Pop();
+
+            //await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+        }
+    }
 }
