@@ -32,6 +32,11 @@ namespace PersonalDataWarehousePOCMAUI.Model
             }
         }
 
+        public async Task WriteToLogAsync(string LogText)
+        {
+            await Task.Run(() => WriteToLog(LogText));
+        }
+
         public void WriteToLog(string LogText)
         {
             // Open the file to get existing content

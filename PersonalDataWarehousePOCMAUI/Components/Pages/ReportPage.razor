@@ -247,6 +247,8 @@
                         @if (IsAILoading)
                         {
                             <div role="progressbar" class="marquee" style="width: 100%"></div>
+                            <br />
+                            <label>@AIStatusMessage</label>
                         }
                         else
                         {
@@ -319,6 +321,7 @@
     private bool CanRedo => redoStack.Count > 0;
     private bool IsAILoading { get; set; } = false;
     private bool ShowAI { get; set; } = false;
+    private string AIStatusMessage = "";
     private string CurrentScript = "";
     private string AIMessage = "";
 
@@ -860,7 +863,7 @@
     {
         try
         {
-            // Determine if AI is set-up
+            AIStatusMessage = "Loading...";
 
             // Get APIKey from secure settings
             string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
@@ -898,7 +901,7 @@
                 return;
             }
 
-            _LogService.WriteToLog($"Report CallOpenAIAsync fileName ({fileName})");
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync fileName ({fileName})");
 
             // Open fileName and get the content into CurrentScript
             CurrentScript = System.IO.File.ReadAllText(fileName);
@@ -914,7 +917,7 @@
                 return;
             }
 
-            _LogService.WriteToLog($"Report CallOpenAIAsync CurrentScript ({CurrentScript})");
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync CurrentScript ({CurrentScript})");
 
             IsAILoading = true;
             StateHasChanged();
@@ -931,7 +934,10 @@
             AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
             AIRequest = AIRequest.Replace("## CURRENT REQUEST ##", AIMessage);
 
-            _LogService.WriteToLog($"Report CallOpenAIAsync ({AIRequest})");
+            AIStatusMessage = "Call AI...";
+            StateHasChanged();
+
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync ({AIRequest})");
 
             var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
 
@@ -941,11 +947,11 @@
             if (AIResponse.Error != "")
             {
                 Message = AIResponse.Error;
-                _LogService.WriteToLog($"Report CallOpenAIAsync Response Error ({AIResponse.Error})");
+                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error ({AIResponse.Error})");
                 return;
             }
 
-            _LogService.WriteToLog($"Report CallOpenAIAsync Response ({AIResponse.Response})");
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response ({AIResponse.Response})");
 
             // Save AIResponse.Response to the filename
             System.IO.File.WriteAllText(fileName, AIResponse.Response);
@@ -956,7 +962,7 @@
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
-            _LogService.WriteToLog(ex.Message);
+            await _LogService.WriteToLogAsync(ex.Message);
         }
     }
 

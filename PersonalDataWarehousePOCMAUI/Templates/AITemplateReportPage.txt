@@ -12,6 +12,7 @@
 11) Do not include unnecessary attributes or elements that are not supported by the .rdlc schema.
 12) If you cannot generate the XML, please provide an error message in the "Error" field and suggest what the user can do to resolve the issue.
 13) Field names must be CLS-compliant identifiers. Do not use special characters or reserved keywords.
+14) Must use the existing DataProvider and DataSet to retrieve data from the database.
 
 ---
 
