@@ -43,7 +43,9 @@
                                  .Where(p => p.CanRead)
                                  .ToArray();
 
-            // 2) Build the <Fields> block for *all* properties
+            // 2) Build the <Fields> block for all cls complient properties
+            properties = ReturnOnlyCLScompliant(properties);
+
             var fieldsBuilder = new StringBuilder();
             foreach (var prop in properties)
             {
@@ -341,6 +343,25 @@
                     .Replace("\"", "&quot;")
                     .Replace("<", "&lt;")
                     .Replace(">", "&gt;");
+        }
+
+        private static PropertyInfo[] ReturnOnlyCLScompliant(PropertyInfo[] types)
+        {
+            // Create a list to hold the CLS-compliant types.
+            List<PropertyInfo> compliantTypes = new List<PropertyInfo>();
+
+            // Loop through each type in the provided array.
+            foreach (PropertyInfo t in types)
+            {
+                // If t.PropertyType.Name starts with an underscore, do not add it to the list.
+                if (!t.Name.StartsWith("_"))
+                {
+                    compliantTypes.Add(t);
+                }
+            }
+
+            // Return the list as an array.
+            return compliantTypes.ToArray();
         }
     }
 }

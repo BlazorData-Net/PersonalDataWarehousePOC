@@ -534,7 +534,7 @@
 
     // Save
 
-    private void SaveReport()
+    private async Task SaveReport()
     {
         if (string.IsNullOrEmpty(CurrentReportNameWithoutDatabase))
         {
@@ -602,14 +602,7 @@
         IsSaveReportPopupVisible = false;
 
         // Reload the dropdown
-        ReportList = new List<string>();
-
-        if (Directory.Exists(ReportsFolder))
-        {
-            ReportList = Directory.GetFiles(ReportsFolder, "*.rdlc")
-                                 .Select(Path.GetFileNameWithoutExtension)
-                                 .ToList();
-        }
+        await LoadReportListDropdownAsync();
 
         // Load the Report
         LoadReport(CurrentReportName);
