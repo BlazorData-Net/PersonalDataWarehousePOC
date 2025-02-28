@@ -32,6 +32,10 @@ By doing the compute locally on your own computer, you avoid expensive cloud com
 
 https://github.com/user-attachments/assets/190f51b5-cbbf-4410-a689-8ea8d2b56d9b
 
+
+https://github.com/user-attachments/assets/3b1de39b-8176-4d08-9fdc-55294870e33b
+
+
 ![image](https://github.com/user-attachments/assets/74238b49-7125-4861-a1e2-2f06c2d3710e)
 
 ![Animation](https://github.com/user-attachments/assets/0c913854-1b1b-4ae9-ad2f-95bab77ade18)
