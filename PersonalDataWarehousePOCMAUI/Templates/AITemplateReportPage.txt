@@ -13,6 +13,7 @@
 12) If you cannot generate the XML, please provide an error message in the "Error" field and suggest what the user can do to resolve the issue.
 13) Field names must be CLS-compliant identifiers. Do not use special characters or reserved keywords.
 14) Must use the existing DataProvider and DataSet to retrieve data from the database.
+15) Report must conform to: http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition
 
 ---
 
