@@ -248,7 +248,8 @@
                         {
                             <div role="progressbar" class="marquee" style="width: 100%"></div>
                             <br />
-                            <label>@AIStatusMessage</label>
+                            <h5>@AIStatusMessage</h5>
+                            <br />
                         }
                         else
                         {
@@ -931,27 +932,62 @@
             // Replace the placeholders
             string AIRequest = "";
 
+            // #############################################
+            // FIRST PASS
+            // #############################################
+
             AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
             AIRequest = AIRequest.Replace("## CURRENT REQUEST ##", AIMessage);
 
-            AIStatusMessage = "Call AI...";
+            AIStatusMessage = "(first pass) Calling AI...";
             StateHasChanged();
 
-            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync ({AIRequest})");
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync (first pass) ({AIRequest})");
 
             var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
-
-            IsAILoading = false;
-            ShowAI = false;
 
             if (AIResponse.Error != "")
             {
                 Message = AIResponse.Error;
-                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error ({AIResponse.Error})");
+                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error (first pass) ({AIResponse.Error})");
                 return;
             }
 
-            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response ({AIResponse.Response})");
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response (first pass) ({AIResponse.Response})");
+
+            // #############################################
+            // SECOND PASS
+            // #############################################
+
+            // ** Open the template
+            templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPageSecondPass.txt");
+
+            // Read the content of the template file
+            templateContent = File.ReadAllText(templatePath);
+
+            // Replace the placeholders
+            AIRequest = "";
+
+            AIRequest = templateContent.Replace("## CURRENT CODE ##", AIResponse.Response);
+
+            AIStatusMessage = "(second pass) Calling AI to validate markup...";
+            StateHasChanged();
+
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync (second pass) ({AIRequest})");
+
+            AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
+
+            if (AIResponse.Error != "")
+            {
+                Message = AIResponse.Error;
+                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error (second pass) ({AIResponse.Error})");
+                return;
+            }
+
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response (second pass) ({AIResponse.Response})");
+
+            IsAILoading = false;
+            ShowAI = false;
 
             // Save AIResponse.Response to the filename
             System.IO.File.WriteAllText(fileName, AIResponse.Response);
