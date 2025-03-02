@@ -291,8 +291,11 @@
                         <br /><br />
                         <div style="text-align: center;">
                             <span>&nbsp; &nbsp;</span>
-                            <button>Revert to previous version</button>
-                            <span>&nbsp; &nbsp;</span>
+                            @if (BackupReportPath != "")
+                            {
+                                <button @onclick="RevertToPreviousVersion">Revert to previous version</button>
+                                <span>&nbsp; &nbsp;</span>
+                            }                            
                             <button>Try to fix</button>
                         </div>
                     </div>
@@ -341,6 +344,7 @@
     private bool IsLoading { get; set; } = false;
     private List<string> ReportList = new List<string>();
     private string CurrentReportName = "";
+    private string BackupReportPath = "";
 
     List<string> colAllDatabases = new List<string>();
     string CurrentDatabaseName = "Default";
@@ -805,7 +809,36 @@
         // Delete the temp pdf file
         System.IO.File.Delete(pdfPath);
 
+        // Backup the report
+        BackupReportPath = Path.Combine(ReportsFolder, "Backup", $"{ReportName}.rdlc");
+        System.IO.File.Copy(reportPath, BackupReportPath, true);
+
         _LogService.WriteToLog($"Render Report ({CurrentReportName})");
+    }
+
+    private void RevertToPreviousVersion()
+    {
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+        // Delete the file
+
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        
+        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+        
+        if (System.IO.File.Exists(fileName))
+        {
+            System.IO.File.Delete(fileName);
+        }
+
+        // Copy the backup file to the original file
+        System.IO.File.Copy(BackupReportPath, fileName, true);
+
+        // Load the Report
+        LoadReport(CurrentReportName);
+
+        // Close the popup
+        ReportErrorMessage = "";
     }
 
     private async Task PreviousPage()
