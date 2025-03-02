@@ -841,6 +841,8 @@
         // Copy the backup file to the original file
         System.IO.File.Copy(BackupReportPath, fileName, true);
 
+        _LogService.WriteToLog($"Revert Report to Previous Version ({CurrentReportName})");
+
         // Load the Report
         LoadReport(CurrentReportName);
 
