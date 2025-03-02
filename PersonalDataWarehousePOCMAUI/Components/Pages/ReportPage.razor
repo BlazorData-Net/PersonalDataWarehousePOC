@@ -811,6 +811,13 @@
 
         // Backup the report
         BackupReportPath = Path.Combine(ReportsFolder, "Backup", $"{ReportName}.rdlc");
+
+        // Create Backup folder if it does not exist
+        if (!System.IO.Directory.Exists(Path.Combine(ReportsFolder, "Backup")))
+        {
+            System.IO.Directory.CreateDirectory(Path.Combine(ReportsFolder, "Backup"));
+        }
+
         System.IO.File.Copy(reportPath, BackupReportPath, true);
 
         _LogService.WriteToLog($"Render Report ({CurrentReportName})");
