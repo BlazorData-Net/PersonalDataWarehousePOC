@@ -293,10 +293,10 @@
                             <span>&nbsp; &nbsp;</span>
                             @if (BackupReportPath != "")
                             {
-                                <button @onclick="RevertToPreviousVersion">Revert to previous version</button>
+                                <button @onclick="RevertToPreviousVersion">Revert to previous report version</button>
                                 <span>&nbsp; &nbsp;</span>
-                            }                            
-                            <button>Try to fix</button>
+                            }
+                            <button @onclick="FixReportAsync">Call AI to fix report</button>
                         </div>
                     </div>
                 </div>
@@ -677,7 +677,9 @@
     }
     #endregion
 
+    // *****************************************************************************************
     // Report Viewer
+    // *****************************************************************************************
 
     private async Task PrepareReportAsync()
     {
@@ -830,9 +832,9 @@
         // Delete the file
 
         String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
-        
+
         var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
-        
+
         if (System.IO.File.Exists(fileName))
         {
             System.IO.File.Delete(fileName);
@@ -841,13 +843,102 @@
         // Copy the backup file to the original file
         System.IO.File.Copy(BackupReportPath, fileName, true);
 
-        _LogService.WriteToLog($"Revert Report to Previous Version ({CurrentReportName})");
+        _LogService.WriteToLog($"Revert report to previous version ({CurrentReportName})");
 
         // Load the Report
         LoadReport(CurrentReportName);
 
         // Close the popup
         ReportErrorMessage = "";
+    }
+
+    private async Task FixReportAsync()
+    {
+        // Save error message in CurrentReportError
+        string CurrentReportError = ReportErrorMessage;
+
+        // Close the popup
+        ReportErrorMessage = "";
+
+        // Open the AI popup
+        IsAILoading = true;
+        ShowAI = true;
+
+        AIStatusMessage = "Calling AI to fix report...";
+        StateHasChanged();
+
+        // Get APIKey from secure settings
+        string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
+
+        if (string.IsNullOrEmpty(ApiKey))
+        {
+            if ((SettingsService.Settings.ApplicationSettings.AIType == "OpenAI") || (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI"))
+            {
+                Message = "Please set up AI in Setings";
+                return;
+            }
+        }
+
+        if ((SettingsService.Settings.ApplicationSettings.AIType == "LM Studio") || (SettingsService.Settings.ApplicationSettings.AIType == "Ollma"))
+        {
+            if ((SettingsService.Settings.ApplicationSettings.Endpoint.Trim() == ""))
+            {
+                Message = "Please set up AI in Setings";
+                return;
+            }
+        }
+
+        // *** Get the Report
+
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+
+        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+
+        if (!System.IO.File.Exists(fileName))
+        {
+            Message = $"Report file '{fileName}' not found.";
+            return;
+        }
+
+        // Open fileName and get the content into CurrentScript
+        CurrentScript = System.IO.File.ReadAllText(fileName);
+
+        // ** Open the template
+        string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPageFixCode.txt");
+
+        // Read the content of the template file
+        string templateContent = File.ReadAllText(templatePath);
+
+        // Replace the placeholders
+        string AIRequest = "";
+
+        AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
+        AIRequest = AIRequest.Replace("## CURRENT ERROR ##", CurrentReportError);
+
+        await _LogService.WriteToLogAsync($"Report FixReportAsync ({AIRequest})");
+
+        var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
+
+        if (AIResponse.Error != "")
+        {
+            Message = AIResponse.Error;
+            await _LogService.WriteToLogAsync($"Report FixReportAsync Response Error ({AIResponse.Error})");
+            return;
+        }
+
+        await _LogService.WriteToLogAsync($"Report FixReportAsync Response ({AIResponse.Response})");
+
+        IsAILoading = false;
+        ShowAI = false;
+
+        // Save AIResponse.Response to the filename
+        System.IO.File.WriteAllText(fileName, AIResponse.Response);
+
+        // Load the Report
+        await Execute();
     }
 
     private async Task PreviousPage()
@@ -935,7 +1026,9 @@
     }
     #endregion
 
+    // *****************************************************************************************
     // AI
+    // *****************************************************************************************
 
     #region AI
     private async Task AIbtn()
