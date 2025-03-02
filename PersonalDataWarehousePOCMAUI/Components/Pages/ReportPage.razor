@@ -293,7 +293,7 @@
                             <span>&nbsp; &nbsp;</span>
                             @if (BackupReportPath != "")
                             {
-                                <button @onclick="RevertToPreviousVersion">Revert to previous report version</button>
+                                <button @onclick="RevertToPreviousVersionAsync">Revert to previous report version</button>
                                 <span>&nbsp; &nbsp;</span>
                             }
                             <button @onclick="FixReportAsync">Call AI to fix report</button>
@@ -673,6 +673,31 @@
         {
             ReportErrorMessage = ex.GetBaseException().Message;
             _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
+
+            try
+            {
+                // Determine if there is a backup of te report
+                // If there is set BackupReportPath so the restore backup buton shows
+
+                // Separate the report name from the database
+                var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+                var ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+
+                // Backup the report
+                BackupReportPath = Path.Combine(ReportsFolder, "Backup", $"{ReportName}.rdlc");
+
+                // See if the file exists
+                if (!System.IO.File.Exists(BackupReportPath))
+                {
+                    // Set this to empty so the button does not show
+                    BackupReportPath = "";
+                }
+            }
+            catch (Exception ex2)
+            {
+                _LogService.WriteToLog($"Determine backup restore button Error: {ex2.Message} - {ex2.StackTrace.ToString()}");
+            }
         }
     }
     #endregion
@@ -825,7 +850,7 @@
         _LogService.WriteToLog($"Render Report ({CurrentReportName})");
     }
 
-    private void RevertToPreviousVersion()
+    private async Task RevertToPreviousVersionAsync()
     {
         // Separate the report name from the database
         var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
@@ -845,11 +870,14 @@
 
         _LogService.WriteToLog($"Revert report to previous version ({CurrentReportName})");
 
-        // Load the Report
-        LoadReport(CurrentReportName);
-
         // Close the popup
         ReportErrorMessage = "";
+
+        IsAILoading = false;
+        ShowAI = false;
+
+        // Load the Report
+        await Execute();
     }
 
     private async Task FixReportAsync()
