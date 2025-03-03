@@ -1250,6 +1250,8 @@
         }
         catch (Exception ex)
         {
+            IsAILoading = false;
+            ShowAI = false;
             Message = ex.GetBaseException().Message;
             await _LogService.WriteToLogAsync(ex.Message);
         }
