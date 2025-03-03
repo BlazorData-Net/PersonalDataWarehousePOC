@@ -57,6 +57,20 @@
                     <i class="material-icons" style="color:black;">play_arrow</i>
                 </button>
 
+                @if (CanUndo)
+                {
+                    <button @onclick="() => Undo()" title="Undo" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">undo</i>
+                    </button>
+                }
+
+                @if (CanRedo)
+                {
+                    <button @onclick="() => Redo()" title="Redo" style="background:none;border:none;">
+                        <i class="material-icons" style="color:black;">redo</i>
+                    </button>
+                }
+
                 <button @onclick="DeleteConfirmation" title="Delete" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">delete</i>
                 </button>
@@ -359,6 +373,7 @@
     private Stack<string> redoStack = new();
     private bool CanUndo => undoStack.Count > 0;
     private bool CanRedo => redoStack.Count > 0;
+
     private bool IsAILoading { get; set; } = false;
     private bool ShowAI { get; set; } = false;
     private string AIStatusMessage = "";
@@ -452,8 +467,14 @@
 
         if (System.IO.File.Exists(fileName))
         {
+            // Update the Undo/Redo stacks
+            undoStack.Clear();
+            redoStack.Clear();
+
             // Set CurrentReportName
             CurrentReportName = paramReport;
+
+            // Log the report loaded
             _LogService.WriteToLog($"Report loaded ({CurrentReportName})");
         }
         else
@@ -1223,38 +1244,60 @@
     // Undo/Redo
 
     // Called when the user clicks the Undo button.
-    private async Task Undo()
+    private void Undo()
     {
         if (CanUndo)
         {
-            // Get the current script
-            //CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+            // Separate the report name from the database
+            var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
 
-            // Push the current text onto the redo stack.
-            redoStack.Push(CurrentScript);
+            // Load the DataReport
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+            var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
 
-            // Pop the last state from the undo stack and set it as the current text.
-            CurrentScript = undoStack.Pop();
+            if (System.IO.File.Exists(fileName))
+            {
+                // Load the contents of the file into TempCurrentScript
+                var TempCurrentScript = System.IO.File.ReadAllText(fileName);
 
-            //await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+                // Push the current text onto the redo stack.
+                redoStack.Push(TempCurrentScript);
+
+                // Pop the last state from the undo stack and set it as the current text.
+                CurrentScript = undoStack.Pop();
+
+                // Save the current text to the file.
+                System.IO.File.WriteAllText(fileName, CurrentScript);
+            }
         }
     }
 
     // Called when the user clicks the Redo button.
-    private async Task Redo()
+    private void Redo()
     {
         if (CanRedo)
         {
-            // Get the current script
-            //CurrentScript = await MonacoCodeEditor.GetCodeAsync();
+            // Separate the report name from the database
+            var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
 
-            // Push the current state onto the undo stack.
-            undoStack.Push(CurrentScript);
+            // Load the DataReport
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+            var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
 
-            // Pop the last undone state from the redo stack and set it as the current text.
-            CurrentScript = redoStack.Pop();
+            if (System.IO.File.Exists(fileName))
+            {
+                // Load the contents of the file into TempCurrentScript
+                var TempCurrentScript = System.IO.File.ReadAllText(fileName);
 
-            //await MonacoCodeEditor.UpdateCodeAsync(CurrentScript);
+                // Push the current state onto the undo stack.
+                undoStack.Push(TempCurrentScript);
+
+                // Pop the last undone state from the redo stack and set it as the current text.
+                CurrentScript = redoStack.Pop();
+
+                // Save the current text to the file.
+                System.IO.File.WriteAllText(fileName, CurrentScript);
+            }
         }
     }
 }
