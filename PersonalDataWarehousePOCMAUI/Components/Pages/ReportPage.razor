@@ -34,7 +34,7 @@
             @foreach (var Report in ReportList)
             {
                 <option value="@Report"
-                selected="@(Report == CurrentReportName ? "selected" : null)">
+                        selected="@(Report == CurrentReportName ? "selected" : null)">
                     @Report
                 </option>
             }
@@ -75,7 +75,7 @@
                     <i class="material-icons" style="color:black;">delete</i>
                 </button>
 
-                <button title="Export" style="background:none;border:none;">
+                <button @onclick="() => OpenExportPopup()" title="Export" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">file_download</i>
                 </button>
 
@@ -131,7 +131,7 @@
                                 </button>
                             </div>
                             <div @ref="pdfContainer" id="pdf-container"
-                            style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
+                                 style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
                         </div>
 
                     </div>
@@ -269,8 +269,8 @@
                         {
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
-                                style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                </textarea>
+                                          style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
+                                        </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -320,6 +320,36 @@
     <div class="modal-backdrop fade show"></div>
 }
 
+
+@if (IsExportVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Export</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseExportPopup"></button>
+                        </div>
+                    </div>
+                    <div class="window-body has-space" style="text-align: center;">
+
+                        <div>
+                            <span>&nbsp; &nbsp;</span>
+                            <button @onclick="ExportRDLC">RDLC</button>
+                            <span>&nbsp; &nbsp;</span>
+                            <button @onclick="ExportRDL">RDL</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
 
 @if (Message != "")
 {
@@ -380,6 +410,8 @@
     private string CurrentScript = "";
     private string AIMessage = "";
     private string ReportErrorMessage = "";
+
+    private bool IsExportVisible { get; set; } = false;
 
     private int CurrentPage = 1;
 
@@ -481,7 +513,7 @@
         {
             Message = "Report not found.";
             _LogService.WriteToLog($"Report not found ({fileName})");
-        }        
+        }
     }
 
     // Delete
@@ -567,7 +599,7 @@
 
         // Open the New Table popup
         IsWizardVisible = false;
-        IsSaveReportPopupVisible = true;        
+        IsSaveReportPopupVisible = true;
     }
 
     // Popups
@@ -1144,7 +1176,7 @@
             IsAILoading = true;
             StateHasChanged();
 
-            // ** Open the template 
+            // ** Open the template
             string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPage.txt");
 
             // Read the content of the template file
@@ -1298,6 +1330,85 @@
                 // Save the current text to the file.
                 System.IO.File.WriteAllText(fileName, CurrentScript);
             }
+        }
+    }
+
+    // *****************************************************************************************
+    // Export
+    // *****************************************************************************************
+
+    private void OpenExportPopup()
+    {
+        IsExportVisible = true;
+    }
+
+    private void CloseExportPopup()
+    {
+        IsExportVisible = false;
+    }
+
+    private async Task ExportRDLC()
+    {
+        await ExportReport("rdlc");
+    }
+
+    private async Task ExportRDL()
+    {
+        await ExportReport("rdl");
+    }
+
+    private async Task ExportReport(string paramReportType)
+    {
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+        // Load the DataReport
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+
+        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+
+        if (System.IO.File.Exists(fileName))
+        {
+            // Get the file name
+            var file = $"{ReportName}.{paramReportType}";
+
+            // Get the file bytes
+            var fileBytes = System.IO.File.ReadAllBytes(fileName);
+
+            // Read DocumentContents into a MemoryStream
+            var stream = new MemoryStream(fileBytes);
+
+            var FileName = $"{ReportName}.{paramReportType}";
+
+            var picker = new Windows.Storage.Pickers.FileSavePicker
+                {
+                    SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+                };
+
+            picker.FileTypeChoices.Add("All Files", new List<string> { $".{paramReportType}" });
+            picker.SuggestedFileName = FileName;
+
+            var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var fileSaverResult = await picker.PickSaveFileAsync();
+
+            if (fileSaverResult != null)
+            {
+                // Convert the MemoryStream to a byte array
+                byte[] fileContent = stream.ToArray();
+
+                // Write the content to the selected path
+                await File.WriteAllBytesAsync(fileSaverResult.Path, fileContent);
+            }
+            else
+            {
+                Message = $"Export  cancelled.";
+            }
+
+            StateHasChanged();
+
+            IsExportVisible = false;
         }
     }
 }
