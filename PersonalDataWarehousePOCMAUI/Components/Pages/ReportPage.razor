@@ -388,6 +388,7 @@
     private bool IsLoading { get; set; } = false;
     private List<string> ReportList = new List<string>();
     private DataTable CurrentReportData { get; set; }
+    private byte[] CurrentReportPdfBytes = new byte[] { };
     private string CurrentReportName = "";
     private string BackupReportPath = "";
 
@@ -706,9 +707,10 @@
         LoadReport(CurrentReportName);
     }
 
-    // Code Execution
+    // *****************************************************************************************
+    // Report
+    // *****************************************************************************************
 
-    #region RunCode
     private async Task ExecuteReportAsync()
     {
         try
@@ -717,7 +719,10 @@
 
             IsLoading = true;
 
+            // *****************************************************************************************
             // GET Report Data
+            // *****************************************************************************************
+
             try
             {
                 await GetReportData();
@@ -726,9 +731,13 @@
             {
                 Message = ex.GetBaseException().Message;
                 _LogService.WriteToLog($"Report Execute() - GetReportData() - Error: {Message} - {ex.StackTrace.ToString()}");
+                return;
             }
 
+            // *****************************************************************************************
             // Run Report
+            // *****************************************************************************************
+
             try
             {
                 await PrepareReportAsync();
@@ -757,11 +766,27 @@
                         // Set this to empty so the button does not show
                         BackupReportPath = "";
                     }
+                    return;
                 }
                 catch (Exception ex2)
                 {
                     _LogService.WriteToLog($"Determine backup restore button Error: {ex2.Message} - {ex2.StackTrace.ToString()}");
+                    return;
                 }
+            }
+
+            // *****************************************************************************************
+            // Render Report
+            // *****************************************************************************************
+
+            try
+            {
+                await RenderReport();
+            }
+            catch (Exception ex)
+            {
+                Message = ex.GetBaseException().Message;
+                _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
             }
 
             IsLoading = false;
@@ -774,11 +799,7 @@
             _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
         }
     }
-    #endregion
 
-    // *****************************************************************************************
-    // Report Viewer
-    // *****************************************************************************************
     private async Task GetReportData()
     {
         // Separate the report name from the database
@@ -887,14 +908,21 @@
         report.SetParameters(parameters);
 
         // Render the report to a PDF byte array
-        byte[] pdfBytes = report.Render("PDF");
+        CurrentReportPdfBytes = report.Render("PDF");
+    }
+
+    private async Task RenderReport()
+    {
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
 
         // To display properly we need to save the PDF as a file and re-load it
-        ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        string ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        var reportPath = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
         var pdfPath = System.IO.Path.Combine(ReportsFolder, $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
 
         // Save the pdf to the temp file
-        System.IO.File.WriteAllBytes(pdfPath, pdfBytes);
+        System.IO.File.WriteAllBytes(pdfPath, CurrentReportPdfBytes);
 
         // Open the temp PDF file and read the bytes
         await using (var pdfStream = System.IO.File.OpenRead(pdfPath))
@@ -902,12 +930,12 @@
             using (var memoryStream = new System.IO.MemoryStream())
             {
                 await pdfStream.CopyToAsync(memoryStream);
-                pdfBytes = memoryStream.ToArray();
+                CurrentReportPdfBytes = memoryStream.ToArray();
             }
         }
 
         // Convert the PDF bytes to a base64 string
-        var pdfBase64 = Convert.ToBase64String(pdfBytes);
+        var pdfBase64 = Convert.ToBase64String(CurrentReportPdfBytes);
 
         // Call the JavaScript function with the element reference and the PDF data
         await jsRuntime.InvokeVoidAsync("blazorPdfViewer.renderPdf", pdfContainer, pdfBase64);
