@@ -387,6 +387,7 @@
 
     private bool IsLoading { get; set; } = false;
     private List<string> ReportList = new List<string>();
+    private DataTable CurrentReportData { get; set; }
     private string CurrentReportName = "";
     private string BackupReportPath = "";
 
@@ -716,7 +717,52 @@
 
             IsLoading = true;
 
-            await PrepareReportAsync();
+            // GET Report Data
+            try
+            {
+                await GetReportData();
+            }
+            catch (Exception ex)
+            {
+                Message = ex.GetBaseException().Message;
+                _LogService.WriteToLog($"Report Execute() - GetReportData() - Error: {Message} - {ex.StackTrace.ToString()}");
+            }
+
+            // Run Report
+            try
+            {
+                await PrepareReportAsync();
+            }
+            catch (Exception ex)
+            {
+                ReportErrorMessage = ex.GetBaseException().Message;
+                _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
+
+                try
+                {
+                    // Determine if there is a backup of te report
+                    // If there is set BackupReportPath so the restore backup buton shows
+
+                    // Separate the report name from the database
+                    var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+                    var ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+
+                    // Backup the report
+                    BackupReportPath = Path.Combine(ReportsFolder, "Backup", $"{ReportName}.rdlc");
+
+                    // See if the file exists
+                    if (!System.IO.File.Exists(BackupReportPath))
+                    {
+                        // Set this to empty so the button does not show
+                        BackupReportPath = "";
+                    }
+                }
+                catch (Exception ex2)
+                {
+                    _LogService.WriteToLog($"Determine backup restore button Error: {ex2.Message} - {ex2.StackTrace.ToString()}");
+                }
+            }
 
             IsLoading = false;
 
@@ -724,33 +770,8 @@
         }
         catch (Exception ex)
         {
-            ReportErrorMessage = ex.GetBaseException().Message;
+            Message = ex.GetBaseException().Message;
             _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
-
-            try
-            {
-                // Determine if there is a backup of te report
-                // If there is set BackupReportPath so the restore backup buton shows
-
-                // Separate the report name from the database
-                var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
-
-                var ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
-
-                // Backup the report
-                BackupReportPath = Path.Combine(ReportsFolder, "Backup", $"{ReportName}.rdlc");
-
-                // See if the file exists
-                if (!System.IO.File.Exists(BackupReportPath))
-                {
-                    // Set this to empty so the button does not show
-                    BackupReportPath = "";
-                }
-            }
-            catch (Exception ex2)
-            {
-                _LogService.WriteToLog($"Determine backup restore button Error: {ex2.Message} - {ex2.StackTrace.ToString()}");
-            }
         }
     }
     #endregion
@@ -758,37 +779,13 @@
     // *****************************************************************************************
     // Report Viewer
     // *****************************************************************************************
-
-    private async Task PrepareReportAsync()
+    private async Task GetReportData()
     {
         // Separate the report name from the database
         var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
 
-        // Create the report
-        using var report = new LocalReport();
-
-        // Define the report parameters
-        var parameters = new[] { new ReportParameter("Title", ReportName) };
-
-        // Load the report definition
         String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
         var reportPath = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
-
-        if (!System.IO.File.Exists(reportPath))
-        {
-            Message = "Report file not found.";
-            _LogService.WriteToLog(Message);
-            return;
-        }
-
-        // Load the report definition (the RDLC file)
-        await using var reportStream = System.IO.File.OpenRead(reportPath);
-        using var reportReader = new System.IO.StreamReader(reportStream);
-        report.LoadReportDefinition(reportReader);
-
-        // ************
-        // Get the report data
-        // ************
 
         // Determine if it is a Table or a View
         // If the file is in the Parquet folder, it is a Table
@@ -808,7 +805,6 @@
         Dataloader dataloader = new Dataloader();
 
         // Get the data based on the ClassType
-
         if (ClassType == "Table")
         {
             // Get the data from the Parquet file
@@ -854,8 +850,38 @@
             dt.Rows.Add(newRow);
         }
 
+        CurrentReportData = dt;
+    }
+
+    private async Task PrepareReportAsync()
+    {
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+        // Create the report
+        using var report = new LocalReport();
+
+        // Define the report parameters
+        var parameters = new[] { new ReportParameter("Title", ReportName) };
+
+        // Load the report definition
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        var reportPath = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+
+        if (!System.IO.File.Exists(reportPath))
+        {
+            Message = "Report file not found.";
+            _LogService.WriteToLog(Message);
+            return;
+        }
+
+        // Load the report definition (the RDLC file)
+        await using var reportStream = System.IO.File.OpenRead(reportPath);
+        using var reportReader = new System.IO.StreamReader(reportStream);
+        report.LoadReportDefinition(reportReader);
+
         // Add the data source to the report
-        report.DataSources.Add(new ReportDataSource("DataSet1", dt));
+        report.DataSources.Add(new ReportDataSource("DataSet1", CurrentReportData));
 
         // Set any report parameters (if needed)
         report.SetParameters(parameters);
