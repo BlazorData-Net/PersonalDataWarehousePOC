@@ -39,14 +39,12 @@ namespace PersonalDataWarehousePOCMAUI.WinUI
             });
 
             // Add controllers or minimal API endpoints
-            builder.Services.AddControllers(); // or builder.Services.AddEndpointsApiExplorer(); if using minimal APIs
+            builder.Services.AddControllers(); 
 
             var app = builder.Build();
 
             // Map your API endpoints
             app.MapControllers();
-            // For minimal API endpoints, you might add:
-            // app.MapGet("/hello", () => "Hello from MAUI API!");
 
             return app;
         }
