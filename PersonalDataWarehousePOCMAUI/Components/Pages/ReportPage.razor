@@ -34,7 +34,7 @@
             @foreach (var Report in ReportList)
             {
                 <option value="@Report"
-                        selected="@(Report == CurrentReportName ? "selected" : null)">
+                selected="@(Report == CurrentReportName ? "selected" : null)">
                     @Report
                 </option>
             }
@@ -131,7 +131,7 @@
                                 </button>
                             </div>
                             <div @ref="pdfContainer" id="pdf-container"
-                                 style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
+                            style="border: 0px solid #ccc; width: 100%; height: 800px;"></div>
                         </div>
 
                     </div>
@@ -269,8 +269,8 @@
                         {
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
-                                          style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                        </textarea>
+                                style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
+                                </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -310,7 +310,7 @@
                                 <button @onclick="RevertToPreviousVersionAsync">Revert to previous report version</button>
                                 <span>&nbsp; &nbsp;</span>
                             }
-                            <button @onclick="FixReportAsync">Call AI to fix report</button>
+                            <button @onclick="async () => await FixReportAsync(true)">Call AI to fix report</button>
                         </div>
                     </div>
                 </div>
@@ -729,27 +729,12 @@
             }
             catch (Exception ex)
             {
-                Message = ex.GetBaseException().Message;
-                _LogService.WriteToLog($"Report Execute() - GetReportData() - Error: {Message} - {ex.StackTrace.ToString()}");
-                return;
-            }
-
-            // *****************************************************************************************
-            // Run Report
-            // *****************************************************************************************
-
-            try
-            {
-                await PrepareReportAsync();
-            }
-            catch (Exception ex)
-            {
                 ReportErrorMessage = ex.GetBaseException().Message;
-                _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
+                _LogService.WriteToLog($"Report Execute() - GetReportData() - Error: {Message} - {ex.StackTrace.ToString()}");
 
                 try
                 {
-                    // Determine if there is a backup of te report
+                    // Determine if there is a backup of the report
                     // If there is set BackupReportPath so the restore backup buton shows
 
                     // Separate the report name from the database
@@ -770,7 +755,48 @@
                 }
                 catch (Exception ex2)
                 {
-                    _LogService.WriteToLog($"Determine backup restore button Error: {ex2.Message} - {ex2.StackTrace.ToString()}");
+                    _LogService.WriteToLog($"GetReportData() - Determine backup restore button Error: {ex2.Message} - {ex2.StackTrace.ToString()}");
+                    return;
+                }
+            }
+
+            // *****************************************************************************************
+            // Run Report
+            // *****************************************************************************************
+
+            try
+            {
+                await PrepareReportAsync();
+            }
+            catch (Exception ex)
+            {
+                ReportErrorMessage = ex.GetBaseException().Message;
+                _LogService.WriteToLog($"Report Execute() - PrepareReportAsync() - Error: {Message} - {ex.StackTrace.ToString()}");
+
+                try
+                {
+                    // Determine if there is a backup of the report
+                    // If there is set BackupReportPath so the restore backup buton shows
+
+                    // Separate the report name from the database
+                    var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+                    var ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+
+                    // Backup the report
+                    BackupReportPath = Path.Combine(ReportsFolder, "Backup", $"{ReportName}.rdlc");
+
+                    // See if the file exists
+                    if (!System.IO.File.Exists(BackupReportPath))
+                    {
+                        // Set this to empty so the button does not show
+                        BackupReportPath = "";
+                    }
+                    return;
+                }
+                catch (Exception ex2)
+                {
+                    _LogService.WriteToLog($"PrepareReportAsync() - Determine backup restore button Error: {ex2.Message} - {ex2.StackTrace.ToString()}");
                     return;
                 }
             }
@@ -987,93 +1013,114 @@
         await ExecuteReportAsync();
     }
 
-    private async Task FixReportAsync()
+    private async Task FixReportAsync(bool DoRenderReport)
     {
-        // Save error message in CurrentReportError
-        string CurrentReportError = ReportErrorMessage;
-
-        // Close the popup
-        ReportErrorMessage = "";
-
-        // Open the AI popup
-        IsAILoading = true;
-        ShowAI = true;
-
-        AIStatusMessage = "Calling AI to fix report...";
-        StateHasChanged();
-
-        // Get APIKey from secure settings
-        string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
-
-        if (string.IsNullOrEmpty(ApiKey))
+        try
         {
-            if ((SettingsService.Settings.ApplicationSettings.AIType == "OpenAI") || (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI"))
+            // Save error message in CurrentReportError
+            string CurrentReportError = ReportErrorMessage;
+
+            // Close the popup
+            ReportErrorMessage = "";
+
+            // Open the AI popup
+            IsAILoading = true;
+            ShowAI = true;
+
+            AIStatusMessage = "Calling AI to fix report...";
+            StateHasChanged();
+
+            // Get APIKey from secure settings
+            string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
+
+            if (string.IsNullOrEmpty(ApiKey))
             {
-                Message = "Please set up AI in Setings";
+                if ((SettingsService.Settings.ApplicationSettings.AIType == "OpenAI") || (SettingsService.Settings.ApplicationSettings.AIType == "Azure OpenAI"))
+                {
+                    Message = "Please set up AI in Setings";
+                    IsAILoading = false;
+                    ShowAI = false;
+                    return;
+                }
+            }
+
+            if ((SettingsService.Settings.ApplicationSettings.AIType == "LM Studio") || (SettingsService.Settings.ApplicationSettings.AIType == "Ollma"))
+            {
+                if ((SettingsService.Settings.ApplicationSettings.Endpoint.Trim() == ""))
+                {
+                    Message = "Please set up AI in Setings";
+                    IsAILoading = false;
+                    ShowAI = false;
+                    return;
+                }
+            }
+
+            // *** Get the Report
+
+            // Separate the report name from the database
+            var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+
+            var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+
+            if (!System.IO.File.Exists(fileName))
+            {
+                Message = $"Report file '{fileName}' not found.";
                 return;
             }
-        }
 
-        if ((SettingsService.Settings.ApplicationSettings.AIType == "LM Studio") || (SettingsService.Settings.ApplicationSettings.AIType == "Ollma"))
-        {
-            if ((SettingsService.Settings.ApplicationSettings.Endpoint.Trim() == ""))
+            // Open fileName and get the content into CurrentScript
+            CurrentScript = System.IO.File.ReadAllText(fileName);
+
+            // ** Open the template
+            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPageFixCode.txt");
+
+            // Read the content of the template file
+            string templateContent = File.ReadAllText(templatePath);
+
+            // Replace the placeholders
+            string AIRequest = "";
+
+            AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
+            AIRequest = AIRequest.Replace("## CURRENT ERROR ##", CurrentReportError);
+
+            await _LogService.WriteToLogAsync($"Report FixReportAsync ({AIRequest})");
+
+            var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
+
+            if (AIResponse.Error != "")
             {
-                Message = "Please set up AI in Setings";
+                Message = AIResponse.Error;
+                await _LogService.WriteToLogAsync($"Report FixReportAsync Response Error ({AIResponse.Error})");
                 return;
             }
+
+            await _LogService.WriteToLogAsync($"Report FixReportAsync Response ({AIResponse.Response})");
+
+            IsAILoading = false;
+            ShowAI = false;
+
+            // Save AIResponse.Response to the filename
+            System.IO.File.WriteAllText(fileName, AIResponse.Response);
+
+            if (DoRenderReport)
+            {
+                // Load the Report
+                await ExecuteReportAsync();
+            }
         }
-
-        // *** Get the Report
-
-        // Separate the report name from the database
-        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
-
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
-
-        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
-
-        if (!System.IO.File.Exists(fileName))
+        catch (Exception ex)
         {
-            Message = $"Report file '{fileName}' not found.";
-            return;
+            Message = ex.GetBaseException().Message;
+            _LogService.WriteToLog($"Report FixReportAsync Error: {Message} - {ex.StackTrace.ToString()}");
+
+            IsAILoading = false;
+            ShowAI = false;
+
+            // Rethrow the exception
+            throw;
         }
-
-        // Open fileName and get the content into CurrentScript
-        CurrentScript = System.IO.File.ReadAllText(fileName);
-
-        // ** Open the template
-        string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPageFixCode.txt");
-
-        // Read the content of the template file
-        string templateContent = File.ReadAllText(templatePath);
-
-        // Replace the placeholders
-        string AIRequest = "";
-
-        AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
-        AIRequest = AIRequest.Replace("## CURRENT ERROR ##", CurrentReportError);
-
-        await _LogService.WriteToLogAsync($"Report FixReportAsync ({AIRequest})");
-
-        var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
-
-        if (AIResponse.Error != "")
-        {
-            Message = AIResponse.Error;
-            await _LogService.WriteToLogAsync($"Report FixReportAsync Response Error ({AIResponse.Error})");
-            return;
-        }
-
-        await _LogService.WriteToLogAsync($"Report FixReportAsync Response ({AIResponse.Response})");
-
-        IsAILoading = false;
-        ShowAI = false;
-
-        // Save AIResponse.Response to the filename
-        System.IO.File.WriteAllText(fileName, AIResponse.Response);
-
-        // Load the Report
-        await ExecuteReportAsync();
     }
 
     private async Task PreviousPage()
