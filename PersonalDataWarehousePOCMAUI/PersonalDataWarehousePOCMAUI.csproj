@@ -106,7 +106,16 @@
         <PackageReference Include="ClosedXML" Version="0.104.2" />
         <PackageReference Include="KustoLoco.Core" Version="1.1.2" />
         <PackageReference Include="KustoLoco.Rendering" Version="1.1.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.3.0" />
         <PackageReference Include="Microsoft.Extensions.AI.Ollama" Version="9.1.0-preview.1.25064.3" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.40" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.40" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.2" />
