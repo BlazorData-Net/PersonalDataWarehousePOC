@@ -310,7 +310,7 @@
                                 <button @onclick="RevertToPreviousVersionAsync">Revert to previous report version</button>
                                 <span>&nbsp; &nbsp;</span>
                             }
-                            <button @onclick="async () => await FixReportAsync(true)">Call AI to fix report</button>
+                            <button @onclick="async () => await FixReportAsync()">Call AI to fix report</button>
                         </div>
                     </div>
                 </div>
@@ -905,12 +905,6 @@
         // Separate the report name from the database
         var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
 
-        // Create the report
-        using var report = new LocalReport();
-
-        // Define the report parameters
-        var parameters = new[] { new ReportParameter("Title", ReportName) };
-
         // Load the report definition
         String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
         var reportPath = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
@@ -918,12 +912,24 @@
         if (!System.IO.File.Exists(reportPath))
         {
             Message = "Report file not found.";
-            _LogService.WriteToLog(Message);
+            await _LogService.WriteToLogAsync(Message);
             return;
         }
 
         // Load the report definition (the RDLC file)
         await using var reportStream = System.IO.File.OpenRead(reportPath);
+
+        await RunReport(ReportName, reportStream);        
+    }
+
+    private async Task RunReport(string ReportName, FileStream reportStream)
+    {
+        // Create the report
+        using var report = new LocalReport();
+
+        // Define the report parameters
+        var parameters = new[] { new ReportParameter("Title", ReportName) };
+
         using var reportReader = new System.IO.StreamReader(reportStream);
         report.LoadReportDefinition(reportReader);
 
@@ -935,6 +941,8 @@
 
         // Render the report to a PDF byte array
         CurrentReportPdfBytes = report.Render("PDF");
+
+        await _LogService.WriteToLogAsync($"RunReport {ReportName}");
     }
 
     private async Task RenderReport()
@@ -1013,23 +1021,10 @@
         await ExecuteReportAsync();
     }
 
-    private async Task FixReportAsync(bool DoRenderReport)
+    private async Task FixReportAsync()
     {
         try
         {
-            // Save error message in CurrentReportError
-            string CurrentReportError = ReportErrorMessage;
-
-            // Close the popup
-            ReportErrorMessage = "";
-
-            // Open the AI popup
-            IsAILoading = true;
-            ShowAI = true;
-
-            AIStatusMessage = "Calling AI to fix report...";
-            StateHasChanged();
-
             // Get APIKey from secure settings
             string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
 
@@ -1055,6 +1050,19 @@
                 }
             }
 
+            // Save error message in CurrentReportError
+            string CurrentReportError = ReportErrorMessage;
+
+            // Close the popup
+            ReportErrorMessage = "";
+
+            // Open the AI popup
+            IsAILoading = true;
+            ShowAI = true;
+
+            AIStatusMessage = "Calling AI to fix report...";
+            StateHasChanged();
+
             // *** Get the Report
 
             // Separate the report name from the database
@@ -1073,39 +1081,22 @@
             // Open fileName and get the content into CurrentScript
             CurrentScript = System.IO.File.ReadAllText(fileName);
 
-            // ** Open the template
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPageFixCode.txt");
-
-            // Read the content of the template file
-            string templateContent = File.ReadAllText(templatePath);
-
-            // Replace the placeholders
-            string AIRequest = "";
-
-            AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
-            AIRequest = AIRequest.Replace("## CURRENT ERROR ##", CurrentReportError);
-
-            await _LogService.WriteToLogAsync($"Report FixReportAsync ({AIRequest})");
-
-            var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
-
-            if (AIResponse.Error != "")
-            {
-                Message = AIResponse.Error;
-                await _LogService.WriteToLogAsync($"Report FixReportAsync Response Error ({AIResponse.Error})");
-                return;
-            }
-
-            await _LogService.WriteToLogAsync($"Report FixReportAsync Response ({AIResponse.Response})");
+            // CallFixReportAsync
+            var objAIResponse = await CallFixReportAsync(CurrentScript, CurrentReportError);
 
             IsAILoading = false;
             ShowAI = false;
 
-            // Save AIResponse.Response to the filename
-            System.IO.File.WriteAllText(fileName, AIResponse.Response);
-
-            if (DoRenderReport)
+            if (objAIResponse.Error != "")
             {
+                Message = objAIResponse.Error;
+                return;
+            }
+            else
+            {
+                // Save AIResponse.Response to the filename
+                System.IO.File.WriteAllText(fileName, objAIResponse.Response);
+
                 // Load the Report
                 await ExecuteReportAsync();
             }
@@ -1121,6 +1112,39 @@
             // Rethrow the exception
             throw;
         }
+    }
+
+    private async Task<AIResponse> CallFixReportAsync(string paramCurrentScript, string paramCurrentReportError)
+    {
+        // ** Open the template
+        string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPageFixCode.txt");
+
+        // Read the content of the template file
+        string templateContent = File.ReadAllText(templatePath);
+
+        // Replace the placeholders
+        string AIRequest = "";
+
+        AIRequest = templateContent.Replace("## CURRENT CODE ##", paramCurrentScript);
+        AIRequest = AIRequest.Replace("## CURRENT ERROR ##", paramCurrentReportError);
+
+        await _LogService.WriteToLogAsync($"Report FixReportAsync ({AIRequest})");
+
+        // Get APIKey from secure settings
+        string ApiKey = await SecureStorage.Default.GetAsync("AIApiKey") ?? "";
+
+        var objAIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
+
+        if (objAIResponse.Error != "")
+        {
+            await _LogService.WriteToLogAsync($"Report FixReportAsync Response Error ({objAIResponse.Error})");
+        }
+        else
+        {
+            await _LogService.WriteToLogAsync($"Report FixReportAsync Response ({objAIResponse.Response})");
+        }
+
+        return objAIResponse;
     }
 
     private async Task PreviousPage()
@@ -1354,6 +1378,7 @@
             IsAILoading = false;
             ShowAI = false;
             Message = ex.GetBaseException().Message;
+            AIStatusMessage = "";
             await _LogService.WriteToLogAsync(ex.Message);
         }
     }
