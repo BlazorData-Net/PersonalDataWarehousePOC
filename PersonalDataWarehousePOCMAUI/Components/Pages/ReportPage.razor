@@ -21,7 +21,7 @@
 
 <h4>Reports</h4>
 <br />
-
+<!-- REPORT DROPDOWN -->
 <div>
     @if (ReportList.Count > 0)
     {
@@ -42,7 +42,7 @@
     }
 </div>
 <br />
-
+<!-- TOOLBAR -->
 <div>
     <div>
         <div class="rz-p-sm-1" style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
@@ -90,7 +90,6 @@
     <br />
     <br />
 </div>
-
 <br />
 <!-- POPUPS -->
 @if (IsNewOutputPopupVisible)
@@ -271,7 +270,12 @@
                                 <textarea @bind="AIMessage" maxlength="1000"
                                 style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
                                 </textarea>
-                            </div>
+                            </div>                            
+                            <select @bind="AutoFixOption">
+                                <option value="true" selected="@(AutoFixOption == "true" ? "selected" : null)">Auto-Fix any errors</option>
+                                <option value="false" selected="@(AutoFixOption == "false" ? "selected" : null)">Do not Auto-Fix</option>
+                            </select>
+                            <br />
                             <br />
                             <button @onclick="AIbtn">Submit</button>
                         }
@@ -391,6 +395,7 @@
     private byte[] CurrentReportPdfBytes = new byte[] { };
     private string CurrentReportName = "";
     private string BackupReportPath = "";
+    private string AutoFixOption { get; set; } = "true";
 
     List<string> colAllDatabases = new List<string>();
     string CurrentDatabaseName = "Default";
