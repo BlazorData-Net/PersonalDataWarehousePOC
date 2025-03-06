@@ -1246,6 +1246,7 @@
     {
         try
         {
+            String CurrentReportError = "";
             ReportErrorMessage = "";
             AIStatusMessage = "Loading...";
 
@@ -1275,7 +1276,7 @@
             // Separate the report name from the database
             var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
 
-            // Delete the file
+            // Get the file
             String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
             var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
 
@@ -1297,7 +1298,7 @@
             }
             else
             {
-                Message = $"Report file '{fileName}' is  found.";
+                Message = $"Report file '{fileName}' is  empty.";
                 return;
             }
 
@@ -1305,6 +1306,28 @@
 
             IsAILoading = true;
             StateHasChanged();
+
+            // *****************************************************************************************
+            // GET Report Data
+            // *****************************************************************************************
+
+            try
+            {
+                await GetReportData();
+            }
+            catch (Exception ex)
+            {
+                Message = ex.GetBaseException().Message;
+                _LogService.WriteToLog($"AIbtn - GetReportData() - Error: {Message} - {ex.StackTrace.ToString()}");
+                IsAILoading = false;
+                ShowAI = false;
+                AIStatusMessage = "";
+                return;
+            }
+
+            // *****************************************************************************************
+            // CALL AI to Update Report 
+            // *****************************************************************************************
 
             // ** Open the template
             string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPage.txt");
@@ -1315,9 +1338,7 @@
             // Replace the placeholders
             string AIRequest = "";
 
-            // #############################################
             // FIRST PASS
-            // #############################################
 
             AIRequest = templateContent.Replace("## CURRENT CODE ##", CurrentScript);
             AIRequest = AIRequest.Replace("## CURRENT REQUEST ##", AIMessage);
@@ -1327,20 +1348,21 @@
 
             await _LogService.WriteToLogAsync($"Report CallOpenAIAsync (first pass) ({AIRequest})");
 
-            var AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
+            var objAIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
 
-            if (AIResponse.Error != "")
+            if (objAIResponse.Error != "")
             {
-                Message = AIResponse.Error;
-                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error (first pass) ({AIResponse.Error})");
+                Message = objAIResponse.Error;
+                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error (first pass) ({objAIResponse.Error})");
+                IsAILoading = false;
+                ShowAI = false;
+                AIStatusMessage = "";
                 return;
             }
 
-            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response (first pass) ({AIResponse.Response})");
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response (first pass) ({objAIResponse.Response})");
 
-            // #############################################
             // SECOND PASS
-            // #############################################
 
             // ** Open the template
             templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "AITemplateReportPageSecondPass.txt");
@@ -1351,39 +1373,157 @@
             // Replace the placeholders
             AIRequest = "";
 
-            AIRequest = templateContent.Replace("## CURRENT CODE ##", AIResponse.Response);
+            AIRequest = templateContent.Replace("## CURRENT CODE ##", objAIResponse.Response);
 
             AIStatusMessage = "(second pass) Calling AI to validate markup...";
             StateHasChanged();
 
             await _LogService.WriteToLogAsync($"Report CallOpenAIAsync (second pass) ({AIRequest})");
 
-            AIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
+            objAIResponse = await OrchestratorMethods.CallOpenAIAsync(SettingsService, ApiKey, AIRequest);
 
-            if (AIResponse.Error != "")
+            if (objAIResponse.Error != "")
             {
-                Message = AIResponse.Error;
-                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error (second pass) ({AIResponse.Error})");
+                Message = objAIResponse.Error;
+                await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response Error (second pass) ({objAIResponse.Error})");
+                IsAILoading = false;
+                ShowAI = false;
+                AIStatusMessage = "";
                 return;
             }
 
-            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response (second pass) ({AIResponse.Response})");
+            await _LogService.WriteToLogAsync($"Report CallOpenAIAsync Response (second pass) ({objAIResponse.Response})");
 
-            IsAILoading = false;
-            ShowAI = false;
+            // Save AIResponse.Response to the filename (the RDLC file)
+            System.IO.File.WriteAllText(fileName, objAIResponse.Response);
 
-            // Save AIResponse.Response to the filename
-            System.IO.File.WriteAllText(fileName, AIResponse.Response);
+            // Load the report definition (the RDLC file)
+            await using var reportStream = System.IO.File.OpenRead(fileName);
 
-            // Load the Report
-            await ExecuteReportAsync();
+            // Try to run report
+
+            try
+            {
+                await RunReport(ReportName, reportStream);
+
+                // *****************************************************************************************
+                // Render Report
+                // *****************************************************************************************
+
+                try
+                {
+                    await RenderReport();
+                }
+                catch (Exception ex)
+                {
+                    Message = ex.GetBaseException().Message;
+                    _LogService.WriteToLog($"AIbtn - RenderReport() - Error: {Message} - {ex.StackTrace.ToString()}");
+                    IsAILoading = false;
+                    ShowAI = false;
+                    AIStatusMessage = "";
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                CurrentReportError = ex.GetBaseException().Message;
+                // This is only hit on RunReport
+                // Do nothing - - continue to the next step
+                // to go into a loop to fix the report
+            }
+
+            bool IsSuccess = false;
+
+            // Open fileName and get the content into CurrentScript
+            CurrentScript = System.IO.File.ReadAllText(fileName);
+
+            // #############################################
+            // #############################################
+            //                  LOOP
+            // #############################################
+            // #############################################
+
+            // If AutoFixOption == true set loop to 4 otherwise set to 1
+            int loop = AutoFixOption == "true" ? 4 : 1;
+
+            for (int i = 0; i < loop; i++)
+            {                       
+                AIStatusMessage = $"Fixing Report... (loop {i} of {loop} possible loop(s))";
+                StateHasChanged();
+
+                // CallFixReportAsync
+                objAIResponse = await CallFixReportAsync(CurrentScript, CurrentReportError);
+
+                if (objAIResponse.Error != "")
+                {
+                    CurrentReportError = objAIResponse.Error;
+                    _LogService.WriteToLog($"AIbtn - CallFixReportAsync - Error: {objAIResponse.Error}");
+                    Message = objAIResponse.Error;
+                    return;
+                }
+                else
+                {
+                    // Try to run the report
+
+                    try
+                    {
+                        // Save AIResponse.Response to the filename (the RDLC file)
+                        System.IO.File.WriteAllText(fileName, objAIResponse.Response);
+
+                        // Load the report definition (the RDLC file)
+                        await using var reportStreamLoop = System.IO.File.OpenRead(fileName);
+
+                        await RunReport(ReportName, reportStreamLoop);
+
+                        // If we get this far it worked
+                        IsSuccess = true;
+
+                        // Break out of loop
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        CurrentReportError = ex.GetBaseException().Message;
+                        _LogService.WriteToLog($"AIbtn - LOOP - RenderReport() - Error: {Message} - {ex.StackTrace.ToString()}");
+                    }
+                }
+            }
+
+            // *****************************************************************************************
+            // Render Report
+            // *****************************************************************************************
+
+            if (IsSuccess)
+            {
+                try
+                {
+                    await RenderReport();
+                }
+                catch (Exception ex)
+                {
+                    Message = ex.GetBaseException().Message;
+                    _LogService.WriteToLog($"Report Execute() Error: {Message} - {ex.StackTrace.ToString()}");
+                    IsAILoading = false;
+                    ShowAI = false;
+                    AIStatusMessage = "";
+                    return;
+                }
+            }
+            else
+            {
+                IsAILoading = false;
+                ShowAI = false;
+                AIStatusMessage = "";
+                Message = "Could Not Process Report - Try Again";
+                await _LogService.WriteToLogAsync("AIbtn - Could Not Process Report - Try Again");
+            }
         }
         catch (Exception ex)
         {
             IsAILoading = false;
             ShowAI = false;
-            Message = ex.GetBaseException().Message;
             AIStatusMessage = "";
+            Message = ex.GetBaseException().Message;            
             await _LogService.WriteToLogAsync(ex.Message);
         }
     }
