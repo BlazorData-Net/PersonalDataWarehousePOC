@@ -1459,6 +1459,9 @@
                     CurrentReportError = objAIResponse.Error;
                     _LogService.WriteToLog($"AIbtn - CallFixReportAsync - Error: {objAIResponse.Error}");
                     Message = objAIResponse.Error;
+                    IsAILoading = false;
+                    ShowAI = false;
+                    AIStatusMessage = "";
                     return;
                 }
                 else
@@ -1485,7 +1488,8 @@
                     {
                         CurrentReportError = ex.GetBaseException().Message;
                         _LogService.WriteToLog($"AIbtn - LOOP - RenderReport() - Error: {Message} - {ex.StackTrace.ToString()}");
-                    }
+                        // We want processing to continue so it loops and tries again
+                    }                    
                 }
             }
 
