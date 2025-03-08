@@ -32,12 +32,11 @@ By doing the compute locally on your own computer, you avoid expensive cloud com
 
 https://github.com/user-attachments/assets/190f51b5-cbbf-4410-a689-8ea8d2b56d9b
 
-
 https://github.com/user-attachments/assets/3b1de39b-8176-4d08-9fdc-55294870e33b
 
+![ReportBuilderAnimation](https://github.com/user-attachments/assets/f0231477-ad4f-4d09-b13c-2faec2488aa1)
 
 ![image](https://github.com/user-attachments/assets/74238b49-7125-4861-a1e2-2f06c2d3710e)
-
 
 ![image](https://github.com/user-attachments/assets/9c51354b-7f69-45f6-9e73-ad79df4edb53)
 
