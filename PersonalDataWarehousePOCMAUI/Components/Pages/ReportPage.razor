@@ -75,7 +75,7 @@
                     <i class="material-icons" style="color:black;">delete</i>
                 </button>
 
-                <button @onclick="() => OpenExportPopup()" title="Export" style="background:none;border:none;">
+                <button @onclick='() => ExportReport("rdl")' title="Export" style="background:none;border:none;">
                     <i class="material-icons" style="color:black;">file_download</i>
                 </button>
 
@@ -324,36 +324,6 @@
     <div class="modal-backdrop fade show"></div>
 }
 
-
-@if (IsExportVisible)
-{
-    <div class="modal fade show" style="display: block;" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-                <div class="window glass active">
-                    <div class="title-bar">
-                        <div class="title-bar-text">Export</div>
-                        <div class="title-bar-controls">
-                            <button aria-label="Close" @onclick="CloseExportPopup"></button>
-                        </div>
-                    </div>
-                    <div class="window-body has-space" style="text-align: center;">
-
-                        <div>
-                            <span>&nbsp; &nbsp;</span>
-                            <button @onclick="ExportRDLC">RDLC</button>
-                            <span>&nbsp; &nbsp;</span>
-                            <button @onclick="ExportRDL">RDL</button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
-}
 
 @if (Message != "")
 {
@@ -848,6 +818,7 @@
         var ClassName = XsdGenerator.GetTableName(reportPath);
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
         var fileName = Path.Combine(viewsFolder, $"{ClassName}.view");
+        
         if (System.IO.File.Exists(fileName))
         {
             ClassType = "View";
@@ -1659,26 +1630,6 @@
     // *****************************************************************************************
     // Export
     // *****************************************************************************************
-
-    private void OpenExportPopup()
-    {
-        IsExportVisible = true;
-    }
-
-    private void CloseExportPopup()
-    {
-        IsExportVisible = false;
-    }
-
-    private async Task ExportRDLC()
-    {
-        await ExportReport("rdlc");
-    }
-
-    private async Task ExportRDL()
-    {
-        await ExportReport("rdl");
-    }
 
     private async Task ExportReport(string paramReportType)
     {
