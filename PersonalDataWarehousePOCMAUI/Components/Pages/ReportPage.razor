@@ -1488,6 +1488,7 @@
             for (int i = 1; i <= loop; i++)
             {                       
                 AIStatusMessage = $"Fixing Report... (loop {i} of {loop} possible loop(s))";
+                await _LogService.WriteToLogAsync(AIStatusMessage);
                 StateHasChanged();
 
                 // CallFixReportAsync
@@ -1495,12 +1496,12 @@
 
                 if (objAIResponse.Error != "")
                 {
-                    CurrentReportError = objAIResponse.Error;
-                    _LogService.WriteToLog($"AIbtn - CallFixReportAsync - Error: {objAIResponse.Error}");
+                    CurrentReportError = objAIResponse.Error;                    
                     Message = objAIResponse.Error;
                     IsAILoading = false;
                     ShowAI = false;
                     AIStatusMessage = "";
+                    await _LogService.WriteToLogAsync($"AIbtn - CallFixReportAsync - Error: {objAIResponse.Error}");
                     return;
                 }
                 else
