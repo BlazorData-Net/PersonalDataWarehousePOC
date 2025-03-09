@@ -59,6 +59,72 @@ public static class XsdGenerator
         return sb.ToString();
     }
 
+    public static string GenerateXmlForType(Type type)
+    {
+        // Use the type name and a simple plural form for the container element.
+        var className = type.Name;           // e.g. "Customer"
+        var pluralName = className + "s";      // e.g. "Customers"
+
+        var sb = new StringBuilder();
+
+        // Outer XML document structure
+        sb.AppendLine("<Query>");
+        sb.AppendLine("  <XmlData>");
+        sb.AppendLine($"    <{pluralName} xmlns=\"http://www.BlazorData.net\">");
+
+        // Generate a single sample instance for the type
+        sb.Append($"      <{className}");
+
+        // If the type has an "ID" property, output it as an attribute with a sample value.
+        var properties = type.GetProperties();
+        var idProp = properties.FirstOrDefault(p => p.Name.Equals("ID", StringComparison.OrdinalIgnoreCase));
+        if (idProp != null)
+        {
+            sb.Append(" ID=\"1\"");
+        }
+        sb.AppendLine(">");
+
+        // Iterate over each property except the "ID" property.
+        foreach (var prop in properties)
+        {
+            if (prop.Name.Equals("ID", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            // Check if the property is a collection (excluding strings).
+            if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) &&
+                prop.PropertyType != typeof(string))
+            {
+                // Render the collection as a container element.
+                sb.AppendLine($"        <{prop.Name}>");
+
+                // Attempt a simple singularization (if the property name ends in "s").
+                string childName = prop.Name;
+                if (childName.EndsWith("s") && childName.Length > 1)
+                {
+                    childName = childName.Substring(0, childName.Length - 1);
+                }
+                sb.AppendLine($"          <{childName}>Sample{childName}</{childName}>");
+                sb.AppendLine($"        </{prop.Name}>");
+            }
+            else
+            {
+                // Render simple properties with a sample value.
+                sb.AppendLine($"        <{prop.Name}>Sample{prop.Name}</{prop.Name}>");
+            }
+        }
+        sb.AppendLine($"      </{className}>");
+
+        // Close the outer XML elements.
+        sb.AppendLine($"    </{pluralName}>");
+        sb.AppendLine("  </XmlData>");
+        sb.AppendLine("</Query>");
+
+        return sb.ToString();
+    }
+
+
+    // Utility
+
     private static string MapToXsdType(Type type)
     {
         // If it's a Nullable<T>, extract T

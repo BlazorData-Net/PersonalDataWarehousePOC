@@ -1,8 +1,11 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using PersonalDataWarehousePOC.Services;
+using System.Data;
 using System.Net;
 
 namespace PersonalDataWarehousePOCMAUI.Services
@@ -34,45 +37,117 @@ namespace PersonalDataWarehousePOCMAUI.Services
         }
 
         [HttpGet("/api/GetData")]
-        public IActionResult GetData(string database, string datasource)
-        {
-            var reportText = """"                
-                <Query>
-                <XmlData>
-                <Customers xmlns="http://www.adventure-works.com">  
-                   <Customer ID="11">  
-                      <FirstName>Bobby</FirstName>  
-                      <LastName>Moore</LastName>  
-                      <Orders>  
-                         <Order ID="1" Qty="6">Chair</Order>  
-                         <Order ID="2" Qty="1">Table</Order>  
-                      </Orders>  
-                      <Returns>  
-                         <Return ID="1" Qty="2">Chair</Return>  
-                      </Returns>  
-                   </Customer>  
-                   <Customer ID="20">  
-                      <FirstName>Crystal</FirstName>  
-                      <LastName>Hu</LastName>  
-                      <Orders>  
-                         <Order ID="8" Qty="2">Sofa</Order>  
-                      </Orders>  
-                      <Returns/>  
-                   </Customer>  
-                   <Customer ID="33">  
-                      <FirstName>Wyatt</FirstName>  
-                      <LastName>Diaz</LastName>  
-                      <Orders>  
-                         <Order ID="15" Qty="2">EndTables</Order>  
-                      </Orders>  
-                      <Returns/>  
-                   </Customer>  
-                </Customers>  
-                </XmlData>
-                </Query>
-                """";
+        public async Task<IActionResult> GetData(string database, string datasource)
+        {  
+            try
+            {
+                // Define directory for output
+                String ClassesPath = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{database}/Classes";
 
-            return Ok(reportText);
+                // **********************
+                // ** Create the XML file
+                // **********************
+
+                // Load the class and generate the schema
+                // Load the class by using its name and get its type
+                var codeFile = $@"{ClassesPath}/{datasource}.cs";
+
+                if (!System.IO.File.Exists(codeFile))
+                {
+                    return Ok("FIle Not Found");
+                }
+
+                // Load the code from the file
+                var code = System.IO.File.ReadAllText(codeFile);
+
+                // Get the Type for the class we want to generate the RDL for
+                var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(datasource.ToLower()));
+
+                var dt = await GetDataTableAsync(database, datasource);
+
+                // Generate the XML string
+                string XMLString = XsdGenerator.GenerateXmlForType(ClassType);
+
+                return Ok(XMLString);
+            }
+            catch (Exception ex)
+            {
+                return Ok(ex.Message);
+            }
+        }
+
+        // Utility
+
+        private async Task<System.Data.DataTable> GetDataTableAsync(string database, string datasource)
+        {
+            // Determine if it is a Table or a View
+            // If the file is in the Parquet folder, it is a Table
+            // If the file is in the Views folder, it is a View
+
+            String ClassType = "Table";
+
+            var ClassName = DataService.FirstCharToUpper(datasource.ToLower());
+
+            String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{database}/Views";
+            
+            var fileName = Path.Combine(viewsFolder, $"{ClassName}.view");
+
+            if (System.IO.File.Exists(fileName))
+            {
+                ClassType = "View";
+            }
+
+            IEnumerable<IDictionary<string, object>> result = new List<IDictionary<string, object>>();
+
+            Dataloader dataloader = new Dataloader();
+
+            // Get the data based on the ClassType
+            if (ClassType == "Table")
+            {
+                // Get the data from the Parquet file
+                result = await dataloader.LoadParquet(database, ClassName);
+            }
+            else // View
+            {
+                // Get the data from the View file
+                result = await dataloader.LoadView(database, ClassName);
+            }
+
+            // Get the fields from the first record (ensure result is not empty)
+            var fields = result.Any()
+                ? result.First().Keys.ToList()
+                : new List<string>();
+
+            // Create a DataTable
+            System.Data.DataTable dt = new System.Data.DataTable("MyDataTable");
+
+            // Add an Id column
+            dt.Columns.Add("Id", typeof(int));
+
+            // Add columns for all fields (replace spaces with underscores)
+            foreach (var field in fields)
+            {
+                string columnName = field.Replace(" ", "_");
+                dt.Columns.Add(columnName, typeof(object));
+            }
+
+            // Fill the DataTable rows
+            int i = 0;
+            foreach (var item in result)
+            {
+                DataRow newRow = dt.NewRow();
+                newRow["Id"] = i++;
+
+                foreach (var field in fields)
+                {
+                    string columnName = field.Replace(" ", "_");
+                    newRow[columnName] = item.ContainsKey(field) ? item[field] : null;
+                }
+
+                dt.Rows.Add(newRow);
+            }
+
+            return dt;
         }
     }
 }
