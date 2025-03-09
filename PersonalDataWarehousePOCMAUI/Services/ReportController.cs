@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using PersonalDataWarehousePOC.Services;
+using PersonalDataWarehousePOCMAUI.Model;
 using System.Data;
 using System.Net;
 
@@ -54,14 +55,20 @@ namespace PersonalDataWarehousePOCMAUI.Services
 
                 if (!System.IO.File.Exists(codeFile))
                 {
-                    return Ok("FIle Not Found");
+                    string error_message = $"ERROR: Passed database:{database} - datasource {datasource} - {codeFile} not found";
+
+                    // Log the error
+                    LogService objLogService = new LogService();
+                    await objLogService.WriteToLogAsync($"/api/GetData Error - {error_message}");
+
+                    return Ok(error_message);
                 }
 
                 // Load the code from the file
                 var code = System.IO.File.ReadAllText(codeFile);
 
                 // Get the Type for the class we want to generate the RDL for
-                var ClassType = XsdGenerator.GetTypeFromCode(code, DataService.FirstCharToUpper(datasource.ToLower()));
+                var ClassType = XsdGenerator.GetTypeFromCode(code, datasource);
 
                 var dt = await GetDataTableAsync(database, datasource);
 
@@ -72,7 +79,14 @@ namespace PersonalDataWarehousePOCMAUI.Services
             }
             catch (Exception ex)
             {
-                return Ok(ex.Message);
+                string error_message = $"ERROR: Check exact casing of database and data source! Passed database:{database} - datasource {datasource} - {ex.Message}";
+
+                // Log the error
+                LogService objLogService = new LogService();
+                await objLogService.WriteToLogAsync($"/api/GetData Error - {error_message}");
+
+                // Return the error message
+                return Ok(error_message);
             }
         }
 
