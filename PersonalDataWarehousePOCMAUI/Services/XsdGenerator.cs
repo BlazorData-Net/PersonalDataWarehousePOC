@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
+using System.Data;
 
 public static class XsdGenerator
 {
@@ -59,7 +60,7 @@ public static class XsdGenerator
         return sb.ToString();
     }
 
-    public static string GenerateXmlForType(Type type)
+    public static string GenerateXmlForType(Type type, DataTable dt)
     {
         // Use the type name and a simple plural form for the container element.
         var className = type.Name;           // e.g. "Customer"
@@ -67,52 +68,41 @@ public static class XsdGenerator
 
         var sb = new StringBuilder();
 
-        // Outer XML document structure
+        // Outer XML document structure.
         sb.AppendLine("<Query>");
         sb.AppendLine("  <XmlData>");
         sb.AppendLine($"    <{pluralName} xmlns=\"http://www.BlazorData.net\">");
 
-        // Generate a single sample instance for the type
-        sb.Append($"      <{className}");
-
-        // If the type has an "ID" property, output it as an attribute with a sample value.
-        var properties = type.GetProperties();
-        var idProp = properties.FirstOrDefault(p => p.Name.Equals("ID", StringComparison.OrdinalIgnoreCase));
-        if (idProp != null)
+        // Iterate through each row in the DataTable.
+        foreach (DataRow row in dt.Rows)
         {
-            sb.Append(" ID=\"1\"");
-        }
-        sb.AppendLine(">");
-
-        // Iterate over each property except the "ID" property.
-        foreach (var prop in properties)
-        {
-            if (prop.Name.Equals("ID", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            // Check if the property is a collection (excluding strings).
-            if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) &&
-                prop.PropertyType != typeof(string))
+            // Start the element for this instance.
+            sb.Append($"      <{className}");
+            // If the DataTable contains an "ID" column, output it as an attribute.
+            if (dt.Columns.Contains("ID"))
             {
-                // Render the collection as a container element.
-                sb.AppendLine($"        <{prop.Name}>");
-
-                // Attempt a simple singularization (if the property name ends in "s").
-                string childName = prop.Name;
-                if (childName.EndsWith("s") && childName.Length > 1)
+                var idValue = row["ID"];
+                if (idValue != DBNull.Value)
                 {
-                    childName = childName.Substring(0, childName.Length - 1);
+                    sb.Append($" ID=\"{idValue}\"");
                 }
-                sb.AppendLine($"          <{childName}>Sample{childName}</{childName}>");
-                sb.AppendLine($"        </{prop.Name}>");
             }
-            else
+            sb.AppendLine(">");
+
+            // Iterate over each column (except "ID") to output its value.
+            foreach (DataColumn column in dt.Columns)
             {
-                // Render simple properties with a sample value.
-                sb.AppendLine($"        <{prop.Name}>Sample{prop.Name}</{prop.Name}>");
+                if (column.ColumnName.Equals("ID", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Use the value from the row (or an empty string if the value is null)
+                var value = row[column] != DBNull.Value ? row[column].ToString() : string.Empty;
+                // Escape the value to ensure it is valid XML.
+                sb.AppendLine($"        <{column.ColumnName}>{System.Security.SecurityElement.Escape(value)}</{column.ColumnName}>");
             }
+
+            sb.AppendLine($"      </{className}>");
         }
-        sb.AppendLine($"      </{className}>");
 
         // Close the outer XML elements.
         sb.AppendLine($"    </{pluralName}>");
@@ -121,7 +111,6 @@ public static class XsdGenerator
 
         return sb.ToString();
     }
-
 
     // Utility
 

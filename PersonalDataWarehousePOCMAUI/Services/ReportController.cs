@@ -66,7 +66,7 @@ namespace PersonalDataWarehousePOCMAUI.Services
                 var dt = await GetDataTableAsync(database, datasource);
 
                 // Generate the XML string
-                string XMLString = XsdGenerator.GenerateXmlForType(ClassType);
+                string XMLString = XsdGenerator.GenerateXmlForType(ClassType, dt);
 
                 return Ok(XMLString);
             }
