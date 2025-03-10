@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 using System.Data;
+using System.Text.RegularExpressions;
 
 public static class XsdGenerator
 {
@@ -295,5 +296,46 @@ public static class XsdGenerator
             .FirstOrDefault();
 
         return schemaPathElement?.Value;
+    }
+
+    public static string GetDatabaseNameFromConnectString(string reportXml)
+    {
+        try
+        {
+            // Remove BOM if present
+            reportXml = reportXml.TrimStart('\uFEFF', '\u200B');
+
+            // Define the XML namespace used in the report definition.
+            XNamespace ns = "http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition";
+
+            // Remove <?xml version="1.0" encoding="utf-8"?>
+            reportXml = reportXml.Replace(@"<?xml version=""1.0"" encoding=""utf-8""?>", "");
+
+            // Parse the report XML.
+            XDocument doc = XDocument.Parse(reportXml);
+
+            // Locate the ConnectString element within the XML.
+            var connectStringElement = doc.Descendants(ns + "ConnectString").FirstOrDefault();
+
+            if (connectStringElement != null)
+            {
+                // Get the ConnectString value.
+                string connectString = connectStringElement.Value;
+
+                // Use a regular expression to extract the 'database' parameter value.
+                var match = Regex.Match(connectString, @"[?&]database=([^&]+)", RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    return match.Groups[1].Value;
+                }
+            }
+
+            // If not found, return an empty string.
+            return string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 }

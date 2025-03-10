@@ -1767,6 +1767,11 @@
 
             // Get the file bytes
             CurrentImportReportContents = await File.ReadAllBytesAsync(file.Path);
+
+            // Convert CurrentImportReportContents to a string
+            string CurrentImportReportContentsString = System.Text.Encoding.UTF8.GetString(CurrentImportReportContents);
+
+            CurrentDatabaseName = XsdGenerator.GetDatabaseNameFromConnectString(CurrentImportReportContentsString);
         }
         else
         {
