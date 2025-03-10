@@ -1823,13 +1823,17 @@
 
             await LoadReportListDropdownAsync();
 
+            _LogService.WriteToLog($"ImportReportAsync() Imported: {CurrentReportName}");
+
             IsImportReportPopupVisible = false;
             StateHasChanged();
 
-            _LogService.WriteToLog($"ImportReportAsync() Imported: {CurrentReportName}");
+            // Load the report definition (the RDLC file)
+            await using var reportStreamLoop = System.IO.File.OpenRead(fileName);
 
-            // Load the Report
-            await ExecuteReportAsync();
+            await GetReportData();
+
+            await RunReport(CurrentImportReportName, reportStreamLoop);
         }
         catch (Exception ex)
         {
