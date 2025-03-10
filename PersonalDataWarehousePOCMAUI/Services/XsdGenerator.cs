@@ -112,6 +112,107 @@ public static class XsdGenerator
         return sb.ToString();
     }
 
+    public static string TransformReportToLocalConnection(string reportXml)
+    {
+        // Define XML namespaces used in the report
+        XNamespace ns = "http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition";
+        XNamespace rd = "http://schemas.microsoft.com/SQLServer/reporting/reportdesigner";
+        XNamespace am = "http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata";
+
+        // Load the report XML
+        XDocument doc = XDocument.Parse(reportXml);
+
+        // Remove the AuthoringMetadata element (if it exists)
+        doc.Root.Element(am + "AuthoringMetadata")?.Remove();
+
+        // --- Update the DataSources section ---
+        var dataSource = doc.Root.Element(ns + "DataSources")?
+                                .Element(ns + "DataSource");
+        if (dataSource != null)
+        {
+            var connectionProperties = dataSource.Element(ns + "ConnectionProperties");
+            if (connectionProperties != null)
+            {
+                // Change the DataProvider from "XML" to "System.Data.DataSet"
+                var dataProvider = connectionProperties.Element(ns + "DataProvider");
+                if (dataProvider != null)
+                {
+                    dataProvider.Value = "System.Data.DataSet";
+                }
+                // Change the ConnectString to "/* Local Connection */"
+                var connectString = connectionProperties.Element(ns + "ConnectString");
+                if (connectString != null)
+                {
+                    connectString.Value = "/* Local Connection */";
+                }
+            }
+        }
+
+        // --- Update the DataSets section ---
+        var dataSet = doc.Root.Element(ns + "DataSets")?
+                           .Element(ns + "DataSet");
+        if (dataSet != null)
+        {
+            // Update the Query/CommandText element to include "/* Local Query */"
+            var query = dataSet.Element(ns + "Query");
+            if (query != null)
+            {
+                var commandText = query.Element(ns + "CommandText");
+                if (commandText != null)
+                {
+                    commandText.Value = "/* Local Query */";
+                }
+                else
+                {
+                    query.Add(new XElement(ns + "CommandText", "/* Local Query */"));
+                }
+            }
+
+            // Process the Fields element
+            var fields = dataSet.Element(ns + "Fields");
+            if (fields != null)
+            {
+                // Remove the fields "xmlns" and "LoginID"
+                fields.Elements(ns + "Field")
+                      .Where(f => (string)f.Attribute("Name") == "xmlns" ||
+                                  (string)f.Attribute("Name") == "LoginID")
+                      .Remove();
+
+                // For the "Id" field: update DataField to "Id" and change type to System.Int32
+                var idField = fields.Elements(ns + "Field")
+                                    .FirstOrDefault(f => (string)f.Attribute("Name") == "Id");
+                if (idField != null)
+                {
+                    var dataField = idField.Element(ns + "DataField");
+                    if (dataField != null)
+                    {
+                        dataField.Value = "Id";
+                    }
+                    var typeName = idField.Element(rd + "TypeName");
+                    if (typeName != null)
+                    {
+                        typeName.Value = "System.Int32";
+                    }
+                }
+
+                // For the "CurrentPayRate" field: change its type to System.Double
+                var currentPayField = fields.Elements(ns + "Field")
+                                            .FirstOrDefault(f => (string)f.Attribute("Name") == "CurrentPayRate");
+                if (currentPayField != null)
+                {
+                    var typeName = currentPayField.Element(rd + "TypeName");
+                    if (typeName != null)
+                    {
+                        typeName.Value = "System.Double";
+                    }
+                }
+            }
+        }
+
+        // Return the modified XML as a string (including the XML declaration)
+        return doc.Declaration + Environment.NewLine + doc.ToString();
+    }
+
     // Utility
 
     private static string MapToXsdType(Type type)
@@ -177,7 +278,7 @@ public static class XsdGenerator
         Assembly assembly = Assembly.Load(ms.ToArray());
 
         // 6. Get our newly compiled type
-        return assembly.GetType($"Controllers.{ClassName}");       
+        return assembly.GetType($"Controllers.{ClassName}");
     }
 
     public static string GetTableName(string rdlcFilePath)

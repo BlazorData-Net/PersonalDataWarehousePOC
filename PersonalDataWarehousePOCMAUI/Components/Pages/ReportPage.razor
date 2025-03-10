@@ -84,6 +84,10 @@
                     <span style="color:red">&nbsp;&nbsp;<b>Editing...</b></span>
                 }
             }
+
+            <button @onclick='() => ImportReport()' title="Import Report" style="background:none;border:none;">
+                <i class="material-icons" style="color:black;">file_upload</i>
+            </button>
         </div>
     </div>
 
@@ -243,6 +247,55 @@
 }
 
 
+@if (IsImportReportPopupVisible)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="window glass active">
+                    <div class="title-bar">
+                        <div class="title-bar-text">Import Report</div>
+                        <div class="title-bar-controls">
+                            <button aria-label="Close" @onclick="CloseImportReportPopup"></button>
+                        </div>
+                    </div>
+
+                    <div class="window-body has-space">
+                        <form @onsubmit="ImportReportAsync">
+                            <div>
+                                <label>Select Database: </label>
+                                <select @onchange="@(async (args) =>
+                                {
+                                    CurrentDatabaseName = args.Value?.ToString();
+                                })">
+                                    @foreach (var database in colAllDatabases)
+                                    {
+                                        <option value="@database"
+                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
+                                            @database
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <br />
+                            <div>
+                                <label for="reportName">Report Name:</label>
+                                <input type="text" id="reportName" maxlength="50" style="width: 300px;" @bind="CurrentImportReportName" />
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="submit">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+
 @if (ShowAI)
 {
     <div class="modal fade show" style="display: block;" tabindex="-1">
@@ -366,6 +419,9 @@
     private string CurrentReportName = "";
     private string BackupReportPath = "";
     private string AutoFixOption { get; set; } = "true";
+    private string CurrentImportReportName = "";
+    private byte[] CurrentImportReportContents = new byte[] { };
+    private bool IsImportReportPopupVisible { get; set; } = false;
 
     List<string> colAllDatabases = new List<string>();
     string CurrentDatabaseName = "Default";
@@ -818,7 +874,7 @@
         var ClassName = XsdGenerator.GetTableName(reportPath);
         String viewsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Views";
         var fileName = Path.Combine(viewsFolder, $"{ClassName}.view");
-        
+
         if (System.IO.File.Exists(fileName))
         {
             ClassType = "View";
@@ -1685,4 +1741,58 @@
             IsExportVisible = false;
         }
     }
+
+    // *****************************************************************************************
+    // IMPORT
+    // *****************************************************************************************
+
+    private async Task ImportReport()
+    {
+        var picker = new Windows.Storage.Pickers.FileOpenPicker
+            {
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+            };
+
+        picker.FileTypeFilter.Add(".rdl");
+
+        var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+        var file = await picker.PickSingleFileAsync();
+
+        if (file != null)
+        {
+            // Get the file name
+            var fileName = file.Name;
+            // Get the file bytes
+            CurrentImportReportContents = await File.ReadAllBytesAsync(file.Path);
+        }
+        else
+        {
+            Message = $"Import cancelled.";
+        }
+
+        IsImportReportPopupVisible = true;
+        StateHasChanged();
+    }
+
+    private async Task ImportReportAsync()
+    {
+        // Separate the report name from the database
+        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
+        // Load the DataReport
+        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
+        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
+        // Write the content to the selected path
+        await File.WriteAllBytesAsync(fileName, CurrentImportReportContents);
+        // Load the Report
+        await ExecuteReportAsync();
+        IsImportReportPopupVisible = false;
+    }
+
+    private void CloseImportReportPopup()
+    {
+        IsImportReportPopupVisible = false;
+    }
+
 }
