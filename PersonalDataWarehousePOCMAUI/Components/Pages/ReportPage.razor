@@ -282,7 +282,7 @@
                             <div>
                                 <label for="reportName">Report Name:</label>
                                 <input type="text" id="reportName" maxlength="50" style="width: 300px;" @bind="CurrentImportReportName" />
-                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <br /><br />
                                 <button type="submit">Submit</button>
                             </div>
                         </form>
@@ -1763,7 +1763,8 @@
         if (file != null)
         {
             // Get the file name
-            var fileName = file.Name;
+            CurrentImportReportName = file.Name.Replace(".rdl","");
+
             // Get the file bytes
             CurrentImportReportContents = await File.ReadAllBytesAsync(file.Path);
         }
