@@ -120,6 +120,9 @@ public static class XsdGenerator
         XNamespace rd = "http://schemas.microsoft.com/SQLServer/reporting/reportdesigner";
         XNamespace am = "http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata";
 
+        // Remove BOM if present
+        reportXml = reportXml.TrimStart('\uFEFF', '\u200B');
+
         // Load the report XML
         XDocument doc = XDocument.Parse(reportXml);
 
@@ -129,6 +132,7 @@ public static class XsdGenerator
         // --- Update the DataSources section ---
         var dataSource = doc.Root.Element(ns + "DataSources")?
                                 .Element(ns + "DataSource");
+
         if (dataSource != null)
         {
             var connectionProperties = dataSource.Element(ns + "ConnectionProperties");
@@ -152,6 +156,7 @@ public static class XsdGenerator
         // --- Update the DataSets section ---
         var dataSet = doc.Root.Element(ns + "DataSets")?
                            .Element(ns + "DataSet");
+
         if (dataSet != null)
         {
             // Update the Query/CommandText element to include "/* Local Query */"
@@ -305,11 +310,11 @@ public static class XsdGenerator
             // Remove BOM if present
             reportXml = reportXml.TrimStart('\uFEFF', '\u200B');
 
-            // Define the XML namespace used in the report definition.
-            XNamespace ns = "http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition";
-
             // Remove <?xml version="1.0" encoding="utf-8"?>
             reportXml = reportXml.Replace(@"<?xml version=""1.0"" encoding=""utf-8""?>", "");
+
+            // Define the XML namespace used in the report definition.
+            XNamespace ns = "http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition";
 
             // Parse the report XML.
             XDocument doc = XDocument.Parse(reportXml);

@@ -323,7 +323,7 @@
                                 <textarea @bind="AIMessage" maxlength="1000"
                                 style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
                                 </textarea>
-                            </div>                            
+                            </div>
                             <select @bind="AutoFixOption">
                                 <option value="true" selected="@(AutoFixOption == "true" ? "selected" : null)">Auto-Fix any errors</option>
                                 <option value="false" selected="@(AutoFixOption == "false" ? "selected" : null)">Do not Auto-Fix</option>
@@ -952,7 +952,7 @@
         // Load the report definition (the RDLC file)
         await using var reportStream = System.IO.File.OpenRead(reportPath);
 
-        await RunReport(ReportName, reportStream);        
+        await RunReport(ReportName, reportStream);
     }
 
     private async Task RunReport(string ReportName, FileStream reportStream)
@@ -1354,7 +1354,7 @@
             }
 
             // *****************************************************************************************
-            // CALL AI to Update Report 
+            // CALL AI to Update Report
             // *****************************************************************************************
 
             // ** Open the template
@@ -1491,7 +1491,7 @@
                 // Display the Report Error popup
                 ReportErrorMessage = CurrentReportError;
 
-                return;                
+                return;
             }
 
             // *****************************************************************************************
@@ -1509,11 +1509,11 @@
             // #############################################
             // #############################################
 
-            // Set loop 
+            // Set loop
             int loop = 4;
 
             for (int i = 1; i <= loop; i++)
-            {                       
+            {
                 AIStatusMessage = $"Fixing Report... (loop {i} of {loop} possible loop(s))";
                 await _LogService.WriteToLogAsync(AIStatusMessage);
                 StateHasChanged();
@@ -1523,7 +1523,7 @@
 
                 if (objAIResponse.Error != "")
                 {
-                    CurrentReportError = objAIResponse.Error;                    
+                    CurrentReportError = objAIResponse.Error;
                     Message = objAIResponse.Error;
                     IsAILoading = false;
                     ShowAI = false;
@@ -1556,7 +1556,7 @@
                         CurrentReportError = ex.GetBaseException().Message;
                         _LogService.WriteToLog($"AIbtn - LOOP - RenderReport() - Error: {Message} - {ex.StackTrace.ToString()}");
                         // We want processing to continue so it loops and tries again
-                    }                    
+                    }
                 }
             }
 
@@ -1600,7 +1600,7 @@
             IsAILoading = false;
             ShowAI = false;
             AIStatusMessage = "";
-            Message = ex.GetBaseException().Message;            
+            Message = ex.GetBaseException().Message;
             await _LogService.WriteToLogAsync(ex.Message);
         }
     }
@@ -1748,52 +1748,105 @@
 
     private async Task ImportReport()
     {
-        var picker = new Windows.Storage.Pickers.FileOpenPicker
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FileOpenPicker
+                {
+                    SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
+                };
+
+            picker.FileTypeFilter.Add(".rdl");
+
+            var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSingleFileAsync();
+
+            if (file != null)
             {
-                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
-            };
+                // Get the file name
+                CurrentImportReportName = file.Name.Replace(".rdl", "");
 
-        picker.FileTypeFilter.Add(".rdl");
+                // Get the file bytes
+                CurrentImportReportContents = await File.ReadAllBytesAsync(file.Path);
 
-        var hwnd = ((MauiWinUIWindow)App.Current.Windows[0].Handler.PlatformView).WindowHandle;
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+                // Convert CurrentImportReportContents to a string
+                string CurrentImportReportContentsString = System.Text.Encoding.UTF8.GetString(CurrentImportReportContents);
 
-        var file = await picker.PickSingleFileAsync();
+                CurrentDatabaseName = XsdGenerator.GetDatabaseNameFromConnectString(CurrentImportReportContentsString);
 
-        if (file != null)
-        {
-            // Get the file name
-            CurrentImportReportName = file.Name.Replace(".rdl","");
+                // If the database name is empty, set it to Default
+                if (CurrentDatabaseName == "")
+                {
+                    CurrentDatabaseName = "Default";
+                }
+            }
+            else
+            {
+                Message = $"Import cancelled.";
+            }
 
-            // Get the file bytes
-            CurrentImportReportContents = await File.ReadAllBytesAsync(file.Path);
-
-            // Convert CurrentImportReportContents to a string
-            string CurrentImportReportContentsString = System.Text.Encoding.UTF8.GetString(CurrentImportReportContents);
-
-            CurrentDatabaseName = XsdGenerator.GetDatabaseNameFromConnectString(CurrentImportReportContentsString);
+            IsImportReportPopupVisible = true;
+            StateHasChanged();
         }
-        else
+        catch (Exception ex)
         {
-            Message = $"Import cancelled.";
+            IsImportReportPopupVisible = false;
+            Message = ex.GetBaseException().Message;
+            _LogService.WriteToLog($"ImportReport() Error: {Message} - {ex.StackTrace.ToString()}");
         }
-
-        IsImportReportPopupVisible = true;
-        StateHasChanged();
     }
 
     private async Task ImportReportAsync()
     {
-        // Separate the report name from the database
-        var (Database, ReportName) = DataService.ExtractDatabaseAndTable(CurrentReportName);
-        // Load the DataReport
-        String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
-        var fileName = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
-        // Write the content to the selected path
-        await File.WriteAllBytesAsync(fileName, CurrentImportReportContents);
-        // Load the Report
-        await ExecuteReportAsync();
-        IsImportReportPopupVisible = false;
+        try
+        {           
+            // Fix Report Name
+            CurrentImportReportName = CurrentImportReportName.Replace(".rdl", "");
+
+            // Remove spaces and special characters
+            CurrentImportReportName = databaseService.RemoveSpacesSpecialCharacters(CurrentImportReportName);
+
+            if (CurrentImportReportName.Trim() == "")
+            {
+                CurrentImportReportName = "NewReport";
+            }
+
+            CurrentImportReportName = DataService.FirstCharToUpper(CurrentImportReportName.Trim());
+
+            // Save the DataReport
+            String ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{CurrentDatabaseName}/Reports";
+            var fileName = Path.Combine(ReportsFolder, $"{CurrentImportReportName}.rdlc");
+
+            // Rewrite the report to use "local data source"
+            string CurrentImportReportContentsString = System.Text.Encoding.UTF8.GetString(CurrentImportReportContents);
+
+            // TransformReport Connection To LocalConnection
+            CurrentImportReportContentsString = XsdGenerator.TransformReportToLocalConnection(CurrentImportReportContentsString);
+
+            // Convert the string to bytes
+            CurrentImportReportContents = System.Text.Encoding.UTF8.GetBytes(CurrentImportReportContentsString);
+
+            // Write the content to the selected path
+            await File.WriteAllBytesAsync(fileName, CurrentImportReportContents);
+
+            // Add the database name to the CurrentReportName
+            CurrentReportNameWithoutDatabase = CurrentImportReportName;
+
+            // Set CurrentReportName to include the database name
+            CurrentReportName = $"{CurrentDatabaseName}/{CurrentImportReportName}";
+
+            IsImportReportPopupVisible = false;
+
+            // Load the Report
+            await ExecuteReportAsync();
+        }
+        catch (Exception ex)
+        {
+            IsImportReportPopupVisible = false;
+            Message = ex.GetBaseException().Message;
+            _LogService.WriteToLog($"ImportReportAsync() Error: {Message} - {ex.StackTrace.ToString()}");
+        }
     }
 
     private void CloseImportReportPopup()
