@@ -264,22 +264,6 @@
                     <div class="window-body has-space">
                         <form @onsubmit="ImportReportAsync">
                             <div>
-                                <label>Select Database: </label>
-                                <select @onchange="@(async (args) =>
-                                {
-                                    CurrentDatabaseName = args.Value?.ToString();
-                                })">
-                                    @foreach (var database in colAllDatabases)
-                                    {
-                                        <option value="@database"
-                                        selected="@(database == CurrentDatabaseName ? "selected" : null)">
-                                            @database
-                                        </option>
-                                    }
-                                </select>
-                            </div>
-                            <br />
-                            <div>
                                 <label for="reportName">Report Name:</label>
                                 <input type="text" id="reportName" maxlength="50" style="width: 300px;" @bind="CurrentImportReportName" />
                                 <br /><br />
@@ -413,6 +397,7 @@
     private string CurrentSelectedTableWizard = "";
 
     private bool IsLoading { get; set; } = false;
+    private string TempPdfPath = "";
     private List<string> ReportList = new List<string>();
     private DataTable CurrentReportData { get; set; }
     private byte[] CurrentReportPdfBytes = new byte[] { };
@@ -840,6 +825,9 @@
             try
             {
                 await RenderReport();
+
+                // Delete the temp pdf file
+                System.IO.File.Delete(TempPdfPath);
             }
             catch (Exception ex)
             {
@@ -986,13 +974,13 @@
         // To display properly we need to save the PDF as a file and re-load it
         string ReportsFolder = $"{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}/PersonalDataWarehouse/Databases/{Database}/Reports";
         var reportPath = Path.Combine(ReportsFolder, $"{ReportName}.rdlc");
-        var pdfPath = System.IO.Path.Combine(ReportsFolder, $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
+        TempPdfPath = System.IO.Path.Combine(ReportsFolder, $"{DateTime.Now.Ticks.ToString()}-TempReport.pdf");
 
         // Save the pdf to the temp file
-        System.IO.File.WriteAllBytes(pdfPath, CurrentReportPdfBytes);
+        System.IO.File.WriteAllBytes(TempPdfPath, CurrentReportPdfBytes);
 
         // Open the temp PDF file and read the bytes
-        await using (var pdfStream = System.IO.File.OpenRead(pdfPath))
+        await using (var pdfStream = System.IO.File.OpenRead(TempPdfPath))
         {
             using (var memoryStream = new System.IO.MemoryStream())
             {
@@ -1006,9 +994,6 @@
 
         // Call the JavaScript function with the element reference and the PDF data
         await jsRuntime.InvokeVoidAsync("blazorPdfViewer.renderPdf", pdfContainer, pdfBase64);
-
-        // Delete the temp pdf file
-        System.IO.File.Delete(pdfPath);
 
         // Backup the report
         BackupReportPath = Path.Combine(ReportsFolder, "Backup", $"{ReportName}.rdlc");
@@ -1836,7 +1821,12 @@
             // Set CurrentReportName to include the database name
             CurrentReportName = $"{CurrentDatabaseName}/{CurrentImportReportName}";
 
+            await LoadReportListDropdownAsync();
+
             IsImportReportPopupVisible = false;
+            StateHasChanged();
+
+            _LogService.WriteToLog($"ImportReportAsync() Imported: {CurrentReportName}");
 
             // Load the Report
             await ExecuteReportAsync();
