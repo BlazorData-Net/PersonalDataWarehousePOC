@@ -1,9 +1,10 @@
 ﻿@using Azure.Storage.Blobs
 @using System.Text
 @using Azure.Storage.Blobs.Models
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Services
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
-
+@inject LogService _LogService
 <div>
     <h5 style="color:red">@strStatusMessage</h5>
     <table class="form-group" cellpadding="4" cellspacing="4" style="width:100%">
@@ -88,7 +89,7 @@
     <div class="modal-backdrop fade show"></div>
 }
 @code {
-#nullable disable
+    #nullable disable
     [Parameter] public string StorageAccountName { get; set; }
     [Parameter] public string ContainerName { get; set; }
     [Parameter] public string AccountKey { get; set; } = "";
@@ -179,6 +180,7 @@
         catch (Exception ex)
         {
             strStatusMessage = $"Connection failed: {ex.Message}";
+            await _LogService.WriteToLogAsync(strStatusMessage);
         }
 
         boolProcessing = false;
@@ -223,6 +225,7 @@
         catch (Exception ex)
         {
             strStatusMessage = $"Connection clear failed: {ex.Message}";
+            await _LogService.WriteToLogAsync(strStatusMessage);
         }
         boolProcessing = false;
         StateHasChanged();

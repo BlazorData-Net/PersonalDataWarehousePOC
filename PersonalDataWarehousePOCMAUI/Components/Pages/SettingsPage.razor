@@ -1,12 +1,15 @@
 ﻿@page "/settingspage"
 @using Newtonsoft.Json;
 @using PersonalDataWarehouse.AI
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Services
 @inherits OwningComponentBase
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 @inject SettingsService SettingsService
 @inject IJSRuntime JSRuntime
+@inject LogService _LogService
+
 <h4>Settings</h4>
 <br />
 <div class="tabs-container">
@@ -266,6 +269,8 @@
                     Detail = ex.Message,
                     Duration = 8000
                 });
+
+            await _LogService.WriteToLogAsync($"SettingsSave exception: {ex.GetBaseException().ToString()}");
         }
     }
 }

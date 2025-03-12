@@ -2,6 +2,7 @@
 @using PersonalDataWarehousePOCMAUI.Model
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+@inject LogService _LogService
 
 <div class="row">
     <div class="col">
@@ -85,6 +86,8 @@
                     Detail = ex.Message,
                     Duration = 4000
                 });
+
+            _LogService.WriteToLog($"Clear Log error: {ex.Message}");
         }
     }
 
@@ -168,6 +171,8 @@
                     Detail = ex.Message,
                     Duration = 4000
                 });
+
+            _LogService.WriteToLog($"Export Log error: {ex.Message}");
         }
     }
 }

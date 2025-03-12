@@ -1,11 +1,13 @@
 ﻿@using System.Text
 @using Microsoft.Data.SqlClient
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Models
 @using System.Data
 @using PersonalDataWarehousePOCMAUI.Services
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 @inject SettingsService SettingsService
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject LogService _LogService
 
 <div class="modal fade show" style="display: block;" tabindex="-1">
     <div class="modal-dialog">
@@ -410,6 +412,7 @@
             catch (Exception ex)
             {
                 strStatusMessage = ex.GetBaseException().Message;
+                await _LogService.WriteToLogAsync(strStatusMessage);
                 return;
             }
         }
@@ -647,6 +650,7 @@
             {
                 boolProcessing = false;
                 strStatusMessage = ex.GetBaseException().Message;
+                await _LogService.WriteToLogAsync(strStatusMessage);
                 return;
             }
         }

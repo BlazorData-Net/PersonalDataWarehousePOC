@@ -4,6 +4,8 @@
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 @inject DatabaseService databaseService
+@inject LogService _LogService
+
 <div class="row">
     <div class="col">
         @if (DatabaseList.Count > 0)
@@ -164,6 +166,7 @@
         catch (Exception ex)
         {
             Message = ex.Message;
+            _LogService.WriteToLog(Message);
         }
     }
 
@@ -234,6 +237,7 @@
         catch (Exception ex)
         {
             Message = ex.Message;
+            await _LogService.WriteToLogAsync(Message);
         }
     }
 
@@ -262,6 +266,7 @@
         catch (Exception ex)
         {
             Message = ex.Message;
+            await _LogService.WriteToLogAsync(Message);
         }
     }
 
@@ -327,6 +332,7 @@
         catch (Exception ex)
         {
             Message = ex.Message;
+            await _LogService.WriteToLogAsync(Message);
         }
     }
 
@@ -340,6 +346,7 @@
         catch (Exception ex)
         {
             Message = ex.Message;
+            _LogService.WriteToLog(Message);
         }
     }
 
@@ -411,9 +418,7 @@
         catch (Exception ex)
         {
             Message = ex.Message;
-
-            LogService objLogService = new LogService();
-            objLogService.WriteToLog(ex.Message);
+            await _LogService.WriteToLogAsync(Message);
         }
     }
 

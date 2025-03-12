@@ -17,12 +17,15 @@
 @using System.Data
 @using PersonalDataWarehousePOC.Services
 @using PersonalDataWarehousePOCMAUI.Components.Pages.ConnectionDialogs
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Models
 @using PersonalDataWarehousePOCMAUI.Services
 @using static PersonalDataWarehousePOCMAUI.Services.SettingsService
 @inject SettingsService SettingsService
 @inject DatabaseService databaseService
 @inject DataService DataService
+@inject LogService _LogService
+
 @if (CurrentDatabaseName != "")
 {
     <div><b>Current Database: </b>  @CurrentDatabaseName</div>
@@ -372,6 +375,7 @@ else
         catch (Exception ex)
         {
             ErrorMessage = ex.GetBaseException().Message;
+            _LogService.WriteToLog(ErrorMessage);
         }
     }
 
@@ -657,6 +661,7 @@ else
             catch (Exception ex)
             {
                 ErrorMessage = ex.GetBaseException().Message;
+                await _LogService.WriteToLogAsync(ErrorMessage);
                 isLoading = false;
                 StateHasChanged();
                 return;
@@ -811,6 +816,7 @@ else
             catch (Exception ex)
             {
                 ErrorMessage = ex.GetBaseException().Message;
+                await _LogService.WriteToLogAsync(ErrorMessage);
 
                 if (connection.State == ConnectionState.Open)
                 {
@@ -1417,6 +1423,7 @@ else
             catch (Exception ex)
             {
                 ErrorMessage = ex.GetBaseException().Message;
+                await _LogService.WriteToLogAsync(ErrorMessage);
             }
             finally
             {
@@ -1619,6 +1626,7 @@ else
                     catch (Exception ex)
                     {
                         ErrorMessage = ex.GetBaseException().Message;
+                        await _LogService.WriteToLogAsync(ErrorMessage);
                     }
                     finally
                     {
@@ -1688,6 +1696,7 @@ else
                     catch (Exception ex)
                     {
                         ErrorMessage = ex.GetBaseException().Message;
+                        await _LogService.WriteToLogAsync(ErrorMessage);
                     }
                     finally
                     {
@@ -1707,6 +1716,7 @@ else
 
             // This will cause the Error dialog to show
             ErrorMessage = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(ErrorMessage);
         }
         finally
         {
@@ -1836,8 +1846,7 @@ else
         }
         catch (Exception ex)
         {
-            // Handle exception (optional logging or rethrowing)
-            Console.WriteLine($"An error occurred: {ex.Message}");
+            _LogService.WriteToLog($"GetIdentityColums Error: {ex.GetBaseException()}");
         }
         finally
         {

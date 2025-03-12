@@ -12,6 +12,7 @@
 @using System.Diagnostics.CodeAnalysis
 @using PersonalDataWarehouse.AI
 @using PersonalDataWarehousePOC.Services
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Services
 @using MonacoRazor
 @using System.Data
@@ -21,6 +22,7 @@
 @inject SettingsService SettingsService
 @inject OrchestratorMethods OrchestratorMethods
 @inject IJSRuntime JS
+@inject LogService _LogService
 <PageTitle>Kusto Queries</PageTitle>
 <h4>Kusto Queries</h4>
 <br />
@@ -44,7 +46,7 @@ else
                     @foreach (var query in QueryList)
                     {
                         <option value="@query"
-                                selected="@(query == CurrentQueryName ? "selected" : null)">
+                        selected="@(query == CurrentQueryName ? "selected" : null)">
                             @query
                         </option>
                     }
@@ -72,7 +74,7 @@ else
     <br />
     <div>
         <div class="rz-p-sm-1"
-             style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
+        style="background-color:whitesmoke; border-block:thin; border-block-color:lightgray; text-align:left">
             <button @onclick="NewScript" title="New" style="background:none;border:none;">
                 <i class="material-icons" style="color:black;">note_add</i>
             </button>
@@ -110,12 +112,12 @@ else
         </div>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
             <CodeEditor @ref="@MonacoCodeEditor"
-                        Language="csharp"
-                        Code="@CurrentScript"
-                        MinHeight="500px"
-                        Width="700px"
-                        Margin="0px"
-                        OnCompletionsRequested="GetCompletionsAsync" />
+            Language="csharp"
+            Code="@CurrentScript"
+            MinHeight="500px"
+            Width="700px"
+            Margin="0px"
+            OnCompletionsRequested="GetCompletionsAsync" />
             <div style="overflow: auto;">
                 <iframe style="width:1000px; min-height: 500px;" srcdoc="@table"></iframe>
             </div>
@@ -147,8 +149,8 @@ else
                             <div>
                                 <label for="kqlQueryName">Query Name:</label>
                                 <input type="text" id="kqlQueryName" maxlength="50"
-                                       style="width: 300px;"
-                                       @bind="CurrentQueryNameWithoutDatabase" />
+                                style="width: 300px;"
+                                @bind="CurrentQueryNameWithoutDatabase" />
                                 &nbsp;&nbsp;&nbsp;&nbsp;
                                 <button type="submit">Submit</button>
                             </div>
@@ -183,8 +185,8 @@ else
                         {
                             <div class="has-scrollbar" style="width: 100%; height: 110px; overflow: auto">
                                 <textarea @bind="AIMessage" maxlength="1000"
-                                          style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
-                                                </textarea>
+                                style="width: 100%; height: 100px; overflow: auto; resize: vertical;">
+                                </textarea>
                             </div>
                             <br />
                             <button @onclick="AIbtn">Submit</button>
@@ -581,6 +583,7 @@ else
             IsLoading = false;
             IsSaveQueryPopupVisible = false;
             Message = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(Message);
         }
     }
 
@@ -734,6 +737,7 @@ else
         {
             IsOutputLoading = false;
             Message = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(Message);
             StateHasChanged();
         }
     }
@@ -889,6 +893,7 @@ else
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(Message);
         }
         finally
         {
@@ -941,7 +946,4 @@ else
         public IEnumerable<IDictionary<string, object>> data { get; set; }
         public Dictionary<string, Type> columns { get; set; }
     }
-
-    // Utility
-
 }

@@ -9,6 +9,7 @@
 @using System.Diagnostics.CodeAnalysis
 @using PersonalDataWarehouse.AI
 @using PersonalDataWarehousePOC.Services
+@using PersonalDataWarehousePOCMAUI.Model
 @using PersonalDataWarehousePOCMAUI.Services
 @using MonacoRazor
 @using System.Data
@@ -16,6 +17,7 @@
 @inject DataService DataService
 @inject SettingsService SettingsService
 @inject OrchestratorMethods OrchestratorMethods
+@inject LogService _LogService
 
 <PageTitle>Views</PageTitle>
 
@@ -694,6 +696,7 @@ else
             IsLoading = false;
             IsSaveViewPopupVisible = false;
             Message = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(Message);
         }
     }
 
@@ -1013,6 +1016,7 @@ else
             IsNewOutputPopupVisible = false;
             IsOutputLoading = false;
             Message = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(Message);
             StateHasChanged();
         }
     }
@@ -1030,6 +1034,7 @@ else
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(Message);
             return null;
         }
     }
@@ -1274,6 +1279,7 @@ else
         catch (Exception ex)
         {
             Message = ex.GetBaseException().Message;
+            await _LogService.WriteToLogAsync(Message);
         }
     }
 
