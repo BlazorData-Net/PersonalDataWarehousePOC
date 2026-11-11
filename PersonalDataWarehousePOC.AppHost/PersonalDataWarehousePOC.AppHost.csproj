@@ -1,6 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,10 +8,6 @@
     <IsAspireHost>true</IsAspireHost>
     <UserSecretsId>396cacfa-c5da-4266-afd2-70dd4c04922a</UserSecretsId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PersonalDataWarehousePOC\PersonalDataWarehousePOC.csproj" />
